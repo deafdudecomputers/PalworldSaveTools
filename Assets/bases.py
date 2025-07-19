@@ -1,6 +1,7 @@
 import os, sys
 sys.path.append(os.path.dirname(__file__))
 from import_libs import *
+from common import open_file_with_default_app
 x_min, x_max = -1000, 1000
 y_min, y_max = -1000, 1000
 image_path = os.path.join(os.path.dirname(__file__), "resources", "worldmap.png")
@@ -135,23 +136,36 @@ def create_world_map():
     high_dpi_image = image.resize((8000, 8000), Image.Resampling.LANCZOS)
     high_dpi_image.save('updated_worldmap.png', format='PNG', dpi=(100, 100), optimize=True)
     os.remove('bases.csv')
-if __name__ == "__main__":
+def generate_map():
     start_time = time.time()
     script_dir = os.path.dirname(os.path.abspath(__file__))
     main_dir = os.path.dirname(script_dir)
     log_file_path = os.path.join(main_dir, 'scan_save.log')
+    
     if not os.path.exists(log_file_path):
         print("Please run the Scan Save Tool first before using this.")
-        sys.exit()
-    guild_data, base_keys = parse_logfile(log_file_path)
-    write_csv(guild_data, base_keys, 'bases.csv')
-    create_world_map()
-    map_path = os.path.join(main_dir, "updated_worldmap.png")
-    if os.path.exists(map_path):
-        print("Opening updated_worldmap.png...")
-        subprocess.run(["start", map_path], shell=True)
-    else:
-        print("updated_worldmap.png not found.")
-    end_time = time.time()
-    duration = end_time - start_time
-    print(f"Done in {duration:.2f} seconds")
+        return False
+    
+    try:
+        guild_data, base_keys = parse_logfile(log_file_path)
+        write_csv(guild_data, base_keys, 'bases.csv')
+        create_world_map()
+        
+        map_path = os.path.join(main_dir, "updated_worldmap.png")
+        if os.path.exists(map_path):
+            print("Opening updated_worldmap.png...")
+            open_file_with_default_app(map_path)
+        else:
+            print("updated_worldmap.png not found.")
+        
+        end_time = time.time()
+        duration = end_time - start_time
+        print(f"Done in {duration:.2f} seconds")
+        return True
+        
+    except Exception as e:
+        print(f"Error generating map: {e}")
+        return False
+
+if __name__ == "__main__":
+    generate_map()

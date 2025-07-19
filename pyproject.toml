@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=75.6.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "PalworldSaveTools"
+version = "1.0.68"
+description = "All-in-one tool for fixing/transferring/editing Palworld saves"
+readme = "readme.md"
+license = "MIT"
+authors = [{ name = "pylar" }]
+requires-python = ">=3.11"
+dependencies = [
+    "matplotlib==3.10.0",
+    "pandas==2.2.3",
+    "customtkinter",
+    "cityhash",
+    "pillow",
+    "numpy",
+    "pyooz @ git+https://github.com/oMaN-Rod/pyooz.git",
+    "cx-freeze>=8.3.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["Assets*"]

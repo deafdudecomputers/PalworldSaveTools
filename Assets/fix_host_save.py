@@ -3,6 +3,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 from scan_save import *
 from datetime import datetime
+from common import ICON_PATH
 player_list_cache = []
 def backup_whole_directory(source_folder, backup_folder):
     if not os.path.isabs(backup_folder):
@@ -200,8 +201,7 @@ window.title("Fix Host Save - GUID Migrator")
 window.geometry("1200x600")
 window.config(bg="#2f2f2f")
 try:
-    icon_path = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", "pal.ico")
-    window.iconbitmap(icon_path)
+    window.iconbitmap(ICON_PATH)
 except Exception as e:
     print(f"Could not set icon: {e}")
 font_style = ("Arial", 10)
@@ -297,5 +297,9 @@ def on_exit():
     if window.winfo_exists():
         window.destroy()
     sys.exit()
-window.protocol("WM_DELETE_WINDOW", on_exit)
-window.mainloop()
+def fix_host_save():
+    window.protocol("WM_DELETE_WINDOW", on_exit)
+    window.mainloop()
+
+if __name__ == "__main__":
+    fix_host_save()

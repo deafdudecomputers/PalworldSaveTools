@@ -6,3 +6,7 @@ GamePassSave/
 saves/
 Restore Map/
 Pal Logger/
+.venv/
+PST_standalone/
+build/
+PalworldSaveTools.egg-info/

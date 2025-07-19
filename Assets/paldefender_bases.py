@@ -116,27 +116,43 @@ def parse_log(inactivity_days=None, max_level=None):
                 info_log.write("-" * 40 + "\n")
             info_log.write(f"Found {guild_count} guild(s) with {base_count} base(s).\n")
             info_log.write("-" * 40)
-if __name__ == "__main__":
-    print("Filter options:")
-    print("1) Inactivity: Guilds qualify if all players exceed >= days.")
-    print("2) Level: Guilds qualify if all players are <= level.")
-    print("3) Both: Guilds qualify only if all players meet both inactivity and level.")
-    filter_type = input("Enter your choice (1 - 3): ")
+def paldefender_bases(filter_type=None, inactivity_days=None, max_level=None):
+    if filter_type is None:
+        print("Filter options:")
+        print("1) Inactivity: Guilds qualify if all players exceed >= days.")
+        print("2) Level: Guilds qualify if all players are <= level.")
+        print("3) Both: Guilds qualify only if all players meet both inactivity and level.")
+        filter_type = input("Enter your choice (1 - 3): ")
+    
     try:
         if filter_type == "1":
-            print("Inactivity filter: Guilds will qualify if all players have been inactive for the specified days or more.")
-            inactivity_days = int(input("Enter the number of inactivity days: "))
+            if inactivity_days is None:
+                print("Inactivity filter: Guilds will qualify if all players have been inactive for the specified days or more.")
+                inactivity_days = int(input("Enter the number of inactivity days: "))
             parse_log(inactivity_days=inactivity_days)
         elif filter_type == "2":
-            print("Level filter: Guilds will qualify if all players are at or below the specified level.")
-            max_level = int(input("Enter the maximum player level: "))
+            if max_level is None:
+                print("Level filter: Guilds will qualify if all players are at or below the specified level.")
+                max_level = int(input("Enter the maximum player level: "))
             parse_log(max_level=max_level)
         elif filter_type == "3":
-            print("Both filters: Guilds will qualify only if all players meet both conditions.")
-            inactivity_days = int(input("Enter the number of inactivity days: "))
-            max_level = int(input("Enter the maximum player level: "))
+            if inactivity_days is None or max_level is None:
+                print("Both filters: Guilds will qualify only if all players meet both conditions.")
+                if inactivity_days is None:
+                    inactivity_days = int(input("Enter the number of inactivity days: "))
+                if max_level is None:
+                    max_level = int(input("Enter the maximum player level: "))
             parse_log(inactivity_days=inactivity_days, max_level=max_level)
         else:
             print("Invalid choice. Please select 1, 2, or 3.")
+            return False
+        return True
     except ValueError:
         print("Invalid input. Please enter numeric values where required.")
+        return False
+
+def main():
+    paldefender_bases()
+
+if __name__ == "__main__":
+    main()

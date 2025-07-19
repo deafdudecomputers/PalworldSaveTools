@@ -1,4 +1,5 @@
 from import_libs import *
+from common import open_file_with_default_app
 def download_from_github(repo_owner, repo_name, version, download_path):
     file_url = get_release_assets(repo_owner, repo_name, version)
     if file_url:
@@ -60,8 +61,7 @@ def main():
         exe_path = find_exe("psp_windows")
         if exe_path:
             print("Opening Palworld Save Pal...")
-            os.chdir(os.path.dirname(exe_path))
-            subprocess.Popen("psp.exe")
+            open_file_with_default_app(exe_path)
         else:
             print("Downloading Palworld Save Pal...")
             zip_file = download_from_github(repo_owner, repo_name, version, ".")
@@ -73,12 +73,15 @@ def main():
                 exe_path = find_exe("psp_windows")
                 if exe_path:
                     print("Opening Palworld Save Pal...")
-                    os.chdir(os.path.dirname(exe_path))
-                    subprocess.Popen("psp.exe")
+                    open_file_with_default_app(exe_path)
                 else:
                     print("Extraction succeeded but could not find psp.exe.")
             else:
                 print("Failed to download Palworld Save Pal...")
     else:
         print("Unable to fetch latest release version.")
-if __name__ == "__main__": main()
+def modify_save():
+    main()
+
+if __name__ == "__main__": 
+    modify_save()

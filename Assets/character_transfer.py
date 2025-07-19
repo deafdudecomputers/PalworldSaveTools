@@ -1,5 +1,6 @@
 from import_libs import *
 from datetime import datetime, timedelta
+from common import ICON_PATH
 level_sav_path, host_sav_path, t_level_sav_path, t_host_sav_path = None, None, None, None
 level_json, host_json, targ_lvl, targ_json = None, None, None, None
 target_section_ranges, target_save_type, target_raw_gvas, targ_json_gvas = None, None, None, None
@@ -593,8 +594,7 @@ window.geometry("")
 window.minsize(800, 300)
 window.config(bg="#2f2f2f")
 try:
-    icon_path = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", "pal.ico")
-    window.iconbitmap(icon_path)
+    window.iconbitmap(ICON_PATH)
 except Exception as e:
     print(f"Could not set icon: {e}")
 font_style = ("Arial", 10)
@@ -671,9 +671,13 @@ def toggle_keep_old_guild():
     print("Keep old guild id after transfer:", "on" if keep_old_guild_id else "off")
 btn_toggle = tk.Button(window, text="☑ Keep old Guild ID after Transfer", command=toggle_keep_old_guild, relief="flat", fg="white", bg="#2f2f2f", activebackground="black", activeforeground="white")
 btn_toggle.grid(row=9, column=0, columnspan=2, sticky='w', padx=10, pady=5)
-def on_exit():
-    if window.winfo_exists():
-        window.destroy()
-    sys.exit()
-window.protocol("WM_DELETE_WINDOW", on_exit)
-window.mainloop()
+def character_transfer():
+    def on_exit():
+        if window.winfo_exists():
+            window.destroy()
+        sys.exit()
+    window.protocol("WM_DELETE_WINDOW", on_exit)
+    window.mainloop()
+
+if __name__ == "__main__":
+    character_transfer()

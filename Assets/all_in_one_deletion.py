@@ -4,8 +4,30 @@ from uuid import UUID
 from datetime import datetime
 from scan_save import decompress_sav_to_gvas, GvasFile, PALWORLD_TYPE_HINTS, SKP_PALWORLD_CUSTOM_PROPERTIES, compress_gvas_to_sav
 from tkinter import simpledialog
+from common import ICON_PATH
+
+# Global variables
 current_save_path = None
 loaded_level_json = None
+
+# GUI-related global variables (initialized when the GUI is created)
+window = None
+stat_labels = None
+guild_tree = None
+base_tree = None
+player_tree = None
+guild_members_tree = None
+guild_search_var = None
+base_search_var = None
+player_search_var = None
+guild_members_search_var = None
+guild_result = None
+base_result = None
+player_result = None
+
+# Placeholder function that will be redefined when GUI is created
+def refresh_stats(section):
+    pass
 def as_uuid(val): return str(val).replace('-', '').lower() if val else ''
 def are_equal_uuids(a,b): return as_uuid(a)==as_uuid(b)
 def backup_whole_directory(source_folder, backup_folder):
@@ -667,36 +689,45 @@ def update_stats_section(stat_labels, section, data):
         label_key = f"{section_key}_{key.lower()}"
         if label_key in stat_labels:
             stat_labels[label_key].config(text=f"{key.capitalize()}: {val}")
-def refresh_stats(section):
-    stats = get_current_stats()
-    if section == "Before Deletion":
-        refresh_stats.stats_before = stats
-    update_stats_section(stat_labels, section, stats)
-    if section == "After Deletion" and hasattr(refresh_stats, "stats_before"):
-        before = refresh_stats.stats_before
-        result = {k: before[k] - stats.get(k, 0) for k in before}
-        update_stats_section(stat_labels, "Deletion Result", result)
-window = tk.Tk()
-window.title("All in One Deletion Tool")
-window.geometry("1400x700")
-window.config(bg="#2f2f2f")
-font = ("Arial", 10)
-s = ttk.Style(window)
-s.theme_use('clam')
-try: window.iconbitmap(os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", "pal.ico"))
-except Exception: pass
-for opt in [
-    ("Treeview.Heading", {"font": ("Arial", 12, "bold"), "background": "#444", "foreground": "white"}),
-    ("Treeview", {"background": "#333", "foreground": "white", "fieldbackground": "#333"}),
-    ("TFrame", {"background": "#2f2f2f"}),
-    ("TLabel", {"background": "#2f2f2f", "foreground": "white"}),
-    ("TEntry", {"fieldbackground": "#444", "foreground": "white"}),
-    ("Dark.TButton", {"background": "#555555", "foreground": "white", "font": font, "padding": 6}),
-]:
-    s.configure(opt[0], **opt[1])
-s.map("Dark.TButton",
-      background=[("active", "#666666"), ("!disabled", "#555555")],
-      foreground=[("disabled", "#888888"), ("!disabled", "white")])
+def all_in_one_deletion():
+    global window, stat_labels, guild_tree, base_tree, player_tree, guild_members_tree
+    global guild_search_var, base_search_var, player_search_var, guild_members_search_var
+    global guild_result, base_result, player_result, refresh_stats
+    
+    def refresh_stats_local(section):
+        stats = get_current_stats()
+        if section == "Before Deletion":
+            refresh_stats_local.stats_before = stats
+        update_stats_section(stat_labels, section, stats)
+        if section == "After Deletion" and hasattr(refresh_stats_local, "stats_before"):
+            before = refresh_stats_local.stats_before
+            result = {k: before[k] - stats.get(k, 0) for k in before}
+            update_stats_section(stat_labels, "Deletion Result", result)
+    
+    # Update the global refresh_stats to point to our local function
+    refresh_stats = refresh_stats_local
+    
+    window = tk.Tk()
+    window.title("All in One Deletion Tool")
+    window.geometry("1400x700")
+    window.config(bg="#2f2f2f")
+    font = ("Arial", 10)
+    s = ttk.Style(window)
+    s.theme_use('clam')
+    try: window.iconbitmap(ICON_PATH)
+    except Exception: pass
+    for opt in [
+        ("Treeview.Heading", {"font": ("Arial", 12, "bold"), "background": "#444", "foreground": "white"}),
+        ("Treeview", {"background": "#333", "foreground": "white", "fieldbackground": "#333"}),
+        ("TFrame", {"background": "#2f2f2f"}),
+        ("TLabel", {"background": "#2f2f2f", "foreground": "white"}),
+        ("TEntry", {"fieldbackground": "#444", "foreground": "white"}),
+        ("Dark.TButton", {"background": "#555555", "foreground": "white", "font": font, "padding": 6}),
+    ]:
+        s.configure(opt[0], **opt[1])
+    s.map("Dark.TButton",
+          background=[("active", "#666666"), ("!disabled", "#555555")],
+          foreground=[("disabled", "#888888"), ("!disabled", "white")])
 def create_search_panel(parent, label_text, search_var, search_callback, tree_columns, tree_headings, tree_col_widths, width, height, tree_height=24):
     panel = ttk.Frame(parent, style="TFrame")
     panel.place(width=width, height=height)
@@ -713,64 +744,106 @@ def create_search_panel(parent, label_text, search_var, search_callback, tree_co
         tree.heading(col, text=head)
         tree.column(col, width=width_col, anchor='w')
     return panel, tree, entry
-guild_search_var = tk.StringVar()
-gframe, guild_tree, guild_search_entry = create_search_panel(window, "Search Guilds:", guild_search_var, on_guild_search,
-    ("Name", "ID"), ("Guild Name", "Guild ID"), (130, 130), 310, 600)
-gframe.place(x=10, y=40)
-guild_tree.bind("<<TreeviewSelect>>", on_guild_select)
-base_search_var = tk.StringVar()
-bframe, base_tree, base_search_entry = create_search_panel(window, "Search Bases:", base_search_var, on_base_search,
-    ("ID",), ("Base ID",), (280,), 310, 280)
-bframe.place(x=330, y=40)
-base_tree.bind("<<TreeviewSelect>>", on_base_select)
-guild_members_search_var = tk.StringVar()
-gm_frame, guild_members_tree, guild_members_search_entry = create_search_panel(
-    window, "Guild Members:", guild_members_search_var, on_guild_members_search,
-    ("Name", "Level", "UID"), ("Member", "Level", "UID"), (100, 50, 140), 310, 320)
-gm_frame.place(x=330, y=320)
-guild_members_tree.bind("<<TreeviewSelect>>", on_guild_member_select)
-player_search_var = tk.StringVar()
-pframe, player_tree, player_search_entry = create_search_panel(
-    window, "Search Players:", player_search_var, on_player_search,
-    ("UID", "Name", "GID", "Last", "Level"),
-    ("Player UID", "Player Name", "Guild ID", "Last Seen", "Level"),
-    (100, 120, 120, 90, 50),
-    540, 600)
-pframe.place(x=650, y=40)
-player_tree.bind("<<TreeviewSelect>>", on_player_select)
-guild_result = tk.Label(window, text="Selected Guild: N/A", bg="#2f2f2f", fg="white", font=font)
-guild_result.place(x=10, y=10)
-base_result = tk.Label(window, text="Selected Base: N/A", bg="#2f2f2f", fg="white", font=font)
-base_result.place(x=330, y=10)
-player_result = tk.Label(window, text="Selected Player: N/A", bg="#2f2f2f", fg="white", font=font)
-player_result.place(x=650, y=10)
-btn_save_changes = ttk.Button(window, text="Save Changes", command=save_changes, style="Dark.TButton")
-btn_save_changes.place(x=650 + 540 - 5 - btn_save_changes.winfo_reqwidth(), y=10)
-window.update_idletasks()
-btn_load_save = ttk.Button(window, text="Load Level.sav", command=load_save, style="Dark.TButton")
-btn_load_save.place(x=btn_save_changes.winfo_x() - 10 - btn_load_save.winfo_reqwidth(), y=10)
-window.update_idletasks()
-btn_delete_guild = ttk.Button(window, text="Delete Selected Guild", command=delete_selected_guild, style="Dark.TButton")
-btn_delete_guild.place(x=20, y=40 + 600 + 10)
-btn_delete_empty_guilds = ttk.Button(window, text="Delete Empty Guilds", command=delete_empty_guilds, style="Dark.TButton")
-btn_delete_empty_guilds.place(x=20 + btn_delete_guild.winfo_reqwidth() + 10, y=40 + 600 + 10)
-btn_delete_base = ttk.Button(window, text="Delete Selected Base", command=delete_selected_base, style="Dark.TButton")
-btn_delete_base.place(x=330 + 5, y=40 + 600 + 10)
-btn_delete_inactive_bases = ttk.Button(window, text="Delete Inactive Bases", command=delete_inactive_bases, style="Dark.TButton")
-btn_delete_inactive_bases.place(x=330 + 310 - 5 - btn_delete_inactive_bases.winfo_reqwidth(), y=40 + 600 + 10)
-y_pos = 40 + 600 + 10
-base_x = 650
-panel_width = 540
-btn_delete_player = ttk.Button(window, text="Delete Selected Player", command=delete_selected_player, style="Dark.TButton")
-btn_fix_duplicate_players = ttk.Button(window, text="Delete Duplicate Players", command=delete_duplicated_players, style="Dark.TButton")
-btn_delete_inactive_players = ttk.Button(window, text="Delete Inactive Players", command=delete_inactive_players_button, style="Dark.TButton")
-btn_delete_player.place(x=base_x + panel_width * 0.18 - (btn_delete_player.winfo_reqwidth() // 2), y=y_pos)
-btn_fix_duplicate_players.place(x=base_x + panel_width * 0.50 - (btn_fix_duplicate_players.winfo_reqwidth() // 2), y=y_pos)
-btn_delete_inactive_players.place(x=base_x + panel_width * 0.82 - (btn_delete_inactive_players.winfo_reqwidth() // 2), y=y_pos)
-stat_labels = create_stats_panel(window)
-def on_exit():
-    if window.winfo_exists():
-        window.destroy()
-    sys.exit()
-window.protocol("WM_DELETE_WINDOW", on_exit)
-window.mainloop()
+
+def all_in_one_deletion():
+    global window, stat_labels, guild_tree, base_tree, player_tree, guild_members_tree
+    global guild_search_var, base_search_var, player_search_var, guild_members_search_var
+    global guild_result, base_result, player_result
+    
+    def refresh_stats(section):
+        stats = get_current_stats()
+        if section == "Before Deletion":
+            refresh_stats.stats_before = stats
+        update_stats_section(stat_labels, section, stats)
+        if section == "After Deletion" and hasattr(refresh_stats, "stats_before"):
+            before = refresh_stats.stats_before
+            result = {k: before[k] - stats.get(k, 0) for k in before}
+            update_stats_section(stat_labels, "Deletion Result", result)
+    
+    window = tk.Tk()
+    window.title("All in One Deletion Tool")
+    window.geometry("1400x700")
+    window.config(bg="#2f2f2f")
+    font = ("Arial", 10)
+    s = ttk.Style(window)
+    s.theme_use('clam')
+    try: window.iconbitmap(ICON_PATH)
+    except Exception: pass
+    for opt in [
+        ("Treeview.Heading", {"font": ("Arial", 12, "bold"), "background": "#444", "foreground": "white"}),
+        ("Treeview", {"background": "#333", "foreground": "white", "fieldbackground": "#333"}),
+        ("TFrame", {"background": "#2f2f2f"}),
+        ("TLabel", {"background": "#2f2f2f", "foreground": "white"}),
+        ("TEntry", {"fieldbackground": "#444", "foreground": "white"}),
+        ("Dark.TButton", {"background": "#555555", "foreground": "white", "font": font, "padding": 6}),
+    ]:
+        s.configure(opt[0], **opt[1])
+    s.map("Dark.TButton",
+          background=[("active", "#666666"), ("!disabled", "#555555")],
+          foreground=[("disabled", "#888888"), ("!disabled", "white")])
+    
+    guild_search_var = tk.StringVar()
+    gframe, guild_tree, guild_search_entry = create_search_panel(window, "Search Guilds:", guild_search_var, on_guild_search,
+        ("Name", "ID"), ("Guild Name", "Guild ID"), (130, 130), 310, 600)
+    gframe.place(x=10, y=40)
+    guild_tree.bind("<<TreeviewSelect>>", on_guild_select)
+    base_search_var = tk.StringVar()
+    bframe, base_tree, base_search_entry = create_search_panel(window, "Search Bases:", base_search_var, on_base_search,
+        ("ID",), ("Base ID",), (280,), 310, 280)
+    bframe.place(x=330, y=40)
+    base_tree.bind("<<TreeviewSelect>>", on_base_select)
+    guild_members_search_var = tk.StringVar()
+    gm_frame, guild_members_tree, guild_members_search_entry = create_search_panel(
+        window, "Guild Members:", guild_members_search_var, on_guild_members_search,
+        ("Name", "Level", "UID"), ("Member", "Level", "UID"), (100, 50, 140), 310, 320)
+    gm_frame.place(x=330, y=320)
+    guild_members_tree.bind("<<TreeviewSelect>>", on_guild_member_select)
+    player_search_var = tk.StringVar()
+    pframe, player_tree, player_search_entry = create_search_panel(
+        window, "Search Players:", player_search_var, on_player_search,
+        ("UID", "Name", "GID", "Last", "Level"),
+        ("Player UID", "Player Name", "Guild ID", "Last Seen", "Level"),
+        (100, 120, 120, 90, 50),
+        540, 600)
+    pframe.place(x=650, y=40)
+    player_tree.bind("<<TreeviewSelect>>", on_player_select)
+    guild_result = tk.Label(window, text="Selected Guild: N/A", bg="#2f2f2f", fg="white", font=font)
+    guild_result.place(x=10, y=10)
+    base_result = tk.Label(window, text="Selected Base: N/A", bg="#2f2f2f", fg="white", font=font)
+    base_result.place(x=330, y=10)
+    player_result = tk.Label(window, text="Selected Player: N/A", bg="#2f2f2f", fg="white", font=font)
+    player_result.place(x=650, y=10)
+    btn_save_changes = ttk.Button(window, text="Save Changes", command=save_changes, style="Dark.TButton")
+    btn_save_changes.place(x=650 + 540 - 5 - btn_save_changes.winfo_reqwidth(), y=10)
+    window.update_idletasks()
+    btn_load_save = ttk.Button(window, text="Load Level.sav", command=load_save, style="Dark.TButton")
+    btn_load_save.place(x=btn_save_changes.winfo_x() - 10 - btn_load_save.winfo_reqwidth(), y=10)
+    window.update_idletasks()
+    btn_delete_guild = ttk.Button(window, text="Delete Selected Guild", command=delete_selected_guild, style="Dark.TButton")
+    btn_delete_guild.place(x=20, y=40 + 600 + 10)
+    btn_delete_empty_guilds = ttk.Button(window, text="Delete Empty Guilds", command=delete_empty_guilds, style="Dark.TButton")
+    btn_delete_empty_guilds.place(x=20 + btn_delete_guild.winfo_reqwidth() + 10, y=40 + 600 + 10)
+    btn_delete_base = ttk.Button(window, text="Delete Selected Base", command=delete_selected_base, style="Dark.TButton")
+    btn_delete_base.place(x=330 + 5, y=40 + 600 + 10)
+    btn_delete_inactive_bases = ttk.Button(window, text="Delete Inactive Bases", command=delete_inactive_bases, style="Dark.TButton")
+    btn_delete_inactive_bases.place(x=330 + 310 - 5 - btn_delete_inactive_bases.winfo_reqwidth(), y=40 + 600 + 10)
+    y_pos = 40 + 600 + 10
+    base_x = 650
+    panel_width = 540
+    btn_delete_player = ttk.Button(window, text="Delete Selected Player", command=delete_selected_player, style="Dark.TButton")
+    btn_fix_duplicate_players = ttk.Button(window, text="Delete Duplicate Players", command=delete_duplicated_players, style="Dark.TButton")
+    btn_delete_inactive_players = ttk.Button(window, text="Delete Inactive Players", command=delete_inactive_players_button, style="Dark.TButton")
+    btn_delete_player.place(x=base_x + panel_width * 0.18 - (btn_delete_player.winfo_reqwidth() // 2), y=y_pos)
+    btn_fix_duplicate_players.place(x=base_x + panel_width * 0.50 - (btn_fix_duplicate_players.winfo_reqwidth() // 2), y=y_pos)
+    btn_delete_inactive_players.place(x=base_x + panel_width * 0.82 - (btn_delete_inactive_players.winfo_reqwidth() // 2), y=y_pos)
+    stat_labels = create_stats_panel(window)
+    
+    def on_exit():
+        if window.winfo_exists():
+            window.destroy()
+        sys.exit()
+    window.protocol("WM_DELETE_WINDOW", on_exit)
+    window.mainloop()
+
+if __name__ == "__main__":
+    all_in_one_deletion()

@@ -1,5 +1,6 @@
 from scan_save import *
 from datetime import datetime
+from common import ICON_PATH
 def backup_whole_directory(source_folder, backup_folder):
     if not os.path.isabs(backup_folder):
         base_path = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
@@ -29,8 +30,7 @@ class SlotNumUpdaterApp(tk.Tk):
         self.geometry("600x200")
         self.config(bg="#2f2f2f")
         try:
-            icon_path = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "resources", "pal.ico")
-            self.iconbitmap(icon_path)
+            self.iconbitmap(ICON_PATH)
         except Exception as e:
             print(f"Could not set icon: {e}")
         font_style = ("Arial", 10)
@@ -116,7 +116,7 @@ class SlotNumUpdaterApp(tk.Tk):
         backup_whole_directory(os.path.dirname(filepath), "Backups/Slot Injector")
         json_to_sav(level_json, filepath)
         messagebox.showinfo("Success", f"Updated {updated_count} SlotNum entries from {current_val} to {new_value} in Level.sav!")
-if __name__ == "__main__":
+def slot_injector():
     def on_exit():
         try: app.destroy()
         except: pass
@@ -124,3 +124,6 @@ if __name__ == "__main__":
     app = SlotNumUpdaterApp()
     app.protocol("WM_DELETE_WINDOW", on_exit)
     app.mainloop()
+
+if __name__ == "__main__":
+    slot_injector()

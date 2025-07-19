@@ -560,4 +560,44 @@ def Save(exit_now=True):
             pass
     if exit_now:
         sys.exit(0)
-if __name__ == "__main__": main_editor()
+def scan_save(filename):
+    global output_file, output_path, args, gui, playerMapping
+    
+    if not os.path.exists(filename):
+        logging.info(f"{filename} does not exist.")
+        return False
+    if not os.path.isfile(filename):
+        logging.info(f"{filename} is not a file.")
+        return False
+    
+    t1 = time.time()
+    try:
+        input_file_size = os.path.getsize(filename)
+        logging.info(f"Size Level.sav: {input_file_size} bytes")
+        
+        # Simulate args for the existing code
+        class Args:
+            def __init__(self, filename):
+                self.filename = filename
+        args = Args(filename)
+        
+        LoadFile(filename)
+    except Exception as e:
+        logging.info("Corrupted Save File", exc_info=True)
+        return False
+    
+    try:
+        logging.info(f"Now checking the data...")
+        ShowPlayers()
+        logging.info("Data has been fully checked...\n")
+    except KeyError as e:
+        traceback.print_exception(e)
+        logging.info("Corrupted Save File", exc_info=True)
+        return False
+    
+    print("Total time taken: %.2fs" % (time.time() - t1))
+    print("\n")
+    return True
+
+if __name__ == "__main__": 
+    main_editor()
