@@ -70,7 +70,6 @@ For **host/co-op**, the save folder is typically located at:
 %localappdata%\Pal\Saved\SaveGames\YOURID\RANDOMID\
 ```
 
-
 For **dedicated servers**, the save folder is typically located at:
 
 ```
