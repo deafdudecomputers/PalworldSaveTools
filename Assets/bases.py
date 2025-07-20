@@ -64,7 +64,7 @@ def sanitize_text(text):
 def extract_info_from_log():
     print(f"Now extracting the info from log...")
     try:
-        with open('scan_save.log', 'r', encoding='utf-8') as file:
+        with open('Save Scan Logger/scan_save.log', 'r', encoding='utf-8') as file:
             log_content = file.read()
     except UnicodeDecodeError:
         raise ValueError("Failed to read log file with utf-8 encoding.")
@@ -90,10 +90,9 @@ def create_world_map():
     base_dir = os.path.dirname(os.path.abspath(__file__))
     worldmap_path = os.path.join(base_dir, 'resources', 'worldmap.png')
     marker_path = os.path.join(base_dir, 'resources', 'baseicon.png')
-    font_path = os.path.join(base_dir, 'resources', 'NotoSans-Regular.ttf')
     image = Image.open(worldmap_path).convert('RGBA')
     marker = Image.open(marker_path).convert('RGBA')
-    pil_font = ImageFont.truetype(font_path, 14)
+    pil_font = ImageFont.load_default()
     df = pd.read_csv('bases.csv')
     marker_size = (64, 64)
     marker_resized = marker.resize(marker_size, Image.Resampling.LANCZOS)
@@ -140,12 +139,10 @@ def generate_map():
     start_time = time.time()
     script_dir = os.path.dirname(os.path.abspath(__file__))
     main_dir = os.path.dirname(script_dir)
-    log_file_path = os.path.join(main_dir, 'scan_save.log')
-    
+    log_file_path = os.path.join(main_dir, 'Save Scan Logger', 'scan_save.log')    
     if not os.path.exists(log_file_path):
         print("Please run the Scan Save Tool first before using this.")
-        return False
-    
+        return False    
     try:
         guild_data, base_keys = parse_logfile(log_file_path)
         write_csv(guild_data, base_keys, 'bases.csv')
@@ -156,16 +153,12 @@ def generate_map():
             print("Opening updated_worldmap.png...")
             open_file_with_default_app(map_path)
         else:
-            print("updated_worldmap.png not found.")
-        
+            print("updated_worldmap.png not found.")        
         end_time = time.time()
         duration = end_time - start_time
         print(f"Done in {duration:.2f} seconds")
-        return True
-        
+        return True        
     except Exception as e:
         print(f"Error generating map: {e}")
         return False
-
-if __name__ == "__main__":
-    generate_map()
+if __name__ == "__main__": generate_map()

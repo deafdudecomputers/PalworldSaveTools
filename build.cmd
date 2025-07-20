@@ -9,11 +9,11 @@ if exist venv (
     echo Now creating venv...
     python -m venv venv
     echo Now installing the requirements to venv...
-    venv\Scripts\pip.exe install .
+    venv\Scripts\pip.exe install -r requirements.txt
 )
 echo Now building the .exe...
-venv\Scripts\python.exe setup_freeze.py build
-echo Build completed!
+venv\Scripts\python.exe build.py
+echo Exe building completed!
 if exist build (
     echo Removing build folder...
     rmdir /s /q build
@@ -22,5 +22,5 @@ if exist PalworldSaveTools.egg-info (
     echo Removing PalworldSaveTools.egg-info folder...
     rmdir /s /q PalworldSaveTools.egg-info
 )
-echo Exe building completed!
+echo All done! Enjoy your latest PST Exe!
 pause

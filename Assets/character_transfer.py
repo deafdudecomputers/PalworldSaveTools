@@ -15,11 +15,11 @@ def backup_whole_directory(source_folder, backup_folder):
         base_path = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
         backup_folder = os.path.abspath(os.path.join(base_path, backup_folder))
     if not os.path.exists(backup_folder): os.makedirs(backup_folder)
-    print("Now backing up the whole directory of the Level.sav's location...")
+    print("[DEBUG] Now backing up the whole directory of the Level.sav's location...")
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     backup_path = os.path.join(backup_folder, f"PalworldSave_backup_{timestamp}")
     shutil.copytree(source_folder, backup_path)
-    print(f"Backup of {source_folder} created at: {backup_path}")
+    print(f"[DEBUG] Backup of {source_folder} created at: {backup_path}")
 def _convert_stringval(value):
     if hasattr(value, 'typename'):
         value = str(value)
@@ -226,7 +226,6 @@ def gather_and_update_dynamic_containers():
             target_dynamic_containers[i] = fast_deepcopy(level_additional_dynamic_containers[j][0])
             repeated_indices.add(j)
     target_dynamic_containers += [fast_deepcopy(container) for i, (container, local_id) in enumerate(level_additional_dynamic_containers) if i not in repeated_indices]
-    print(f"[DEBUG] Replaced {len(repeated_indices)} dynamic containers")
 def collect_param_maps(owner_uid):
     param_maps = []
     palcount = 0
@@ -238,11 +237,6 @@ def collect_param_maps(owner_uid):
                 palcount += 1
         except: pass
     return param_maps, palcount
-def update_param_maps_for_target(param_maps, targ_pals_id, targ_uid):
-    for pal in param_maps:
-        slot = pal['value']['RawData']['value']["object"]["SaveParameter"]["value"]["SlotId"]["value"]
-        slot["ContainerId"]["value"]["ID"]["value"] = targ_pals_id
-        pal['value']['RawData']['value']["object"]["SaveParameter"]["value"]["OwnerPlayerUId"]["value"] = targ_uid
 def replace_character_save_params(param_maps, targ_uid):
     new_map = []
     removed = 0
@@ -397,22 +391,20 @@ def main():
     if not exported_map:
         messagebox.showerror("Error!", f"Couldn't find exported_map for OwnerUID {host_guid}")
         return
-    param_maps, palcount = collect_param_maps(host_guid)
+    param_maps, palcount = collect_param_maps(host_guid)[:2]
     print(f"[DEBUG] Collected {palcount} pals from source.")
-    update_param_maps_for_target(param_maps, targ_inv_ids["pals"], targ_uid)
+    update_target_character_with_exported_map(targ_uid, exported_map)
     replace_character_save_params(param_maps, targ_uid)
     replace_containers(targ_inv_ids)
     gather_and_update_dynamic_containers()
-    update_target_character_with_exported_map(targ_uid, exported_map)
     if not update_guild_data(targ_lvl, targ_json, host_guid, targ_uid, keep_old_guild_id, source_guild_dict): return
     update_targ_tech_and_data()
     print("[DEBUG] Writing back modified data.")
     save_and_backup()
-    print("Transfer Successful!")
     messagebox.showinfo(title="Transfer Successful!", message='Transfer Successful!')
 def save_and_backup():
     global targ_json_gvas
-    print("Now saving the data...")
+    print("[DEBUG] Now saving the data...")
     WORLDSAVESIZEPREFIX = b'\x0e\x00\x00\x00worldSaveData\x00\x0f\x00\x00\x00StructProperty\x00'
     size_idx = target_raw_gvas.find(WORLDSAVESIZEPREFIX) + len(WORLDSAVESIZEPREFIX)
     output_data = MyWriter(custom_properties=PALWORLD_CUSTOM_PROPERTIES).write_sections(targ_lvl, target_section_ranges, target_raw_gvas, size_idx)
@@ -429,7 +421,7 @@ def save_and_backup():
     backup_whole_directory(os.path.dirname(t_level_sav_path), backup_folder)
     gvas_to_sav(t_level_sav_path, output_data)
     gvas_to_sav(t_host_sav_path, targ_json_gvas.write())
-    print("Done saving the data!")
+    print("[DEBUG] Done saving the data!")
 def sav_to_gvas(file):
     with open(file, 'rb') as f:
         data = f.read()
@@ -508,7 +500,7 @@ def source_level_file():
         if not raw_gvas:
             messagebox.showerror("Error!", "Invalid file, must be Level.sav!")
             return
-        print("Now loading the data from Source Save...")
+        print("[DEBUG] Now loading the data from Source Save...")
         reader = MyReader(raw_gvas, PALWORLD_TYPE_HINTS, PALWORLD_CUSTOM_PROPERTIES)
         group_save_section, _ = reader.load_section('GroupSaveDataMap', MAP_START, reverse=True)
         source_section_load_handle = threading.Thread(target=load_all_source_sections_async, args=(group_save_section, reader))
@@ -519,7 +511,7 @@ def source_level_file():
         level_sav_path = tmp
         selected_source_player = None
         current_selection_label.config(text=f"Source: {selected_source_player}, Target: {selected_target_player}")
-        print("Done loading the data from Source Save!")
+        print("[DEBUG] Done loading the data from Source Save!")
 def load_all_target_sections_async(group_save_section, group_save_section_range, reader):
     global targ_lvl, target_section_ranges
     targ_lvl, target_section_ranges = reader.load_sections([
@@ -541,7 +533,7 @@ def target_level_file():
         if not raw_gvas:
             messagebox.showerror("Error!", "Invalid file, must be Level.sav!")
             return
-        print("Now loading the data from Target Save...")
+        print("[DEBUG] Now loading the data from Target Save...")
         target_raw_gvas = raw_gvas
         reader = MyReader(raw_gvas, PALWORLD_TYPE_HINTS, PALWORLD_CUSTOM_PROPERTIES)
         group_save_section, group_save_section_range = reader.load_section('GroupSaveDataMap', MAP_START, reverse=True)
@@ -552,7 +544,7 @@ def target_level_file():
         t_level_sav_path = tmp
         selected_target_player = None
         current_selection_label.config(text=f"Source: {selected_source_player}, Target: {selected_target_player}")
-        print("Done loading the data from Target Save!")
+        print("[DEBUG] Done loading the data from Target Save!")
 def on_selection_of_source_player(event):
     global selected_source_player
     selections = source_player_list.selection()
@@ -591,7 +583,7 @@ def filter_treeview(tree, query, is_source):
 window = tk.Tk()
 window.title("Character Transfer")
 window.geometry("")
-window.minsize(800, 300)
+window.minsize(1100, 500)
 window.config(bg="#2f2f2f")
 try:
     window.iconbitmap(ICON_PATH)
@@ -601,67 +593,60 @@ font_style = ("Arial", 10)
 heading_font = ("Arial", 12, "bold")
 style = ttk.Style(window)
 style.theme_use('clam')
-style.configure("Treeview.Heading", font=("Arial", 12, "bold"), background="#444444", foreground="white")
+style.configure("Treeview.Heading", font=heading_font, background="#444444", foreground="white")
 style.configure("Treeview", background="#333333", foreground="white", rowheight=25, fieldbackground="#333333", borderwidth=0)
 style.configure("TFrame", background="#2f2f2f")
 style.configure("TLabel", background="#2f2f2f", foreground="white")
 style.configure("TEntry", fieldbackground="#444444", foreground="white")
 style.configure("Dark.TButton", background="#555555", foreground="white", padding=6)
-style.map("Dark.TButton",
-    background=[("active", "#666666"), ("!disabled", "#555555")],
-    foreground=[("disabled", "#888888"), ("!disabled", "white")]
-)
-window.columnconfigure(0, weight=1)
-window.columnconfigure(1, weight=2)
-window.rowconfigure(3, weight=1)
-window.rowconfigure(5, weight=1)
+style.map("Dark.TButton", background=[("active", "#666666"), ("!disabled", "#555555")], foreground=[("disabled", "#888888"), ("!disabled", "white")])
+window.columnconfigure(0, weight=0)
+window.columnconfigure(1, weight=0)
+window.rowconfigure(1, weight=1)
 source_frame = ttk.Frame(window, style="TFrame")
-source_frame.grid(row=2, column=0, padx=10, pady=5, sticky="ew")
-ttk.Label(source_frame, text="Search Source Player:", font=font_style, style="TLabel").pack(side="left", padx=(0, 5))
+source_frame.grid(row=0, column=0, padx=10, pady=5, sticky="ew")
+ttk.Label(source_frame, text="Search Source Player:", font=font_style, style="TLabel").pack(side="top", anchor="w", padx=(0, 5))
 source_search_var = tk.StringVar()
 source_search_entry = ttk.Entry(source_frame, textvariable=source_search_var, font=font_style, style="TEntry", width=20)
-source_search_entry.pack(side="left", fill="x", expand=True)
+source_search_entry.pack(side="top", fill="x", expand=True)
 source_search_entry.bind("<KeyRelease>", lambda e: filter_treeview(source_player_list, source_search_entry.get(), is_source=True))
 target_frame = ttk.Frame(window, style="TFrame")
-target_frame.grid(row=5, column=0, padx=10, pady=5, sticky="ew")
-ttk.Label(target_frame, text="Search Target Player:", font=font_style, style="TLabel").pack(side="left", padx=(0, 5))
+target_frame.grid(row=0, column=1, padx=10, pady=5, sticky="ew")
+ttk.Label(target_frame, text="Search Target Player:", font=font_style, style="TLabel").pack(side="top", anchor="w", padx=(0, 5))
 target_search_var = tk.StringVar()
 target_search_entry = ttk.Entry(target_frame, textvariable=target_search_var, font=font_style, style="TEntry", width=20)
-target_search_entry.pack(side="left", fill="x", expand=True)
+target_search_entry.pack(side="top", fill="x", expand=True)
 target_search_entry.bind("<KeyRelease>", lambda e: filter_treeview(target_player_list, target_search_entry.get(), is_source=False))
-ttk.Button(window, text='Select Source Level File', command=source_level_file, style="Dark.TButton").grid(row=1, column=1, padx=10, pady=20, sticky="ew")
+ttk.Button(window, text='Select Source Level File', command=source_level_file, style="Dark.TButton").grid(row=2, column=0, padx=10, pady=10, sticky="ew")
+ttk.Button(window, text='Select Target Level File', command=target_level_file, style="Dark.TButton").grid(row=2, column=1, padx=10, pady=10, sticky="ew")
 source_level_path_label = ttk.Label(window, text="Please select a file:", font=font_style, style="TLabel", wraplength=600)
-source_level_path_label.grid(row=1, column=0, padx=10, pady=20, sticky="ew")
+source_level_path_label.grid(row=3, column=0, padx=10, sticky="ew")
+target_level_path_label = ttk.Label(window, text="Please select a file:", font=font_style, style="TLabel", wraplength=600)
+target_level_path_label.grid(row=3, column=1, padx=10, sticky="ew")
 source_player_list = ttk.Treeview(window, columns=(0, 1, 2), show='headings', style="Treeview")
-source_player_list.grid(row=3, column=0, columnspan=2, padx=10, pady=10, sticky='nsew')
+source_player_list.grid(row=1, column=0, padx=10, pady=10, sticky='nw')
+for col in (0, 1, 2): source_player_list.column(col, anchor='center', width=180, stretch=False)
 source_player_list.tag_configure("even", background="#333333", foreground="white")
 source_player_list.tag_configure("odd", background="#444444", foreground="white")
 source_player_list.tag_configure("selected", background="#555555", foreground="white")
-source_player_list.column(0, anchor='center', width=100)
-source_player_list.column(1, anchor='center', width=100)
-source_player_list.column(2, anchor='center', width=100)
 source_player_list.heading(0, text='Guild ID', command=lambda: sort_treeview_column(source_player_list, 0, False))
 source_player_list.heading(1, text='Player UID', command=lambda: sort_treeview_column(source_player_list, 1, False))
 source_player_list.heading(2, text='Nickname', command=lambda: sort_treeview_column(source_player_list, 2, False))
 source_player_list.bind('<<TreeviewSelect>>', on_selection_of_source_player)
-ttk.Button(window, text='Select Target Level File', command=target_level_file, style="Dark.TButton").grid(row=4, column=1, padx=10, pady=20, sticky="ew")
-target_level_path_label = ttk.Label(window, text="Please select a file:", font=font_style, style="TLabel", wraplength=600)
-target_level_path_label.grid(row=4, column=0, padx=10, pady=20, sticky="ew")
 target_player_list = ttk.Treeview(window, columns=(0, 1, 2), show='headings', style="Treeview")
-target_player_list.grid(row=6, column=0, columnspan=2, padx=10, pady=10, sticky='nsew')
+target_player_list.grid(row=1, column=1, padx=10, pady=10, sticky='nw')
+for col in (0, 1, 2): target_player_list.column(col, anchor='center', width=180, stretch=False)
 target_player_list.tag_configure("even", background="#333333", foreground="white")
 target_player_list.tag_configure("odd", background="#444444", foreground="white")
 target_player_list.tag_configure("selected", background="#555555", foreground="white")
-target_player_list.column(0, anchor='center', width=100)
-target_player_list.column(1, anchor='center', width=100)
-target_player_list.column(2, anchor='center', width=100)
 target_player_list.heading(0, text='Guild ID', command=lambda: sort_treeview_column(target_player_list, 0, False))
 target_player_list.heading(1, text='Player UID', command=lambda: sort_treeview_column(target_player_list, 1, False))
 target_player_list.heading(2, text='Nickname', command=lambda: sort_treeview_column(target_player_list, 2, False))
 target_player_list.bind('<<TreeviewSelect>>', on_selection_of_target_player)
-current_selection_label = ttk.Label(window, text=f"Source: N/A, Target: N/A", font=font_style, style="TLabel", wraplength=600)
-current_selection_label.grid(row=8, column=0, padx=10, pady=20, sticky="ew")
-ttk.Button(window, text='Start Transfer!', command=main, style="Dark.TButton").grid(row=8, column=1, padx=10, pady=20, sticky="ew")
+current_selection_label = ttk.Label(window, text="Source: N/A, Target: N/A", font=font_style, style="TLabel", anchor="w", wraplength=600)
+current_selection_label.grid(row=4, column=0, columnspan=2, padx=10, pady=10, sticky="ew")
+window.grid_columnconfigure(0, weight=1)
+window.grid_columnconfigure(1, weight=1)
 keep_old_guild_id = True
 def toggle_keep_old_guild():
     global keep_old_guild_id
@@ -670,7 +655,8 @@ def toggle_keep_old_guild():
     btn_toggle.config(text=txt + "Keep old Guild ID after Transfer")
     print("Keep old guild id after transfer:", "on" if keep_old_guild_id else "off")
 btn_toggle = tk.Button(window, text="☑ Keep old Guild ID after Transfer", command=toggle_keep_old_guild, relief="flat", fg="white", bg="#2f2f2f", activebackground="black", activeforeground="white")
-btn_toggle.grid(row=9, column=0, columnspan=2, sticky='w', padx=10, pady=5)
+btn_toggle.grid(row=5, column=0, sticky='w', padx=10, pady=(0, 10))
+ttk.Button(window, text='Start Transfer!', command=main, style="Dark.TButton").grid(row=5, column=1, padx=10, pady=10, sticky="ew")
 def character_transfer():
     def on_exit():
         if window.winfo_exists():
@@ -678,6 +664,4 @@ def character_transfer():
         sys.exit()
     window.protocol("WM_DELETE_WINDOW", on_exit)
     window.mainloop()
-
-if __name__ == "__main__":
-    character_transfer()
+if __name__ == "__main__": character_transfer()

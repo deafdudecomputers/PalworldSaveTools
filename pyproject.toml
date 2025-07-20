@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "PalworldSaveTools"
-version = "1.0.68"
+version = "1.0.70"
 description = "All-in-one tool for fixing/transferring/editing Palworld saves"
 readme = "readme.md"
 license = "MIT"
