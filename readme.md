@@ -9,37 +9,6 @@
 - **Contact me on Discord:** Pylar1991
 ---
 
-If you get errors installing or using my tools, **PLEASE** install the prerequisites below first.  
-Afterwards, reset and update PST using **Option #18** from the menu.
-
----
-## Prerequisites
-
-### 1. **Updated Saves**
-- Ensure your saves were updated on/after the current patch.
-
-### 2. **[Python Installation](https://www.python.org/downloads)**
-- Download Python from the official website.  
-- Before clicking **Install Now**, **CHECK** the box at the bottom that says:  
-  **"Add Python to PATH"** 🟩  
-  (*This ensures Python is accessible from the command line!*)  
-  ![Add Python to PATH checkbox](https://i.imgur.com/SCJEkdJ.png)
-
-### 3. **[Visual Studio Build Tools](https://aka.ms/vs/17/release/vs_BuildTools.exe)**
-- Download Visual Studio Build Tools.
-- During installation, **CHECK** the box that says:  
-  **"Desktop development with C++"** 🟩  
-  (*This allows the `cityhash` and `oozlib` library to install!*)  
-  ![CityHash Screenshot](https://i.imgur.com/RZGZ9So.png)
-  
-### 4. **[Git](https://gitforwindows.org/)**
-- Download and install Git.  
-(*This allows Git commands to be used by scripts and Python subprocesses!*)  
-
-### 5. ***Start Menu.cmd***
-
----
-
 ## Features:
 
 - **Fast parsing/reading** tool—one of the quickest available.  
