@@ -62,8 +62,6 @@
 
 Done! Your map is back in your **new server/world**!
 
-
-
 ## 🔁 To Move from Host/Co-op to Server or Vice Versa
 
 For **host/co-op**, the save folder is typically located at:
