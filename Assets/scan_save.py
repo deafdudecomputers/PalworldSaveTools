@@ -491,7 +491,7 @@ def resort_player_log(file_path, header_line):
             base_dir = os.path.dirname(sys.executable)
         else:
             base_dir = os.path.dirname(os.path.abspath(__file__))
-        log_folder = os.path.abspath(os.path.join(base_dir, "..", "Save Scan Logger"))
+        log_folder = os.path.abspath(os.path.join(base_dir, "Save Scan Logger"))
         os.makedirs(log_folder, exist_ok=True)
         file_path = os.path.join(log_folder, file_path)
     if not os.path.exists(file_path):

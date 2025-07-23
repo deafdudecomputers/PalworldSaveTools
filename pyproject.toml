@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "PalworldSaveTools"
-version = "1.0.70"
+version = "1.0.71"
 description = "All-in-one tool for fixing/transferring/editing Palworld saves"
 readme = "readme.md"
 license = "MIT"
-authors = [{ name = "pylar" }]
+authors = [{ name = "Pylar" }]
 requires-python = ">=3.11"
 dependencies = [
     "matplotlib==3.10.0",

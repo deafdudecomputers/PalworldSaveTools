@@ -1,13 +1,15 @@
 from import_libs import *
 from common import ICON_PATH
+import traceback
 
-# Global variables for the module
 saves = []
 save_extractor_done = threading.Event()
 save_converter_done = threading.Event()
-base_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-root_dir = os.path.abspath(os.path.join(base_dir, ".."))
-
+if getattr(sys, 'frozen', False):
+    base_dir = os.path.dirname(sys.executable)
+else:
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+root_dir = base_dir
 
 def get_save_game_pass():
     saves_path = os.path.join(root_dir, "saves")
@@ -15,38 +17,31 @@ def get_save_game_pass():
         shutil.rmtree(saves_path)
     print("Fetching save from GamePass...")
     progressbar.set(0.0)
-    threading.Thread(target=check_for_zip_files, daemon=True).start()
+    threading.Thread(target=check_for_zip_files, args=(root_dir,), daemon=True).start()
     threading.Thread(target=check_progress, args=(progressbar,), daemon=True).start()
-
 
 def get_save_steam():
     folder = filedialog.askdirectory(title="Select Steam Save Folder to Transfer")
     if not folder:
         print("No folder selected.")
         return
-    threading.Thread(
-        target=transfer_steam_to_gamepass, args=(folder,), daemon=True
-    ).start()
-
+    threading.Thread(target=transfer_steam_to_gamepass, args=(folder,), daemon=True).start()
 
 def check_progress(progressbar):
     if save_extractor_done.is_set():
         progressbar.set(0.5)
         print("Attempting to convert the save files...")
-        threading.Thread(
-            target=convert_save_files, args=(progressbar,), daemon=True
-        ).start()
+        threading.Thread(target=convert_save_files, args=(progressbar,), daemon=True).start()
     else:
         window.after(1000, check_progress, progressbar)
 
-
-def check_for_zip_files():
-    if not find_zip_files(root_dir):
+def check_for_zip_files(search_dir):
+    saves_path = os.path.join(root_dir, "saves")
+    if not find_zip_files(saves_path):
         print("Fetching zip files from local directory...")
-        threading.Thread(target=run_save_extractor, daemon=True).start()
+        threading.Thread(target=run_save_extractor, args=(search_dir,), daemon=True).start()
     else:
         process_zip_files()
-
 
 def process_zip_files():
     saves_path = os.path.join(root_dir, "saves")
@@ -54,25 +49,20 @@ def process_zip_files():
         zip_files = find_zip_files(root_dir)
         print(zip_files)
         if zip_files:
-            full_zip_path = os.path.join(root_dir, zip_files[0])
+            full_zip_path = os.path.join(root_dir, zip_files[-1])
             unzip_file(full_zip_path, saves_path)
             save_extractor_done.set()
         else:
-            print(
-                "No save files found on XGP please reinstall the game on XGP and try again"
-            )
+            print("No save files found on XGP please reinstall the game on XGP and try again")
             window.quit()
-
 
 def process_zip_file(file_path: str):
     saves_path = os.path.join(root_dir, "saves")
-    if is_folder_empty(saves_path):
-        unzip_file(file_path, saves_path)
-        save_extractor_done.set()
-    else:
-        print("Saves folder is not empty, skipping unzip.")
-        save_extractor_done.set()
-
+    unzip_file(file_path, saves_path)
+    xgp_original_saves_path = os.path.join(root_dir, "XGP_original_saves")
+    os.makedirs(xgp_original_saves_path, exist_ok=True)
+    shutil.copy2(file_path, os.path.join(xgp_original_saves_path, os.path.basename(file_path)))
+    save_extractor_done.set()
 
 def convert_save_files(progressbar):
     saves_path = os.path.join(root_dir, "saves")
@@ -89,35 +79,40 @@ def convert_save_files(progressbar):
     progressbar.destroy()
     print("Choose a save to convert:")
 
-
-def run_save_extractor():
+def run_save_extractor(search_dir):
     try:
         print("Running Xbox Game Pass save extractor...")
-        # Import and call xgp_save_extract main function directly
         import xgp_save_extract
-
         zip_file_path = xgp_save_extract.main()
         print(f"Save extraction completed successfully to {zip_file_path}")
-        process_zip_file(zip_file_path)
+        saves_path = os.path.join(root_dir, "saves")
+        os.makedirs(saves_path, exist_ok=True)
+        if zip_file_path and os.path.exists(zip_file_path):
+            target_zip_path = os.path.join(saves_path, os.path.basename(zip_file_path))
+            shutil.move(zip_file_path, target_zip_path)
+            process_zip_file(target_zip_path)
+        else:
+            zip_files = find_zip_files(root_dir)
+            if zip_files:
+                print("Found leftover zip(s) in base_dir, moving the latest one.")
+                full_zip_path = os.path.join(root_dir, zip_files[-1])
+                target_zip_path = os.path.join(saves_path, os.path.basename(full_zip_path))
+                shutil.move(full_zip_path, target_zip_path)
+                process_zip_file(target_zip_path)
+            else:
+                print("No zip file created by extractor.")
+                messagebox.showerror("Error", "Failed to extract save from GamePass.")
     except Exception as e:
         print(f"Error running save extractor: {e}")
-        import traceback
-
         traceback.print_exc()
-
 
 def list_folders_in_directory(directory):
     try:
         if not os.path.exists(directory):
             os.makedirs(directory)
-        return [
-            item
-            for item in os.listdir(directory)
-            if os.path.isdir(os.path.join(directory, item))
-        ]
+        return [item for item in os.listdir(directory) if os.path.isdir(os.path.join(directory, item))]
     except:
         return []
-
 
 def is_folder_empty(directory):
     try:
@@ -127,20 +122,13 @@ def is_folder_empty(directory):
     except:
         return False
 
-
 def find_zip_files(directory):
-    return (
-        [
-            f
-            for f in os.listdir(directory)
-            if f.endswith(".zip")
-            and f.startswith("palworld_")
-            and is_valid_zip(os.path.join(directory, f))
-        ]
-        if os.path.exists(directory)
-        else []
-    )
-
+    if not os.path.exists(directory):
+        return []
+    return [
+        f for f in os.listdir(directory)
+        if f.endswith(".zip") and f.startswith("palworld_") and is_valid_zip(os.path.join(directory, f))
+    ]
 
 def is_valid_zip(zip_file_path):
     try:
@@ -150,23 +138,18 @@ def is_valid_zip(zip_file_path):
     except:
         return False
 
-
 def unzip_file(zip_file_path, extract_to_folder):
     os.makedirs(extract_to_folder, exist_ok=True)
     with zipfile.ZipFile(zip_file_path, "r") as zip_ref:
         zip_ref.extractall(extract_to_folder)
 
-
 def convert_sav_JSON(saveName):
     save_path = os.path.join(root_dir, "saves", saveName, "Level", "01.sav")
     if not os.path.exists(save_path):
         return None
-
     import sys as sys_module
-
     try:
         from palworld_save_tools.commands import convert
-
         old_argv = sys_module.argv
         try:
             sys_module.argv = ["convert", save_path]
@@ -181,18 +164,14 @@ def convert_sav_JSON(saveName):
         return None
     return saveName
 
-
 def convert_JSON_sav(saveName):
     json_path = os.path.join(root_dir, "saves", saveName, "Level", "01.sav.json")
     output_path = os.path.join(root_dir, "saves", saveName, "Level.sav")
     if not os.path.exists(json_path):
         return
-
     import sys as sys_module
-
     try:
         from palworld_save_tools.commands import convert
-
         old_argv = sys_module.argv
         try:
             sys_module.argv = ["convert", json_path, "--output", output_path]
@@ -206,7 +185,6 @@ def convert_JSON_sav(saveName):
     except ImportError:
         print("palworld_save_tools module not found. Please ensure it's installed.")
 
-
 def generate_random_name(length=32):
     return "".join(random.choices(string.ascii_uppercase + string.digits, k=length))
 
@@ -214,64 +192,61 @@ def move_save_steam(saveName):
     local_app_data_path = os.path.expandvars(r"%localappdata%\Pal\Saved\SaveGames")
     try:
         if not os.path.exists(local_app_data_path):
-            raise FileNotFoundError()
-        subdirs = [
-            d
-            for d in os.listdir(local_app_data_path)
-            if os.path.isdir(os.path.join(local_app_data_path, d))
-        ]
+            print("Steam save folder not found. Skipping Steam migration.")
+            source_folder = os.path.join(root_dir, "saves", saveName)
+            xgp_converted_saves_path = os.path.join(root_dir, "XGP_converted_saves")
+            os.makedirs(xgp_converted_saves_path, exist_ok=True)
+            new_name = generate_random_name()
+            new_converted_target_folder = os.path.join(xgp_converted_saves_path, new_name)
+            def ignore_folders(_, names):
+                return {n for n in names if n in {"Level", "Slot1", "Slot2", "Slot3"}}
+            shutil.copytree(source_folder, new_converted_target_folder, dirs_exist_ok=True, ignore=ignore_folders)
+            messagebox.showinfo("Success", "Your save is converted and saved in XGP_converted_saves folder.")
+            shutil.rmtree(os.path.join(root_dir, "saves"))
+            window.quit()
+            return
+        subdirs = [d for d in os.listdir(local_app_data_path) if os.path.isdir(os.path.join(local_app_data_path, d))]
         if not subdirs:
-            raise FileNotFoundError()
+            print("No subdirectories in Steam save folder. Skipping Steam migration.")
+            source_folder = os.path.join(root_dir, "saves", saveName)
+            xgp_converted_saves_path = os.path.join(root_dir, "XGP_converted_saves")
+            os.makedirs(xgp_converted_saves_path, exist_ok=True)
+            new_name = generate_random_name()
+            new_converted_target_folder = os.path.join(xgp_converted_saves_path, new_name)
+            def ignore_folders(_, names):
+                return {n for n in names if n in {"Level", "Slot1", "Slot2", "Slot3"}}
+            shutil.copytree(source_folder, new_converted_target_folder, dirs_exist_ok=True, ignore=ignore_folders)
+            messagebox.showinfo("Success", "Your save is converted and saved in XGP_converted_saves folder.")
+            shutil.rmtree(os.path.join(root_dir, "saves"))
+            window.quit()
+            return
         target_folder = os.path.join(local_app_data_path, subdirs[0])
         source_folder = os.path.join(root_dir, "saves", saveName)
+        if not os.path.exists(source_folder):
+            raise FileNotFoundError(f"Source save folder not found: {source_folder}")
         def ignore_folders(_, names):
             return {n for n in names if n in {"Level", "Slot1", "Slot2", "Slot3"}}
         new_name = generate_random_name()
-        new_target_folder = os.path.join(
-            target_folder,
-            new_name
-            if os.path.exists(os.path.join(target_folder, saveName))
-            else saveName,
-        )
-        shutil.copytree(
-            source_folder, new_target_folder, dirs_exist_ok=True, ignore=ignore_folders
-        )
-        game_pass_save_path = os.path.join(root_dir, "GamePassSave")
-        os.makedirs(game_pass_save_path, exist_ok=True)
-        new_gamepass_target_folder = os.path.join(game_pass_save_path, new_name)
-        shutil.copytree(
-            source_folder,
-            new_gamepass_target_folder,
-            dirs_exist_ok=True,
-            ignore=ignore_folders,
-        )
-        messagebox.showinfo(
-            "Success",
-            "Your save is migrated to Steam. You may go ahead and open Steam Palworld.",
-        )
+        xgp_converted_saves_path = os.path.join(root_dir, "XGP_converted_saves")
+        os.makedirs(xgp_converted_saves_path, exist_ok=True)
+        new_converted_target_folder = os.path.join(xgp_converted_saves_path, new_name)
+        shutil.copytree(source_folder, new_converted_target_folder, dirs_exist_ok=True, ignore=ignore_folders)
+        new_target_folder = os.path.join(target_folder, new_name if os.path.exists(os.path.join(target_folder, saveName)) else saveName)
+        shutil.copytree(source_folder, new_target_folder, dirs_exist_ok=True, ignore=ignore_folders)
+        messagebox.showinfo("Success", "Your save is migrated to Steam. You may go ahead and open Steam Palworld.")
         shutil.rmtree(os.path.join(root_dir, "saves"))
         window.quit()
     except Exception as e:
         print(f"Error copying save folder: {e}")
+        traceback.print_exc()
         messagebox.showerror("Error", f"Failed to copy the save folder: {e}")
-        
+
 def transfer_steam_to_gamepass(source_folder):
     import sys as sys_module
     try:
         import_path = os.path.join(base_dir, "palworld_xgp_import")
         sys_module.path.insert(0, import_path)
         from palworld_xgp_import import main as xgp_main
-        local_app_data_path = os.path.expandvars(r"%localappdata%\Pal\Saved\SaveGames")
-        subdirs = [
-            d for d in os.listdir(local_app_data_path)
-            if os.path.isdir(os.path.join(local_app_data_path, d))
-        ]
-        if not subdirs:
-            raise FileNotFoundError("Steam save UUID folder not found")
-        old_uuid_folder = os.path.join(local_app_data_path, subdirs[0])
-        new_uuid_folder_name = generate_random_name()
-        new_uuid_folder = os.path.join(local_app_data_path, new_uuid_folder_name)
-        os.rename(old_uuid_folder, new_uuid_folder)
         old_argv = sys_module.argv
         try:
             sys_module.argv = ["main.py", source_folder]
@@ -282,41 +257,11 @@ def transfer_steam_to_gamepass(source_folder):
             messagebox.showerror("Error", f"Conversion failed: {e}")
         finally:
             sys_module.argv = old_argv
-            if import_path in sys_module.path:
-                sys_module.path.remove(import_path)
-    except Exception as e:
-        print(f"Error importing palworld_xgp_import module or renaming UUID folder: {e}")
-        messagebox.showerror("Error", f"Import or rename failed: {e}")
-
-
-def transfer_steam_to_gamepass(source_folder):
-    import sys as sys_module
-
-    try:
-        # Add the palworld_xgp_import directory to sys.path temporarily
-        import_path = os.path.join(base_dir, "palworld_xgp_import")
-        sys_module.path.insert(0, import_path)
-
-        # Import and call the main function
-        from palworld_xgp_import import main as xgp_main
-
-        old_argv = sys_module.argv
-        try:
-            sys_module.argv = ["main.py", source_folder]
-            xgp_main.main()
-            messagebox.showinfo("Success", "Steam save exported to GamePass format!")
-        except Exception as e:
-            print(f"Error during conversion: {e}")
-            messagebox.showerror("Error", f"Conversion failed: {e}")
-        finally:
-            sys_module.argv = old_argv
-            # Remove the path we added
             if import_path in sys_module.path:
                 sys_module.path.remove(import_path)
     except ImportError as e:
         print(f"Error importing palworld_xgp_import module: {e}")
         messagebox.showerror("Error", f"Import failed: {e}")
-
 
 def update_combobox(saveList):
     global saves
@@ -324,19 +269,11 @@ def update_combobox(saveList):
     for widget in save_frame.winfo_children():
         widget.destroy()
     if saves:
-        combobox = customtkinter.CTkComboBox(
-            save_frame, values=saves, width=320, font=("Arial", 14)
-        )
+        combobox = customtkinter.CTkComboBox(save_frame, values=saves, width=320, font=("Arial", 14))
         combobox.pack(pady=(10, 10))
         combobox.set("Choose a save to convert:")
-        button = customtkinter.CTkButton(
-            save_frame,
-            width=150,
-            text="Convert Save",
-            command=lambda: convert_JSON_sav(combobox.get()),
-        )
+        button = customtkinter.CTkButton(save_frame, width=150, text="Convert Save", command=lambda: convert_JSON_sav(combobox.get()))
         button.pack(pady=(0, 10))
-
 
 def on_exit():
     try:
@@ -345,40 +282,25 @@ def on_exit():
         pass
     sys.exit()
 
-
 def game_pass_save_fix():
     global window, progressbar, save_frame
-
     window = customtkinter.CTk()
     window.title("Palworld Save Converter")
     window.geometry("400x200")
     window.iconbitmap(ICON_PATH)
-
     main_frame = customtkinter.CTkFrame(window, fg_color="transparent")
     main_frame.pack(expand=True, fill="both")
-
-    xgp_button = customtkinter.CTkButton(
-        main_frame, text="GamePass", command=get_save_game_pass, width=150
-    )
+    xgp_button = customtkinter.CTkButton(main_frame, text="GamePass", command=get_save_game_pass, width=150)
     xgp_button.pack(pady=(20, 10))
-
-    steam_button = customtkinter.CTkButton(
-        main_frame, text="Steam", command=get_save_steam, width=150
-    )
+    steam_button = customtkinter.CTkButton(main_frame, text="Steam", command=get_save_steam, width=150)
     steam_button.pack(pady=(0, 10))
-
-    progressbar = customtkinter.CTkProgressBar(
-        main_frame, orientation="horizontal", mode="determinate", width=350
-    )
+    progressbar = customtkinter.CTkProgressBar(main_frame, orientation="horizontal", mode="determinate", width=350)
     progressbar.set(0)
     progressbar.pack(pady=(0, 10))
-
     save_frame = customtkinter.CTkFrame(main_frame, fg_color="transparent")
     save_frame.pack(pady=(10, 10))
-
     window.protocol("WM_DELETE_WINDOW", on_exit)
     window.mainloop()
-
 
 if __name__ == "__main__":
     game_pass_save_fix()
