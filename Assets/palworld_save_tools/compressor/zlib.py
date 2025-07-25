@@ -1,5 +1,6 @@
 import zlib
 
+from loguru import logger
 from palworld_save_tools.compressor import Compressor, SaveType
 
 
@@ -11,7 +12,7 @@ class Zlib(Compressor):
         self.SAFE_SPACE_PADDING = 128
 
     def compress(self, data: bytes, save_type: int) -> bytes:
-        print("\nStarting compression process with zlib...")
+        logger.info("Starting compression process with zlib...")
 
         uncompressed_len = len(data)
         compressed_data = zlib.compress(data)
@@ -23,12 +24,12 @@ class Zlib(Compressor):
         compressed_data = zlib.compress(compressed_data)
         magic_bytes = self._get_magic(save_type)
 
-        print(f"File information (Compress):")
-        print(f"  Magic bytes: {magic_bytes.decode('ascii', errors='ignore')}")
-        print(f"  Save type: 0x{save_type:02X}")
-        print(f"  Compressed size: {compressed_len:,} bytes")
-        print(f"  Uncompressed size: {uncompressed_len:,} bytes")
-        print(f"  Hex dump: {compressed_data.hex()[:64]}")
+        logger.debug("File information (Compress):")
+        logger.debug(f"  Magic bytes: {magic_bytes.decode('ascii', errors='ignore')}")
+        logger.debug(f"  Save type: 0x{save_type:02X}")
+        logger.debug(f"  Compressed size: {compressed_len:,} bytes")
+        logger.debug(f"  Uncompressed size: {uncompressed_len:,} bytes")
+        logger.debug(f"  Hex dump: {compressed_data.hex()[:64]}")
 
         sav_data = self.build_sav(
             compressed_data,
@@ -41,7 +42,7 @@ class Zlib(Compressor):
         return sav_data
 
     def decompress(self, data: bytes) -> bytes:
-        print("\nStarting decompression process with zlib...")
+        logger.info("Starting decompression process with zlib...")
 
         format_result = self.check_sav_format(data)
 
@@ -57,12 +58,12 @@ class Zlib(Compressor):
             self._parse_sav_header(data)
         )
 
-        print(f"File information (Decompress):")
-        print(f"  Magic bytes: {magic.decode('ascii', errors='ignore')}")
-        print(f"  Save type: 0x{save_type:02X}")
-        print(f"  Compressed size: {compressed_len:,} bytes")
-        print(f"  Uncompressed size: {uncompressed_len:,} bytes")
-        print("Detected PLZ format (Zlib), starting decompression...")
+        logger.debug("File information (Decompress):")
+        logger.debug(f"  Magic bytes: {magic.decode('ascii', errors='ignore')}")
+        logger.debug(f"  Save type: 0x{save_type:02X}")
+        logger.debug(f"  Compressed size: {compressed_len:,} bytes")
+        logger.debug(f"  Uncompressed size: {uncompressed_len:,} bytes")
+        logger.debug("Detected PLZ format (Zlib), starting decompression...")
 
         uncompressed_data = zlib.decompress(data[data_offset:])
 
@@ -77,7 +78,7 @@ class Zlib(Compressor):
                 f"incorrect uncompressed length: {uncompressed_len} != {len(uncompressed_data)}"
             )
 
-        print(
+        logger.info(
             f"Decompression successful, decompressed size: {len(uncompressed_data):,} bytes"
         )
 

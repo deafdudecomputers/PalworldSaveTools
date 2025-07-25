@@ -1,5 +1,6 @@
 from typing import Any
 
+from loguru import logger
 from palworld_save_tools.archive import *
 
 
@@ -13,7 +14,7 @@ def decode(
     if len(debug_bytes) > 0:
         debug_str = "".join(f"{b:02x}" for b in debug_bytes)
         # if debug_str != "00000000000000000000000000000000":
-        print(debug_str)
+        logger.debug(debug_str)
         # print(bytes(debug_bytes))
     return value
 

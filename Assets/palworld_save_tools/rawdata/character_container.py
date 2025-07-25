@@ -1,5 +1,6 @@
 from typing import Any, Sequence
 
+from loguru import logger
 from palworld_save_tools.archive import *
 
 
@@ -26,8 +27,11 @@ def decode_bytes(
         "permission_tribe_id": reader.byte(),
     }
     if not reader.eof():
-        data["unknown_data"] = [int(b) for b in reader.read_to_end()]
-        # raise Exception("Warning: EOF not reached")
+        unknown_bytes = [int(b) for b in reader.read_to_end()]
+        logger.debug(
+            f"Unknown data in character container: {' '.join(f'{b:02x}' for b in unknown_bytes)}"
+        )
+        data["unknown_bytes"] = unknown_bytes
     return data
 
 
@@ -49,7 +53,7 @@ def encode_bytes(p: dict[str, Any]) -> bytes:
     writer.guid(p["player_uid"])
     writer.guid(p["instance_id"])
     writer.byte(p["permission_tribe_id"])
-    if "unknown_data" in p:
-        writer.write(bytes(p["unknown_data"]))
+    if "unknown_bytes" in p:
+        writer.write(bytes(p["unknown_bytes"]))
     encoded_bytes = writer.bytes()
     return encoded_bytes

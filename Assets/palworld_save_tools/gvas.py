@@ -1,6 +1,7 @@
 import base64
 from typing import Any, Callable
 
+from loguru import logger
 from palworld_save_tools.archive import FArchiveReader, FArchiveWriter
 
 
@@ -131,7 +132,7 @@ class GvasFile:
             gvas_file.properties = reader.properties_until_end()
             gvas_file.trailer = reader.read_to_end()
             if gvas_file.trailer != b"\x00\x00\x00\x00":
-                print(
+                logger.debug(
                     f"{len(gvas_file.trailer)} bytes of trailer data, file may not have fully parsed"
                 )
         return gvas_file

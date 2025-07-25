@@ -1,4 +1,6 @@
 from typing import Tuple
+
+from loguru import logger
 from palworld_save_tools.compressor.enums import SaveType, MagicBytes
 
 
@@ -57,7 +59,7 @@ class Compressor:
             case SaveType.CNK.value:
                 return SaveType.CNK
             case _:
-                print(f"Unknown save type: 0x{save_type:02X}")
+                logger.debug(f"Unknown save type: 0x{save_type:02X}")
                 return None
 
     def check_sav_format(self, sav_data: bytes) -> SaveType | None:
@@ -69,7 +71,7 @@ class Compressor:
         if len(sav_data) < 12:
             return None
         magic = sav_data[8:11]
-        print(f"Checking SAV format, magic bytes: {magic!r}")
+        logger.debug(f"Checking SAV format, magic bytes: {magic!r}")
 
         match magic:
             case MagicBytes.PLZ.value:
@@ -79,7 +81,7 @@ class Compressor:
             case MagicBytes.CNK.value:
                 return SaveType.CNK
             case _:
-                print(f"Unknown magic bytes: {magic!r}")
+                logger.debug(f"Unknown magic bytes: {magic!r}")
                 return None
 
     def build_sav(
@@ -94,7 +96,7 @@ class Compressor:
         Build SAV file header.
         Returns: bytes with the header.
         """
-        print("Building .sav file...")
+        logger.debug("Building .sav file...")
         result = bytearray()
         result.extend(uncompressed_len.to_bytes(4, "little"))
         result.extend(compressed_len.to_bytes(4, "little"))
@@ -102,5 +104,5 @@ class Compressor:
         result.extend(bytes([save_type]))
         result.extend(compressed_data)
 
-        print("Finished building .sav file.")
+        logger.debug("Finished building .sav file.")
         return bytes(result)

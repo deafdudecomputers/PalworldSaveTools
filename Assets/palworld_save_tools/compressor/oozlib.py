@@ -2,6 +2,7 @@ import os
 import sys
 import platform
 
+from loguru import logger
 from palworld_save_tools.compressor import Compressor, SaveType
 
 
@@ -80,7 +81,7 @@ class OozLib(Compressor):
         self.ooz = ooz
 
     def compress(self, data: bytes, save_type: int) -> bytes:
-        print("\nStarting compression process with libooz...")
+        logger.info("Starting compression process with libooz...")
 
         uncompressed_len = len(data)
         if uncompressed_len == 0:
@@ -91,7 +92,7 @@ class OozLib(Compressor):
                 f"Unhandled compression type: 0x{save_type:02X}, only 0x31 (PLM) is supported"
             )
 
-        print("Compressing data...")
+        logger.debug("Compressing data...")
 
         compressed_data = self.ooz.compress(
             OodleCompressor.Mermaid, OodleLevel.Normal, data, uncompressed_len
@@ -105,14 +106,16 @@ class OozLib(Compressor):
         compressed_len = len(compressed_data)
         magic_bytes = self._get_magic(save_type)
 
-        print(f"Compression successful, compressed size: {compressed_len:,} bytes")
+        logger.info(
+            f"Compression successful, compressed size: {compressed_len:,} bytes"
+        )
 
-        print(f"File information (Compress):")
-        print(f"  Magic bytes: {magic_bytes.decode('ascii', errors='ignore')}")
-        print(f"  Save type: 0x{save_type:02X}")
-        print(f"  Compressed size: {compressed_len:,} bytes")
-        print(f"  Uncompressed size: {uncompressed_len:,} bytes")
-        print(f"  Hex dump: {compressed_data.hex()[:64]}")
+        logger.debug("File information (Compress):")
+        logger.debug(f"  Magic bytes: {magic_bytes.decode('ascii', errors='ignore')}")
+        logger.debug(f"  Save type: 0x{save_type:02X}")
+        logger.debug(f"  Compressed size: {compressed_len:,} bytes")
+        logger.debug(f"  Uncompressed size: {uncompressed_len:,} bytes")
+        logger.debug(f"  Hex dump: {compressed_data.hex()[:64]}")
 
         sav_data = self.build_sav(
             compressed_data, uncompressed_len, compressed_len, magic_bytes, save_type
@@ -121,7 +124,7 @@ class OozLib(Compressor):
         return sav_data
 
     def decompress(self, data: bytes) -> bytes:
-        print("\nStarting decompression process with libooz...")
+        logger.info("Starting decompression process with libooz...")
 
         if not data:
             raise ValueError("SAV data cannot be empty")
@@ -138,13 +141,13 @@ class OozLib(Compressor):
             self._parse_sav_header(data)
         )
 
-        print(f"File information (Decompress):")
-        print(f"  Magic bytes: {magic.decode('ascii', errors='ignore')}")
-        print(f"  Save type: 0x{save_type:02X}")
-        print(f"  Compressed size: {compressed_len:,} bytes")
-        print(f"  Uncompressed size: {uncompressed_len:,} bytes")
-        print(f"  Data offset: {data_offset} bytes")
-        print("Detected PLM format (Oodle), starting decompression...")
+        logger.debug("File information (Decompress):")
+        logger.debug(f"  Magic bytes: {magic.decode('ascii', errors='ignore')}")
+        logger.debug(f"  Save type: 0x{save_type:02X}")
+        logger.debug(f"  Compressed size: {compressed_len:,} bytes")
+        logger.debug(f"  Uncompressed size: {uncompressed_len:,} bytes")
+        logger.debug(f"  Data offset: {data_offset} bytes")
+        logger.debug("Detected PLM format (Oodle), starting decompression...")
 
         compressed_data = data[data_offset : data_offset + compressed_len]
         decompressed = self.ooz.decompress(compressed_data, uncompressed_len)
@@ -154,7 +157,7 @@ class OozLib(Compressor):
                 f"Decompressed data length {len(decompressed)} does not match expected uncompressed length {uncompressed_len}"
             )
 
-        print(
+        logger.info(
             f"Decompression successful, decompressed size: {len(decompressed):,} bytes"
         )
 

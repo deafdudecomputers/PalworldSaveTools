@@ -1,6 +1,6 @@
-from typing import Any, Sequence
+from typing import Any
 
-from palworld_save_tools.archive import *
+from palworld_save_tools.archive import FArchiveReader, FArchiveWriter
 from palworld_save_tools.rawdata import (
     build_process,
     connector,

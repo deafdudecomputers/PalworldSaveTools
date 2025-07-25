@@ -15,7 +15,7 @@ set_console_title(batch_title)
 if getattr(sys, 'frozen', False):
     base_path = os.path.dirname(sys.executable)
 else:
-    base_path = os.getcwd()
+    base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 log_folder = os.path.join(base_path, "Save Scan Logger")
 os.makedirs(log_folder, exist_ok=True)
 log_file = os.path.join(log_folder, "scan_save.log")
@@ -490,7 +490,7 @@ def resort_player_log(file_path, header_line):
         if getattr(sys, 'frozen', False):
             base_dir = os.path.dirname(sys.executable)
         else:
-            base_dir = os.path.dirname(os.path.abspath(__file__))
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         log_folder = os.path.abspath(os.path.join(base_dir, "Save Scan Logger"))
         os.makedirs(log_folder, exist_ok=True)
         file_path = os.path.join(log_folder, file_path)

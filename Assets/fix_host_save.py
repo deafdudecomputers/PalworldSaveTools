@@ -92,7 +92,6 @@ def fix_save(save_path, new_guid, old_guid, guild_fix=True):
     os.rename(tmp_path, os.path.join(save_path, 'Players', new_guid.upper() + '.sav'))
     print(f"Success! Fix has been applied! Have fun!")
     messagebox.showinfo("Success", "Fix has been applied! Have fun!")
-    sys.exit()
 def sav_to_json(filepath):
     with open(filepath, "rb") as f:
         data = f.read()
@@ -190,6 +189,13 @@ def fix_save_wrapper():
         return
     folder_path = os.path.dirname(file_path)
     fix_save(folder_path, new_guid, old_guid)
+    for i, entry in enumerate(player_list_cache):
+        if entry.startswith(old_guid):
+            player_list_cache[i] = entry.replace(old_guid, new_guid, 1)
+        elif entry.startswith(new_guid):
+            player_list_cache[i] = entry.replace(new_guid, old_guid, 1)
+    populate_player_tree(old_tree, folder_path)
+    populate_player_tree(new_tree, folder_path)
 def sort_treeview_column(treeview, col, reverse):
     data = [(treeview.set(k, col), k) for k in treeview.get_children('')]
     data.sort(reverse=reverse)
@@ -223,7 +229,7 @@ style.map("Dark.TButton",
 file_frame = ttk.Frame(window, style="TFrame")
 file_frame.pack(fill='x', padx=10, pady=10)
 ttk.Label(file_frame, text='Select Level.sav file:', font=font_style, style="TLabel").pack(side='left')
-level_sav_entry = ttk.Entry(file_frame, width=70, font=font_style, style="TEntry")
+level_sav_entry = ttk.Entry(file_frame, width=65, font=font_style, style="TEntry")
 level_sav_entry.pack(side='left', padx=5)
 browse_button = ttk.Button(file_frame, text="Browse", command=choose_level_file, style="Dark.TButton")
 browse_button.pack(side='left')
@@ -300,6 +306,4 @@ def on_exit():
 def fix_host_save():
     window.protocol("WM_DELETE_WINDOW", on_exit)
     window.mainloop()
-
-if __name__ == "__main__":
-    fix_host_save()
+if __name__ == "__main__": fix_host_save()

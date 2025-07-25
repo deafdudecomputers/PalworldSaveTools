@@ -1,6 +1,7 @@
-from typing import Any, Sequence
+from typing import Any, Optional, Sequence
 
-from palworld_save_tools.archive import *
+from loguru import logger
+from palworld_save_tools.archive import FArchiveReader, FArchiveWriter
 
 
 def decode(
@@ -22,12 +23,12 @@ def decode_bytes(
     buf = bytes(c_bytes)
     reader = parent_reader.internal_copy(buf, debug=False)
     data: dict[str, Any] = {}
+    data["type"] = "unknown"
     data["id"] = {
         "created_world_id": reader.guid(),
         "local_id_in_created_world": reader.guid(),
         "static_id": reader.fstring(),
     }
-    data["type"] = "unknown"
     egg_data = try_read_egg(reader)
     if isinstance(egg_data, dict):
         data |= egg_data
@@ -51,8 +52,8 @@ def decode_bytes(
                 raise Exception("Warning: EOF not reached")
             data |= temp_data
         except Exception as e:
-            print(
-                f"Warning: Failed to parse weapon data, continuing as raw data {buf!r}: {e}"
+            logger.debug(
+                f"Failed to parse weapon data, continuing as raw data {buf!r}: {e}"
             )
             reader.data.seek(cur_pos)
             data["trailer"] = [int(b) for b in reader.read_to_end()]

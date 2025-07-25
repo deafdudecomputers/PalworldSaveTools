@@ -1,7 +1,0 @@
-cx_Freeze>=6.15.0
-setuptools>=75.6.0
-matplotlib==3.10.0
-pandas==2.2.3
-customtkinter
-cityhash
-pyooz @ git+https://github.com/oMaN-Rod/pyooz.git

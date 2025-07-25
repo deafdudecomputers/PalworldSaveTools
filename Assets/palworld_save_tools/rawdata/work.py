@@ -1,5 +1,6 @@
 from typing import Any, Sequence
 
+from loguru import logger
 from palworld_save_tools.archive import *
 
 WORK_BASE_TYPES = set(
@@ -119,7 +120,7 @@ def decode_bytes(
             data["target_map_object_model_id"] = reader.guid()
 
     if len(data.keys()) == 0:
-        print(f"Warning, unable to parse {work_type}, falling back to raw bytes")
+        logger.debug(f"Unable to parse {work_type}, falling back to raw bytes")
         return {"values": b_bytes}
     # UPalWorkProgressTransformBase->SerializeProperties
     transform_type = reader.byte()

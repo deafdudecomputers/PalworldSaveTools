@@ -3,7 +3,7 @@ import sys
 
 # Application Information
 APP_NAME = "PalworldSaveTools"
-APP_VERSION = "1.0.71"
+APP_VERSION = "1.0.72"
 GAME_VERSION = "0.6.2"
 
 # Directory paths

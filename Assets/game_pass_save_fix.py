@@ -8,17 +8,28 @@ save_converter_done = threading.Event()
 if getattr(sys, 'frozen', False):
     base_dir = os.path.dirname(sys.executable)
 else:
-    base_dir = os.path.dirname(os.path.abspath(__file__))
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 root_dir = base_dir
 
 def get_save_game_pass():
-    saves_path = os.path.join(root_dir, "saves")
-    if os.path.exists(saves_path):
-        shutil.rmtree(saves_path)
-    print("Fetching save from GamePass...")
+    default_source = os.path.expandvars(
+        r"%LOCALAPPDATA%\Packages\PocketpairInc.Palworld_ad4psfrxyesvt\SystemAppData\wgs"
+    )
+    if not os.path.exists(default_source):
+        default_source = os.path.join(root_dir, "saves")
+    source_folder = filedialog.askdirectory(title="Select GamePass Save ZIP Source Folder", initialdir=default_source)
+    if not source_folder:
+        print("No source folder selected.")
+        return
+    default_dest = os.path.expandvars(r"%localappdata%\Pal\Saved\SaveGames")
+    destination_folder = filedialog.askdirectory(title="Select Output Folder for Converted Save", initialdir=default_dest)
+    if not destination_folder:
+        print("No destination folder selected.")
+        return
     progressbar.set(0.0)
-    threading.Thread(target=check_for_zip_files, args=(root_dir,), daemon=True).start()
+    threading.Thread(target=check_for_zip_files, args=(source_folder,), daemon=True).start()
     threading.Thread(target=check_progress, args=(progressbar,), daemon=True).start()
+    save_converter_done.destination_folder = destination_folder
 
 def get_save_steam():
     folder = filedialog.askdirectory(title="Select Steam Save Folder to Transfer")
@@ -189,38 +200,13 @@ def generate_random_name(length=32):
     return "".join(random.choices(string.ascii_uppercase + string.digits, k=length))
 
 def move_save_steam(saveName):
-    local_app_data_path = os.path.expandvars(r"%localappdata%\Pal\Saved\SaveGames")
     try:
-        if not os.path.exists(local_app_data_path):
-            print("Steam save folder not found. Skipping Steam migration.")
-            source_folder = os.path.join(root_dir, "saves", saveName)
-            xgp_converted_saves_path = os.path.join(root_dir, "XGP_converted_saves")
-            os.makedirs(xgp_converted_saves_path, exist_ok=True)
-            new_name = generate_random_name()
-            new_converted_target_folder = os.path.join(xgp_converted_saves_path, new_name)
-            def ignore_folders(_, names):
-                return {n for n in names if n in {"Level", "Slot1", "Slot2", "Slot3"}}
-            shutil.copytree(source_folder, new_converted_target_folder, dirs_exist_ok=True, ignore=ignore_folders)
-            messagebox.showinfo("Success", "Your save is converted and saved in XGP_converted_saves folder.")
-            shutil.rmtree(os.path.join(root_dir, "saves"))
-            window.quit()
-            return
-        subdirs = [d for d in os.listdir(local_app_data_path) if os.path.isdir(os.path.join(local_app_data_path, d))]
-        if not subdirs:
-            print("No subdirectories in Steam save folder. Skipping Steam migration.")
-            source_folder = os.path.join(root_dir, "saves", saveName)
-            xgp_converted_saves_path = os.path.join(root_dir, "XGP_converted_saves")
-            os.makedirs(xgp_converted_saves_path, exist_ok=True)
-            new_name = generate_random_name()
-            new_converted_target_folder = os.path.join(xgp_converted_saves_path, new_name)
-            def ignore_folders(_, names):
-                return {n for n in names if n in {"Level", "Slot1", "Slot2", "Slot3"}}
-            shutil.copytree(source_folder, new_converted_target_folder, dirs_exist_ok=True, ignore=ignore_folders)
-            messagebox.showinfo("Success", "Your save is converted and saved in XGP_converted_saves folder.")
-            shutil.rmtree(os.path.join(root_dir, "saves"))
-            window.quit()
-            return
-        target_folder = os.path.join(local_app_data_path, subdirs[0])
+        destination_folder = getattr(save_converter_done, 'destination_folder', None)
+        if not destination_folder:
+            destination_folder = filedialog.askdirectory(title="Select Output Folder for Converted Save")
+            if not destination_folder:
+                print("No destination folder selected.")
+                return
         source_folder = os.path.join(root_dir, "saves", saveName)
         if not os.path.exists(source_folder):
             raise FileNotFoundError(f"Source save folder not found: {source_folder}")
@@ -231,9 +217,9 @@ def move_save_steam(saveName):
         os.makedirs(xgp_converted_saves_path, exist_ok=True)
         new_converted_target_folder = os.path.join(xgp_converted_saves_path, new_name)
         shutil.copytree(source_folder, new_converted_target_folder, dirs_exist_ok=True, ignore=ignore_folders)
-        new_target_folder = os.path.join(target_folder, new_name if os.path.exists(os.path.join(target_folder, saveName)) else saveName)
+        new_target_folder = os.path.join(destination_folder, new_name)
         shutil.copytree(source_folder, new_target_folder, dirs_exist_ok=True, ignore=ignore_folders)
-        messagebox.showinfo("Success", "Your save is migrated to Steam. You may go ahead and open Steam Palworld.")
+        messagebox.showinfo("Success", f"Your save is converted and copied to:\n{destination_folder}")
         shutil.rmtree(os.path.join(root_dir, "saves"))
         window.quit()
     except Exception as e:
