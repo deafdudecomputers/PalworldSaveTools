@@ -2,11 +2,8 @@ from import_libs import *
 from datetime import datetime, timedelta, timezone
 from pathlib import Path, PurePath
 from typing import Any, Dict, List, Tuple
-
 filetime_epoch = datetime(1601, 1, 1, tzinfo=timezone.utc)
 packages_root = Path(os.path.expandvars(f"%LOCALAPPDATA%\\Packages"))
-
-
 def read_game_list() -> Dict[str, Any] | None:
     try:
         games_json_path = Path("games.json")
@@ -29,8 +26,6 @@ def read_game_list() -> Dict[str, Any] | None:
         return games
     except:
         return None
-
-
 def discover_games(supported_games: Dict[str, Any]) -> List[str]:
     found_games = []
     for pkg_name in supported_games.keys():
@@ -38,20 +33,14 @@ def discover_games(supported_games: Dict[str, Any]) -> List[str]:
         if pkg_path.exists():
             found_games.append(pkg_name)
     return found_games
-
-
 def read_utf16_str(f, str_len=None) -> str:
     if not str_len:
         str_len = struct.unpack("<i", f.read(4))[0]
     return f.read(str_len * 2).decode("utf-16").rstrip("\0")
-
-
 def read_filetime(f) -> datetime:
     filetime = struct.unpack("<Q", f.read(8))[0]
     filetime_seconds = filetime / 10_000_000
     return filetime_epoch + timedelta(seconds=filetime_seconds)
-
-
 def print_sync_warning(title: str):
     print()
     print(f"!! {title} !!")
@@ -59,8 +48,6 @@ def print_sync_warning(title: str):
     print("Extracted saves for this game might be corrupted!")
     print("Press enter to skip and continue.")
     input()
-
-
 def get_xbox_user_name(user_id: int) -> str | None:
     xbox_app_package = "Microsoft.XboxApp_8wekyb3d8bbwe"
     try:
@@ -75,8 +62,6 @@ def get_xbox_user_name(user_id: int) -> str | None:
         return gamer.get("Gamertag")
     except:
         return None
-
-
 def find_user_containers(pkg_name: str) -> List[Tuple[int | str, Path]]:
     wgs_dir = packages_root / pkg_name / "SystemAppData/wgs"
     if not wgs_dir.is_dir():
@@ -105,8 +90,6 @@ def find_user_containers(pkg_name: str) -> List[Tuple[int | str, Path]]:
         user_name = get_xbox_user_name(user_id)
         user_dirs.append((user_name or user_id, valid_user_dir))
     return user_dirs
-
-
 def read_user_containers(user_wgs_dir: Path) -> Tuple[str, List[Dict[str, Any]]]:
     containers_dir = user_wgs_dir
     containers_idx_path = containers_dir / "containers.index"
@@ -177,8 +160,6 @@ def read_user_containers(user_wgs_dir: Path) -> Tuple[str, List[Dict[str, Any]]]
                 }
             )
     return (store_pkg_name, containers)
-
-
 def get_save_paths(
     supported_games: Dict[str, Any],
     store_pkg_name: str,
@@ -195,8 +176,6 @@ def get_save_paths(
         fpath = container["files"][0]["path"]
         save_meta.append((fname, fpath))
     return save_meta
-
-
 def main():
     print("Xbox Game Pass for PC savefile extractor")
     print("========================================")
@@ -255,7 +234,4 @@ def main():
             traceback.print_exc()
             print()
     return zip_full_path
-
-
-if __name__ == "__main__":
-    main()
+if __name__ == "__main__": main()

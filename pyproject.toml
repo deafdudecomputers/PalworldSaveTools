@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "PalworldSaveTools"
-version = "1.0.72"
+version = "1.0.73"
 description = "All-in-one tool for fixing/transferring/editing Palworld saves"
 readme = "readme.md"
 license = "MIT"
@@ -18,8 +18,9 @@ dependencies = [
     "cityhash",
     "pillow",
     "numpy",
+    "pygame",
     "pyooz @ git+https://github.com/oMaN-Rod/pyooz.git",
-    "cx-freeze>=8.3.0",
+    "cx-freeze>=8.3.0"
 ]
 
 [tool.setuptools.packages.find]

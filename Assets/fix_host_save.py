@@ -7,7 +7,10 @@ from common import ICON_PATH
 player_list_cache = []
 def backup_whole_directory(source_folder, backup_folder):
     if not os.path.isabs(backup_folder):
-        base_path = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
+        if getattr(sys, 'frozen', False):
+            base_path = os.path.dirname(sys.executable)
+        else:
+            base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         backup_folder = os.path.abspath(os.path.join(base_path, backup_folder))
     if not os.path.exists(backup_folder): os.makedirs(backup_folder)
     print("Now backing up the whole directory of the Level.sav's location...")
@@ -59,28 +62,32 @@ def fix_save(save_path, new_guid, old_guid, guild_fix=True):
                             p['player_uid'] = new_guid_formatted
                         elif p['player_uid'] == new_guid_formatted:
                             p['player_uid'] = old_guid_formatted
+    def deep_swap_ownership(data, old_uid, new_uid):
+        if isinstance(data, dict):
+            if data.get("OwnerPlayerUId", {}).get("value") == old_uid:
+                data["OwnerPlayerUId"]["value"] = new_uid
+            if data.get("build_player_uid") == old_uid:
+                data["build_player_uid"] = new_uid
+            if data.get("private_lock_player_uid") == old_uid:
+                data["private_lock_player_uid"] = new_uid
+            for v in data.values():
+                deep_swap_ownership(v, old_uid, new_uid)
+        elif isinstance(data, list):
+            for item in data:
+                deep_swap_ownership(item, old_uid, new_uid)
+    def count_owner_uid(data, uid):
+        nonlocal count
+        if isinstance(data, dict):
+            if data.get("OwnerPlayerUId", {}).get("value") == uid:
+                count += 1
+            for v in data.values():
+                count_owner_uid(v, uid)
+        elif isinstance(data, list):
+            for item in data:
+                count_owner_uid(item, uid)
     if old_guid_formatted.endswith('000000000001') or new_guid_formatted.endswith('000000000001'):
-        def deep_swap_ownership(data, old_uid, new_uid):
-            if isinstance(data, dict):
-                if data.get("OwnerPlayerUId", {}).get("value") == old_uid:
-                    data["OwnerPlayerUId"]["value"] = new_uid
-                for v in data.values():
-                    deep_swap_ownership(v, old_uid, new_uid)
-            elif isinstance(data, list):
-                for item in data:
-                    deep_swap_ownership(item, old_uid, new_uid)
         deep_swap_ownership(level_json, old_guid_formatted, new_guid_formatted)
         count = 0
-        def count_owner_uid(data, uid):
-            nonlocal count
-            if isinstance(data, dict):
-                if data.get("OwnerPlayerUId", {}).get("value") == uid:
-                    count += 1
-                for v in data.values():
-                    count_owner_uid(v, uid)
-            elif isinstance(data, list):
-                for item in data:
-                    count_owner_uid(item, uid)
         count_owner_uid(level_json, new_guid_formatted)
     backup_whole_directory(os.path.dirname(level_sav_path), "Backups/Fix Host Save")
     json_to_sav(level_json, level_sav_path)

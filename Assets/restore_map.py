@@ -51,18 +51,15 @@ def restore_map(auto_confirm=False):
     print("Warning: This will perform the following actions:")
     print("1. Automatically fetch the largest LocalData.sav")
     print("2. Create backups of each existing LocalData.sav in the 'Backups/Restore Map' folder with timestamps")
-    print("3. Copy the largest LocalData.sav to all other worlds/servers")
-    
+    print("3. Copy the largest LocalData.sav to all other worlds/servers")    
     if not auto_confirm:
         choice = input("Do you want to continue? (y/n): ")
         if choice.lower() != 'y':
             print("Operation canceled.")
-            return False
-    
+            return False    
     print("=" * 80)
     print("Searching for the largest LocalData.sav...")
-    largest_file, largest_size, largest_folder = find_largest_local_data()
-    
+    largest_file, largest_size, largest_folder = find_largest_local_data()    
     if largest_file:
         print(f"Largest LocalData.sav found: {largest_file} (Size: {largest_size} bytes)")
         print("=" * 80)
@@ -71,9 +68,5 @@ def restore_map(auto_confirm=False):
     else: 
         print("No LocalData.sav found.")
         return False
-
-def main():
-    restore_map()
-
-if __name__ == '__main__': 
-    main()
+def main(): restore_map()
+if __name__ == '__main__': main()

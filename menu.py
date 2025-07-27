@@ -3,52 +3,36 @@ from pathlib import Path
 import importlib.util
 import tkinter as tk
 from tkinter import messagebox
-
 def is_frozen():
     return getattr(sys, 'frozen', False)
-
 def get_assets_path():
     if is_frozen():
         return os.path.join(os.path.dirname(sys.executable), "Assets")
     else:
         return os.path.join(os.path.dirname(__file__), "Assets")
-
 def setup_import_paths():
     assets_path = get_assets_path()
-    
-    # Add Assets directory to path if not already there
     if assets_path not in sys.path:
         sys.path.insert(0, assets_path)
-    
-    # Add subdirectories for modular imports
     subdirs = ['palworld_coord', 'palworld_save_tools', 'palworld_xgp_import']
     for subdir in subdirs:
         subdir_path = os.path.join(assets_path, subdir)
         if os.path.exists(subdir_path) and subdir_path not in sys.path:
             sys.path.insert(0, subdir_path)
-
-# Setup import paths
 setup_import_paths()
-
-class LazyImporter:
-    
+class LazyImporter:    
     def __init__(self):
         self._modules = {}
-        self._common_funcs = None
-    
+        self._common_funcs = None    
     def _try_import(self, module_name):
         if module_name in self._modules:
-            return self._modules[module_name]
-        
-        # Strategy 1: Direct import (for normal execution)
+            return self._modules[module_name]        
         try:
             module = importlib.import_module(module_name)
             self._modules[module_name] = module
             return module
         except ImportError:
             pass
-        
-        # Strategy 2: Import from Assets package (for frozen builds)
         try:
             if is_frozen():
                 full_module_name = f"Assets.{module_name}"
@@ -59,8 +43,6 @@ class LazyImporter:
             return module
         except ImportError:
             pass
-        
-        # Strategy 3: Try direct file import
         try:
             assets_path = get_assets_path()
             module_file = os.path.join(assets_path, f"{module_name}.py")
@@ -72,21 +54,16 @@ class LazyImporter:
                     self._modules[module_name] = module
                     return module
         except Exception:
-            pass
-        
-        raise ImportError(f"Could not import module: {module_name}")
-    
+            pass        
+        raise ImportError(f"Could not import module: {module_name}")    
     def get_module(self, module_name):
-        return self._try_import(module_name)
-    
+        return self._try_import(module_name)    
     def get_function(self, module_name, function_name):
         module = self.get_module(module_name)
-        return getattr(module, function_name)
-    
+        return getattr(module, function_name)    
     def get_common_functions(self):
         if self._common_funcs is not None:
-            return self._common_funcs
-        
+            return self._common_funcs        
         try:
             common_module = self._try_import('common')
             self._common_funcs = {
@@ -95,19 +72,13 @@ class LazyImporter:
                 'open_file_with_default_app': getattr(common_module, 'open_file_with_default_app', lambda x: None)
             }
         except ImportError:
-            # Provide defaults if common module can't be imported
             self._common_funcs = {
                 'ICON_PATH': 'Assets/resources/pal.ico',
                 'get_versions': lambda: ("Unknown", "Unknown"),
                 'open_file_with_default_app': lambda x: None
-            }
-        
+            }        
         return self._common_funcs
-
-# Initialize the lazy importer
 lazy_importer = LazyImporter()
-
-# Get common functions
 common_funcs = lazy_importer.get_common_functions()
 ICON_PATH = common_funcs['ICON_PATH']
 get_versions = common_funcs['get_versions']

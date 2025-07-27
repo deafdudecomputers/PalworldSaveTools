@@ -6,7 +6,10 @@ from datetime import datetime
 from common import ICON_PATH
 def backup_whole_directory(source_folder, backup_folder):
     if not os.path.isabs(backup_folder):
-        base_path = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
+        if getattr(sys, 'frozen', False):
+            base_path = os.path.dirname(sys.executable)
+        else:
+            base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         backup_folder = os.path.abspath(os.path.join(base_path, backup_folder))
     if not os.path.exists(backup_folder): os.makedirs(backup_folder)
     print("Now backing up the whole directory of the Level.sav's location...")
@@ -58,28 +61,32 @@ def fix_save(save_path, new_guid, old_guid, guild_fix=True):
                             p['player_uid'] = new_guid_formatted
                         elif p['player_uid'] == new_guid_formatted:
                             p['player_uid'] = old_guid_formatted
+    def deep_swap_ownership(data, old_uid, new_uid):
+        if isinstance(data, dict):
+            if data.get("OwnerPlayerUId", {}).get("value") == old_uid:
+                data["OwnerPlayerUId"]["value"] = new_uid
+            if data.get("build_player_uid") == old_uid:
+                data["build_player_uid"] = new_uid
+            if data.get("private_lock_player_uid") == old_uid:
+                data["private_lock_player_uid"] = new_uid
+            for v in data.values():
+                deep_swap_ownership(v, old_uid, new_uid)
+        elif isinstance(data, list):
+            for item in data:
+                deep_swap_ownership(item, old_uid, new_uid)
+    def count_owner_uid(data, uid):
+        nonlocal count
+        if isinstance(data, dict):
+            if data.get("OwnerPlayerUId", {}).get("value") == uid:
+                count += 1
+            for v in data.values():
+                count_owner_uid(v, uid)
+        elif isinstance(data, list):
+            for item in data:
+                count_owner_uid(item, uid)
     if old_guid_formatted.endswith('000000000001') or new_guid_formatted.endswith('000000000001'):
-        def deep_swap_ownership(data, old_uid, new_uid):
-            if isinstance(data, dict):
-                if data.get("OwnerPlayerUId", {}).get("value") == old_uid:
-                    data["OwnerPlayerUId"]["value"] = new_uid
-                for v in data.values():
-                    deep_swap_ownership(v, old_uid, new_uid)
-            elif isinstance(data, list):
-                for item in data:
-                    deep_swap_ownership(item, old_uid, new_uid)
         deep_swap_ownership(level_json, old_guid_formatted, new_guid_formatted)
         count = 0
-        def count_owner_uid(data, uid):
-            nonlocal count
-            if isinstance(data, dict):
-                if data.get("OwnerPlayerUId", {}).get("value") == uid:
-                    count += 1
-                for v in data.values():
-                    count_owner_uid(v, uid)
-            elif isinstance(data, list):
-                for item in data:
-                    count_owner_uid(item, uid)
         count_owner_uid(level_json, new_guid_formatted)
     backup_whole_directory(os.path.dirname(level_sav_path), "Backups/Fix Host Save")
     json_to_sav(level_json, level_sav_path)
@@ -91,7 +98,6 @@ def fix_save(save_path, new_guid, old_guid, guild_fix=True):
     os.rename(tmp_path, os.path.join(save_path, 'Players', new_guid.upper() + '.sav'))
     print(f"Success! Fix has been applied! Have fun!")
     messagebox.showinfo("Success", "Fix has been applied! Have fun!")
-    sys.exit()
 def sav_to_json(filepath):
     with open(filepath, "rb") as f:
         data = f.read()
@@ -113,10 +119,23 @@ try:
 except Exception as e:
     print(f"Could not set icon: {e}")
 font_style = ("Arial", 12)
-frame = tk.Frame(window, bg="#2f2f2f")
+style = ttk.Style(window)
+style.theme_use('clam')
+for opt in [
+    ("TFrame", {"background": "#2f2f2f"}),
+    ("TLabel", {"background": "#2f2f2f", "foreground": "white", "font": font_style}),
+    ("TEntry", {"fieldbackground": "#444444", "foreground": "white", "font": font_style}),
+    ("Dark.TButton", {"background": "#555555", "foreground": "white", "font": font_style, "padding": 6}),
+]:
+    style.configure(opt[0], **opt[1])
+style.map("Dark.TButton",
+    background=[("active", "#666666"), ("!disabled", "#555555")],
+    foreground=[("disabled", "#888888"), ("!disabled", "white")]
+)
+frame = ttk.Frame(window, style="TFrame")
 frame.pack(padx=20, pady=20, fill='x')
-tk.Label(frame, text="Level.sav File Path:", bg="#2f2f2f", fg="white", font=font_style).grid(row=0, column=0, sticky='w')
-level_file_entry = tk.Entry(frame, font=font_style, bg="#444444", fg="white", insertbackground="white")
+ttk.Label(frame, text="Level.sav File Path:", style="TLabel").grid(row=0, column=0, sticky='w')
+level_file_entry = ttk.Entry(frame, style="TEntry")
 level_file_entry.grid(row=0, column=1, padx=5, sticky='ew')
 def browse_file():
     path = filedialog.askopenfilename(title="Select Level.sav", filetypes=[("SAV Files", "*.sav")])
@@ -126,12 +145,12 @@ def browse_file():
             return
         level_file_entry.delete(0, 'end')
         level_file_entry.insert(0, path)
-tk.Button(frame, text="Browse", command=browse_file, bg="#555555", fg="white", font=font_style, activebackground="#666666").grid(row=0, column=2, padx=5)
-tk.Label(frame, text="Old GUID:", bg="#2f2f2f", fg="white", font=font_style).grid(row=1, column=0, sticky='w', pady=10)
-old_guid_entry = tk.Entry(frame, font=font_style, bg="#444444", fg="white", insertbackground="white")
+ttk.Button(frame, text="Browse", command=browse_file, style="Dark.TButton").grid(row=0, column=2, padx=5)
+ttk.Label(frame, text="Old GUID:", style="TLabel").grid(row=1, column=0, sticky='w', pady=10)
+old_guid_entry = ttk.Entry(frame, style="TEntry")
 old_guid_entry.grid(row=1, column=1, padx=5, sticky='ew')
-tk.Label(frame, text="New GUID:", bg="#2f2f2f", fg="white", font=font_style).grid(row=2, column=0, sticky='w')
-new_guid_entry = tk.Entry(frame, font=font_style, bg="#444444", fg="white", insertbackground="white")
+ttk.Label(frame, text="New GUID:", style="TLabel").grid(row=2, column=0, sticky='w')
+new_guid_entry = ttk.Entry(frame, style="TEntry")
 new_guid_entry.grid(row=2, column=1, padx=5, sticky='ew')
 def manual_fix():
     level_sav_path = level_file_entry.get().strip()
@@ -151,9 +170,10 @@ def manual_fix():
         fix_save(folder_path, new_guid, old_guid)
     except Exception as e:
         messagebox.showerror("Error", f"Failed to fix save:\n{e}")
-tk.Button(frame, text="Apply Manual GUID Swap", command=manual_fix, bg="#555555", fg="white", font=font_style, activebackground="#666666").grid(row=3, column=0, columnspan=2, pady=20)
+ttk.Button(frame, text="Apply Manual GUID Swap", command=manual_fix, style="Dark.TButton").grid(row=3, column=0, columnspan=3, pady=20)
 frame.grid_columnconfigure(0, weight=0)
 frame.grid_columnconfigure(1, weight=1)
+frame.grid_columnconfigure(2, weight=0)
 def on_exit():
     if window.winfo_exists():
         window.destroy()
@@ -161,6 +181,4 @@ def on_exit():
 def fix_host_save_manual():
     window.protocol("WM_DELETE_WINDOW", on_exit)
     window.mainloop()
-
-if __name__ == "__main__":
-    fix_host_save_manual()
+if __name__ == "__main__": fix_host_save_manual()

@@ -1,7 +1,6 @@
 from import_libs import *
 from common import ICON_PATH
 import traceback
-
 saves = []
 save_extractor_done = threading.Event()
 save_converter_done = threading.Event()
@@ -10,7 +9,6 @@ if getattr(sys, 'frozen', False):
 else:
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 root_dir = base_dir
-
 def get_save_game_pass():
     default_source = os.path.expandvars(
         r"%LOCALAPPDATA%\Packages\PocketpairInc.Palworld_ad4psfrxyesvt\SystemAppData\wgs"
@@ -30,14 +28,12 @@ def get_save_game_pass():
     threading.Thread(target=check_for_zip_files, args=(source_folder,), daemon=True).start()
     threading.Thread(target=check_progress, args=(progressbar,), daemon=True).start()
     save_converter_done.destination_folder = destination_folder
-
 def get_save_steam():
     folder = filedialog.askdirectory(title="Select Steam Save Folder to Transfer")
     if not folder:
         print("No folder selected.")
         return
     threading.Thread(target=transfer_steam_to_gamepass, args=(folder,), daemon=True).start()
-
 def check_progress(progressbar):
     if save_extractor_done.is_set():
         progressbar.set(0.5)
@@ -45,7 +41,6 @@ def check_progress(progressbar):
         threading.Thread(target=convert_save_files, args=(progressbar,), daemon=True).start()
     else:
         window.after(1000, check_progress, progressbar)
-
 def check_for_zip_files(search_dir):
     saves_path = os.path.join(root_dir, "saves")
     if not find_zip_files(saves_path):
@@ -53,7 +48,6 @@ def check_for_zip_files(search_dir):
         threading.Thread(target=run_save_extractor, args=(search_dir,), daemon=True).start()
     else:
         process_zip_files()
-
 def process_zip_files():
     saves_path = os.path.join(root_dir, "saves")
     if is_folder_empty(saves_path):
@@ -66,7 +60,6 @@ def process_zip_files():
         else:
             print("No save files found on XGP please reinstall the game on XGP and try again")
             window.quit()
-
 def process_zip_file(file_path: str):
     saves_path = os.path.join(root_dir, "saves")
     unzip_file(file_path, saves_path)
@@ -74,7 +67,6 @@ def process_zip_file(file_path: str):
     os.makedirs(xgp_original_saves_path, exist_ok=True)
     shutil.copy2(file_path, os.path.join(xgp_original_saves_path, os.path.basename(file_path)))
     save_extractor_done.set()
-
 def convert_save_files(progressbar):
     saves_path = os.path.join(root_dir, "saves")
     saveFolders = list_folders_in_directory(saves_path)
@@ -89,7 +81,6 @@ def convert_save_files(progressbar):
     update_combobox(saveList)
     progressbar.destroy()
     print("Choose a save to convert:")
-
 def run_save_extractor(search_dir):
     try:
         print("Running Xbox Game Pass save extractor...")
@@ -116,7 +107,6 @@ def run_save_extractor(search_dir):
     except Exception as e:
         print(f"Error running save extractor: {e}")
         traceback.print_exc()
-
 def list_folders_in_directory(directory):
     try:
         if not os.path.exists(directory):
@@ -124,7 +114,6 @@ def list_folders_in_directory(directory):
         return [item for item in os.listdir(directory) if os.path.isdir(os.path.join(directory, item))]
     except:
         return []
-
 def is_folder_empty(directory):
     try:
         if not os.path.exists(directory):
@@ -132,7 +121,6 @@ def is_folder_empty(directory):
         return len(os.listdir(directory)) == 0
     except:
         return False
-
 def find_zip_files(directory):
     if not os.path.exists(directory):
         return []
@@ -140,7 +128,6 @@ def find_zip_files(directory):
         f for f in os.listdir(directory)
         if f.endswith(".zip") and f.startswith("palworld_") and is_valid_zip(os.path.join(directory, f))
     ]
-
 def is_valid_zip(zip_file_path):
     try:
         with zipfile.ZipFile(zip_file_path, "r") as zip_ref:
@@ -148,12 +135,10 @@ def is_valid_zip(zip_file_path):
         return True
     except:
         return False
-
 def unzip_file(zip_file_path, extract_to_folder):
     os.makedirs(extract_to_folder, exist_ok=True)
     with zipfile.ZipFile(zip_file_path, "r") as zip_ref:
         zip_ref.extractall(extract_to_folder)
-
 def convert_sav_JSON(saveName):
     save_path = os.path.join(root_dir, "saves", saveName, "Level", "01.sav")
     if not os.path.exists(save_path):
@@ -174,7 +159,6 @@ def convert_sav_JSON(saveName):
         print("palworld_save_tools module not found. Please ensure it's installed.")
         return None
     return saveName
-
 def convert_JSON_sav(saveName):
     json_path = os.path.join(root_dir, "saves", saveName, "Level", "01.sav.json")
     output_path = os.path.join(root_dir, "saves", saveName, "Level.sav")
@@ -195,10 +179,8 @@ def convert_JSON_sav(saveName):
             sys_module.argv = old_argv
     except ImportError:
         print("palworld_save_tools module not found. Please ensure it's installed.")
-
 def generate_random_name(length=32):
     return "".join(random.choices(string.ascii_uppercase + string.digits, k=length))
-
 def move_save_steam(saveName):
     try:
         destination_folder = getattr(save_converter_done, 'destination_folder', None)
@@ -226,7 +208,6 @@ def move_save_steam(saveName):
         print(f"Error copying save folder: {e}")
         traceback.print_exc()
         messagebox.showerror("Error", f"Failed to copy the save folder: {e}")
-
 def transfer_steam_to_gamepass(source_folder):
     import sys as sys_module
     try:
@@ -248,7 +229,6 @@ def transfer_steam_to_gamepass(source_folder):
     except ImportError as e:
         print(f"Error importing palworld_xgp_import module: {e}")
         messagebox.showerror("Error", f"Import failed: {e}")
-
 def update_combobox(saveList):
     global saves
     saves = saveList
@@ -260,14 +240,12 @@ def update_combobox(saveList):
         combobox.set("Choose a save to convert:")
         button = customtkinter.CTkButton(save_frame, width=150, text="Convert Save", command=lambda: convert_JSON_sav(combobox.get()))
         button.pack(pady=(0, 10))
-
 def on_exit():
     try:
         window.destroy()
     except Exception:
         pass
     sys.exit()
-
 def game_pass_save_fix():
     global window, progressbar, save_frame
     window = customtkinter.CTk()
@@ -287,6 +265,4 @@ def game_pass_save_fix():
     save_frame.pack(pady=(10, 10))
     window.protocol("WM_DELETE_WINDOW", on_exit)
     window.mainloop()
-
-if __name__ == "__main__":
-    game_pass_save_fix()
+if __name__ == "__main__": game_pass_save_fix()

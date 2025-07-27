@@ -128,6 +128,3 @@ steamapps\common\Palworld\Pal\Saved\SaveGames\0\RANDOMSERVERID\
    - Load the save and play **once** to let the game auto-update the save file structure.  
    - Ensure your saves were updated **on or after** the current game patch to prevent `struct.error`.  
    - This works because the game rewrites save data structures between versions during play.
-   
-5. **Unable to access my old private chests**
-   - Always make sure to unlock your private chests BEFORE using the tools.

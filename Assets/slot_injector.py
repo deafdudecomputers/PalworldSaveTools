@@ -3,7 +3,10 @@ from datetime import datetime
 from common import ICON_PATH
 def backup_whole_directory(source_folder, backup_folder):
     if not os.path.isabs(backup_folder):
-        base_path = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
+        if getattr(sys, 'frozen', False):
+            base_path = os.path.dirname(sys.executable)
+        else:
+            base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         backup_folder = os.path.abspath(os.path.join(base_path, backup_folder))
     if not os.path.exists(backup_folder): os.makedirs(backup_folder)
     print("Now backing up the whole directory of the Level.sav's location...")
@@ -124,6 +127,4 @@ def slot_injector():
     app = SlotNumUpdaterApp()
     app.protocol("WM_DELETE_WINDOW", on_exit)
     app.mainloop()
-
-if __name__ == "__main__":
-    slot_injector()
+if __name__ == "__main__": slot_injector()

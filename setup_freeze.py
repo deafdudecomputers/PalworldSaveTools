@@ -28,6 +28,7 @@ def find_ooz_library():
 
 build_exe_options = {
     "packages": [
+        "pygame",
         "loguru",
         "os",
         "sys",
@@ -141,7 +142,7 @@ if sys.platform == "win32":
     base = "Console"
 setup(
     name="PalworldSaveTools",
-    version="1.0.72",
+    version="1.0.73",
     description="All-in-one tool for fixing/transferring/editing Palworld saves",
     options={"build_exe": build_exe_options},
     executables=[

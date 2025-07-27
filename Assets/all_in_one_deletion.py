@@ -5,12 +5,9 @@ from datetime import datetime
 from scan_save import decompress_sav_to_gvas, GvasFile, PALWORLD_TYPE_HINTS, SKP_PALWORLD_CUSTOM_PROPERTIES, compress_gvas_to_sav
 from tkinter import simpledialog
 from common import ICON_PATH
-
-# Global variables
+from scan_save import *
 current_save_path = None
 loaded_level_json = None
-
-# GUI-related global variables (initialized when the GUI is created)
 window = None
 stat_labels = None
 guild_tree = None
@@ -24,15 +21,23 @@ guild_members_search_var = None
 guild_result = None
 base_result = None
 player_result = None
-
-# Placeholder function that will be redefined when GUI is created
 def refresh_stats(section):
-    pass
+    stats = get_current_stats()
+    if section == "Before Deletion":
+        refresh_stats.stats_before = stats
+    update_stats_section(stat_labels, section, stats)
+    if section == "After Deletion" and hasattr(refresh_stats, "stats_before"):
+        before = refresh_stats.stats_before
+        result = {k: before[k] - stats.get(k, 0) for k in before}
+        update_stats_section(stat_labels, "Deletion Result", result)
 def as_uuid(val): return str(val).replace('-', '').lower() if val else ''
 def are_equal_uuids(a,b): return as_uuid(a)==as_uuid(b)
 def backup_whole_directory(source_folder, backup_folder):
     if not os.path.isabs(backup_folder):
-        base_path = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
+        if getattr(sys, 'frozen', False):
+            base_path = os.path.dirname(sys.executable)
+        else:
+            base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         backup_folder = os.path.abspath(os.path.join(base_path, backup_folder))
     if not os.path.exists(backup_folder): os.makedirs(backup_folder)
     print("Now backing up the whole directory of the Level.sav's location...")
@@ -51,6 +56,32 @@ def json_to_sav(j,path):
     t = 0x32 if "Pal.PalworldSaveGame" in g.header.save_game_class_name else 0x31
     data = compress_gvas_to_sav(g.write(SKP_PALWORLD_CUSTOM_PROPERTIES),t)
     with open(path,"wb") as f: f.write(data)
+def ask_integer_with_icon(title, prompt, icon_path):
+    class CustomDialog(simpledialog.Dialog):
+        def __init__(self, parent, title):
+            super().__init__(parent, title)
+        def body(self, master):
+            try: self.iconbitmap(icon_path)
+            except: pass
+            self.geometry("400x120")
+            self.configure(bg="#2f2f2f")
+            master.configure(bg="#2f2f2f")
+            tk.Label(master, text=prompt, bg="#2f2f2f", fg="white", font=("Arial", 10)).grid(row=0, column=0, padx=15, pady=15)
+            self.entry = tk.Entry(master, bg="#444444", fg="white", insertbackground="white", font=("Arial", 10))
+            self.entry.grid(row=1, column=0, padx=15)
+            return self.entry
+        def buttonbox(self):
+            box = tk.Frame(self, bg="#2f2f2f")
+            btn_ok = tk.Button(box, text="OK", width=10, command=self.ok, bg="#555555", fg="white", font=("Arial",10), relief="flat", activebackground="#666666")
+            btn_ok.pack(side="left", padx=5, pady=5)
+            btn_cancel = tk.Button(box, text="Cancel", width=10, command=self.cancel, bg="#555555", fg="white", font=("Arial",10), relief="flat", activebackground="#666666")
+            btn_cancel.pack(side="left", padx=5, pady=5)
+            box.pack()
+    root = tk.Tk()
+    root.withdraw()
+    dlg = CustomDialog(root, title)
+    root.destroy()
+    return dlg.result
 def clean_character_save_parameter_map(data_source, valid_uids):
     if "CharacterSaveParameterMap" not in data_source: return
     entries = data_source["CharacterSaveParameterMap"].get("value", [])
@@ -73,7 +104,7 @@ def clean_character_save_parameter_map(data_source, valid_uids):
             keep.append(entry)
     entries[:] = keep
 def load_save():
-    global current_save_path, loaded_level_json, backup_save_path
+    global current_save_path, loaded_level_json, backup_save_path, srcGuildMapping
     p = filedialog.askopenfilename(title="Select Level.sav", filetypes=[("SAV","*.sav")])
     if not p: return
     if not p.endswith("Level.sav"):
@@ -94,6 +125,9 @@ def load_save():
     stats = get_current_stats()
     for k,v in stats.items():
         print(f"Total {k}: {v}")
+    all_in_one_deletion.loaded_json = loaded_level_json
+    data_source = loaded_level_json["properties"]["worldSaveData"]["value"]
+    srcGuildMapping = MappingCacheObject.get(data_source, use_mp=not getattr(args, "reduce_memory", False))
 def save_changes():
     folder = current_save_path
     if not folder:
@@ -137,8 +171,10 @@ def refresh_all():
         base_tree.insert("", "end", values=(str(b['key']),))
     for uid, name, gid, seen, level in get_players():
         player_tree.insert("", "end", iid=uid, values=(uid, name, gid, seen, level))
-def on_guild_search(evt=None):
-    q = guild_search_var.get().lower()
+def on_guild_search(q=None):
+    if q is None:
+        q = guild_search_var.get()
+    q = q.lower()
     guild_tree.delete(*guild_tree.get_children())
     for g in loaded_level_json['properties']['worldSaveData']['value']['GroupSaveDataMap']['value']:
         if g['value']['GroupType']['value']['value'] != 'EPalGroupType::Guild': continue
@@ -146,15 +182,19 @@ def on_guild_search(evt=None):
         gid = as_uuid(g['key'])
         if q in name.lower() or q in gid.lower():
             guild_tree.insert("", "end", values=(name, gid))
-def on_base_search(evt=None):
-    q = base_search_var.get().lower()
+def on_base_search(q=None):
+    if q is None:
+        q = base_search_var.get()
+    q = q.lower()
     base_tree.delete(*base_tree.get_children())
     for b in loaded_level_json['properties']['worldSaveData']['value']['BaseCampSaveData']['value']:
         bid = str(b['key'])
         if q in bid.lower():
             base_tree.insert("", "end", values=(bid,))
-def on_player_search(evt=None):
-    q = player_search_var.get().lower()
+def on_player_search(q=None):
+    if q is None:
+        q = player_search_var.get()
+    q = q.lower()
     player_tree.delete(*player_tree.get_children())
     for uid, name, gid, seen, level in get_players():
         if any(q in str(c).lower() for c in (uid, name, gid, seen, level)):
@@ -373,7 +413,7 @@ def delete_inactive_bases():
     if not folder:
         messagebox.showerror("Error", "No save loaded!")
         return
-    d = simpledialog.askinteger("Delete Inactive Bases", "Delete bases where ALL players inactive for how many days?")
+    d = ask_integer_with_icon("Delete Inactive Bases", "Delete bases where ALL players inactive for how many days?", ICON_PATH)
     if d is None: return
     wsd = loaded_level_json['properties']['worldSaveData']['value']
     tick = wsd['GameTimeSaveData']['value']['RealDateTimeTicks']['value']
@@ -472,7 +512,7 @@ def delete_inactive_players_button():
     if not folder:
         messagebox.showerror("Error", "No save loaded!")
         return
-    d = simpledialog.askinteger("Days", "Delete players inactive for days?")
+    d = ask_integer_with_icon("Delete Inactive Players", "Delete players inactive for days?", ICON_PATH)
     if d is None: return
     delete_inactive_players(folder, inactive_days=d)
 def delete_inactive_players(folder_path, inactive_days=30):
@@ -637,8 +677,10 @@ def delete_duplicated_players():
         print(f"KEPT    -> UID: {d['kept_uid']}, Name: {d['kept_name']}, Guild ID: {d['kept_gid']}, Last Online: {format_duration(tick_now - d['kept_last_online'])}")
         print(f"DELETED -> UID: {d['deleted_uid']}, Name: {d['deleted_name']}, Guild ID: {d['deleted_gid']}, Last Online: {format_duration(tick_now - d['deleted_last_online'])}\n")
     print(f"Deleted {len(deleted_players)} duplicate player(s)...")
-def on_guild_members_search(event=None):
-    q = guild_members_search_var.get().lower()
+def on_guild_members_search(q=None):
+    if q is None:
+        q = guild_members_search_var.get()
+    q = q.lower()
     guild_members_tree.delete(*guild_members_tree.get_children())
     sel = guild_tree.selection()
     if not sel: return
@@ -670,17 +712,17 @@ def get_current_stats():
     return dict(Players=total_players, Guilds=total_guilds, Bases=total_bases, Pals=total_pals)
 def create_stats_panel(parent):
     stat_frame = ttk.Frame(parent, style="TFrame")
-    stat_frame.place(x=1190, y=40, width=200, height=340)
-    ttk.Label(stat_frame, text="Stats", font=("Arial", 12, "bold"), style="TLabel").pack(anchor="w", padx=5, pady=(0,5))
+    stat_frame.place(x=1190, y=80, width=200, height=340)
+    ttk.Label(stat_frame, text="Stats", font=("Arial", 12, "bold"), style="TLabel").pack(anchor="center", padx=5, pady=(0,5))
     sections = ["Before Deletion", "After Deletion", "Deletion Result"]
     stat_labels = {}
     for sec in sections:
-        ttk.Label(stat_frame, text=f"{sec}:", font=("Arial", 10, "bold"), style="TLabel").pack(anchor="w", padx=5, pady=(5,0))
+        ttk.Label(stat_frame, text=f"{sec}:", font=("Arial", 10, "bold"), style="TLabel").pack(anchor="center", padx=5, pady=(5,0))
         key_sec = sec.lower().replace(" ", "")
         for field in ["Guilds", "Bases", "Players", "Pals"]:
             key = f"{key_sec}_{field.lower()}"
             lbl = ttk.Label(stat_frame, text=f"{field}: 0", style="TLabel", font=("Arial", 10))
-            lbl.pack(anchor="w", padx=15)
+            lbl.pack(anchor="center", padx=15)
             stat_labels[key] = lbl
     return stat_labels
 def update_stats_section(stat_labels, section, data):
@@ -689,45 +731,6 @@ def update_stats_section(stat_labels, section, data):
         label_key = f"{section_key}_{key.lower()}"
         if label_key in stat_labels:
             stat_labels[label_key].config(text=f"{key.capitalize()}: {val}")
-def all_in_one_deletion():
-    global window, stat_labels, guild_tree, base_tree, player_tree, guild_members_tree
-    global guild_search_var, base_search_var, player_search_var, guild_members_search_var
-    global guild_result, base_result, player_result, refresh_stats
-    
-    def refresh_stats_local(section):
-        stats = get_current_stats()
-        if section == "Before Deletion":
-            refresh_stats_local.stats_before = stats
-        update_stats_section(stat_labels, section, stats)
-        if section == "After Deletion" and hasattr(refresh_stats_local, "stats_before"):
-            before = refresh_stats_local.stats_before
-            result = {k: before[k] - stats.get(k, 0) for k in before}
-            update_stats_section(stat_labels, "Deletion Result", result)
-    
-    # Update the global refresh_stats to point to our local function
-    refresh_stats = refresh_stats_local
-    
-    window = tk.Tk()
-    window.title("All in One Deletion Tool")
-    window.geometry("1400x700")
-    window.config(bg="#2f2f2f")
-    font = ("Arial", 10)
-    s = ttk.Style(window)
-    s.theme_use('clam')
-    try: window.iconbitmap(ICON_PATH)
-    except Exception: pass
-    for opt in [
-        ("Treeview.Heading", {"font": ("Arial", 12, "bold"), "background": "#444", "foreground": "white"}),
-        ("Treeview", {"background": "#333", "foreground": "white", "fieldbackground": "#333"}),
-        ("TFrame", {"background": "#2f2f2f"}),
-        ("TLabel", {"background": "#2f2f2f", "foreground": "white"}),
-        ("TEntry", {"fieldbackground": "#444", "foreground": "white"}),
-        ("Dark.TButton", {"background": "#555555", "foreground": "white", "font": font, "padding": 6}),
-    ]:
-        s.configure(opt[0], **opt[1])
-    s.map("Dark.TButton",
-          background=[("active", "#666666"), ("!disabled", "#555555")],
-          foreground=[("disabled", "#888888"), ("!disabled", "white")])
 def create_search_panel(parent, label_text, search_var, search_callback, tree_columns, tree_headings, tree_col_widths, width, height, tree_height=24):
     panel = ttk.Frame(parent, style="TFrame")
     panel.place(width=width, height=height)
@@ -737,29 +740,276 @@ def create_search_panel(parent, label_text, search_var, search_callback, tree_co
     lbl.pack(side='left')
     entry = ttk.Entry(topbar, textvariable=search_var)
     entry.pack(side='left', fill='x', expand=True, padx=(5, 0))
-    entry.bind("<KeyRelease>", lambda e: search_callback(None))
+    entry.bind("<KeyRelease>", lambda e: search_callback(entry.get()))
     tree = ttk.Treeview(panel, columns=tree_columns, show='headings', height=tree_height)
     tree.pack(fill='both', expand=True, padx=5, pady=(0, 5))
     for col, head, width_col in zip(tree_columns, tree_headings, tree_col_widths):
         tree.heading(col, text=head)
         tree.column(col, width=width_col, anchor='w')
     return panel, tree, entry
-
+def show_base_map():
+    import pygame, os
+    from tkinter import messagebox
+    from palworld_coord import sav_to_map
+    global srcGuildMapping, loaded_level_json
+    folder = current_save_path
+    if not folder:
+        messagebox.showerror("Error", "No save loaded!")
+        return
+    if srcGuildMapping is None:
+        messagebox.showwarning("No Data", "Load a save first to have base data.")
+        return
+    tick = loaded_level_json['properties']['worldSaveData']['value']['GameTimeSaveData']['value']['RealDateTimeTicks']['value']
+    pygame.init()
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    wm_path = os.path.join(base_dir, "resources", "worldmap.png")
+    icon_path = os.path.join(base_dir, "resources", "pal.ico")
+    base_icon_path = os.path.join(base_dir, "resources", "baseicon.png")
+    orig_map_raw = pygame.image.load(wm_path)
+    mw, mh = orig_map_raw.get_size()
+    w, h = min(mw, 1200), min(mh, 800)
+    screen = pygame.display.set_mode((w, h), pygame.RESIZABLE)
+    pygame.display.set_caption("Base Map Viewer")
+    if os.path.exists(icon_path):
+        try:
+            icon_surface = pygame.image.load(icon_path)
+            pygame.display.set_icon(icon_surface)
+        except: pass
+    orig_map = orig_map_raw.convert_alpha()
+    base_icon = pygame.image.load(base_icon_path).convert_alpha()
+    base_icon = pygame.transform.smoothscale(base_icon, (32, 32))
+    bases = list(srcGuildMapping.BaseCampMapping.values())
+    font = pygame.font.SysFont(None, 20)
+    tooltip_bg_color = (50, 50, 50, 220)
+    tooltip_text_color = (255, 255, 255)
+    popup_bg_color = (30, 30, 30)
+    popup_text_color = (255, 255, 255)
+    input_bg_color = (40, 40, 40)
+    input_text_color = (255, 255, 255)
+    marker_rects = []
+    min_zoom = min(w / mw, h / mh)
+    zoom = max(min_zoom, 0.15)
+    offset_x = (mw - w / zoom) / 2
+    offset_y = (mh - h / zoom) / 2
+    dragging = False; drag_start = (0, 0); offset_origin = (0, 0)
+    clock = pygame.time.Clock(); running = True
+    popup_info = None
+    user_input = ""
+    active_input = False
+    def to_image_coordinates(x_world, y_world, width, height):
+        x_min, x_max = -1000, 1000
+        y_min, y_max = -1000, 1000
+        x_scale = width / (x_max - x_min)
+        y_scale = height / (y_max - y_min)
+        x_img = (x_world - x_min) * x_scale
+        y_img = (y_max - y_world) * y_scale
+        return int(x_img), int(y_img)
+    def get_base_coords(b):
+        try:
+            offset = b["value"]["RawData"]["value"]["transform"]["translation"]
+            x, y = sav_to_map(offset['x'], offset['y'], new=True)
+            return x, y
+        except: return None, None
+    def get_leader_name(gdata):
+        admin_uid = gdata['value']['RawData']['value'].get('admin_player_uid', None)
+        if not admin_uid: return "Unknown Leader"
+        players = gdata['value']['RawData']['value'].get('players', [])
+        for p in players:
+            uid_raw = p.get('player_uid')
+            uid = str(uid_raw) if uid_raw else ''
+            if uid == admin_uid:
+                return p.get('player_info', {}).get('player_name', admin_uid)
+        return admin_uid
+    def get_last_seen(gdata, tick):
+        players = gdata['value']['RawData']['value'].get('players', [])
+        last_online_list = [p.get('player_info', {}).get('last_online_real_time') for p in players if p.get('player_info', {}).get('last_online_real_time')]
+        if not last_online_list: return "Unknown"
+        most_recent = max(last_online_list)
+        diff = (tick - most_recent) / 1e7
+        if diff < 0: diff = 0
+        return format_duration(diff)
+    def format_duration(seconds):
+        days = int(seconds // 86400)
+        hours = int((seconds % 86400) // 3600)
+        mins = int((seconds % 3600) // 60)
+        if days > 0: return f"{days}d {hours}h"
+        if hours > 0: return f"{hours}h {mins}m"
+        return f"{mins}m"
+    def parse_search_input(text):
+        text = text.strip()
+        if text.lower().startswith("last seen:"):
+            val = text[10:].strip()
+            if val.endswith('d') and val[:-1].isdigit():
+                return int(val[:-1])
+        return None
+    def guild_matches_search(gdata, search_text, days_filter, tick):
+        if not search_text and days_filter is None:
+            return True
+        guild_name = gdata['value']['RawData']['value'].get('guild_name', "").lower()
+        leader_name = get_leader_name(gdata).lower()
+        if days_filter is not None:
+            players = gdata['value']['RawData']['value'].get('players', [])
+            last_online_list = [p.get('player_info', {}).get('last_online_real_time') for p in players if p.get('player_info', {}).get('last_online_real_time')]
+            if not last_online_list: return False
+            most_recent = max(last_online_list)
+            diff_days = (tick - most_recent) / 1e7 / 86400
+            if diff_days < days_filter:
+                return False
+            search_text = search_text.lower()
+        if search_text and "last seen:" not in search_text:
+            if search_text not in guild_name and search_text not in leader_name:
+                return False
+        return True
+    while running:
+        mouse_pos = pygame.mouse.get_pos()
+        hovered_base = None
+        marker_rects.clear()
+        for ev in pygame.event.get():
+            if ev.type == pygame.QUIT:
+                running = False
+            elif ev.type == pygame.KEYDOWN:
+                if active_input:
+                    if ev.key == pygame.K_BACKSPACE:
+                        user_input = user_input[:-1]
+                    elif ev.key == pygame.K_RETURN:
+                        active_input = False
+                    else:
+                        if ev.unicode.isprintable():
+                            user_input += ev.unicode
+                else:
+                    if ev.key == pygame.K_f:
+                        active_input = True
+            elif ev.type == pygame.MOUSEBUTTONDOWN:
+                if ev.button == 1:
+                    dragging = True
+                    drag_start = ev.pos
+                    offset_origin = (offset_x, offset_y)
+                    input_rect = pygame.Rect(10, h - 36, 200, 26)
+                    if input_rect.collidepoint(ev.pos):
+                        active_input = True
+                    else:
+                        active_input = False
+            elif ev.type == pygame.MOUSEBUTTONUP and ev.button == 1:
+                dragging = False
+                for base, rect in marker_rects:
+                    if rect.collidepoint(ev.pos):
+                        base_id = base.get('key')
+                        guild_name = "Unknown Guild"
+                        leader_name = "Unknown Leader"
+                        last_seen = "Unknown"
+                        for gid, gdata in srcGuildMapping.GuildSaveDataMap.items():
+                            base_ids = gdata['value']['RawData']['value'].get('base_ids', [])
+                            if base_id in base_ids:
+                                guild_name = gdata['value']['RawData']['value'].get('guild_name', guild_name)
+                                leader_name = get_leader_name(gdata)
+                                last_seen = get_last_seen(gdata, tick)
+                                break
+                        popup_info = (guild_name, leader_name, last_seen)
+                        break
+                else:
+                    popup_info = None
+            elif ev.type == pygame.MOUSEMOTION and dragging:
+                dx, dy = ev.pos[0] - drag_start[0], ev.pos[1] - drag_start[1]
+                offset_x = offset_origin[0] - dx / zoom
+                offset_y = offset_origin[1] - dy / zoom
+            elif ev.type == pygame.MOUSEWHEEL:
+                old_zoom = zoom
+                zoom = min(max(zoom * (1.1 if ev.y > 0 else 0.9), min_zoom), 5.0)
+                mx, my = pygame.mouse.get_pos()
+                if zoom != old_zoom:
+                    ox_rel = offset_x + mx / old_zoom
+                    oy_rel = offset_y + my / old_zoom
+                    offset_x = ox_rel - mx / zoom
+                    offset_y = oy_rel - my / zoom
+            elif ev.type == pygame.VIDEORESIZE:
+                w, h = ev.w, ev.h
+                screen = pygame.display.set_mode((w, h), pygame.RESIZABLE)
+        w, h = screen.get_size()
+        rect_w, rect_h = int(w / zoom), int(h / zoom)
+        offset_x = max(0, min(offset_x, max(0, mw - rect_w)))
+        offset_y = max(0, min(offset_y, max(0, mh - rect_h)))
+        rect = pygame.Rect(int(offset_x), int(offset_y), rect_w, rect_h)
+        map_rect = pygame.Rect(0, 0, mw, mh)
+        rect.clamp_ip(map_rect)
+        safe_rect = rect.clip(map_rect)
+        sub = orig_map.subsurface(safe_rect).copy()
+        scaled_sub = pygame.transform.smoothscale(sub, (w, h))
+        screen.blit(scaled_sub, (0, 0))
+        days_filter = parse_search_input(user_input)
+        search_text = user_input.lower() if days_filter is None else ""
+        for b in bases:
+            guild_for_base = None
+            base_id = b.get('key')
+            for gid, gdata in srcGuildMapping.GuildSaveDataMap.items():
+                base_ids = gdata['value']['RawData']['value'].get('base_ids', [])
+                if base_id in base_ids:
+                    if guild_matches_search(gdata, search_text, days_filter, tick):
+                        guild_for_base = gdata
+                        break
+            if guild_for_base:
+                x, y = get_base_coords(b)
+                if x is None or y is None: continue
+                px, py = to_image_coordinates(x, y, mw, mh)
+                px = (px - offset_x) * zoom
+                py = (py - offset_y) * zoom
+                if 0 <= px < w and 0 <= py < h:
+                    rect_marker = pygame.Rect(int(px) - 16, int(py) - 16, 32, 32)
+                    marker_rects.append((b, rect_marker))
+                    screen.blit(base_icon, rect_marker.topleft)
+                    if rect_marker.collidepoint(mouse_pos):
+                        hovered_base = b
+        if hovered_base:
+            guild_name = "Unknown Guild"
+            leader_name = "Unknown Leader"
+            last_seen = "Unknown"
+            base_id = hovered_base.get('key')
+            for gid, gdata in srcGuildMapping.GuildSaveDataMap.items():
+                base_ids = gdata['value']['RawData']['value'].get('base_ids', [])
+                if base_id in base_ids:
+                    guild_name = gdata['value']['RawData']['value'].get('guild_name', guild_name)
+                    leader_name = get_leader_name(gdata)
+                    last_seen = get_last_seen(gdata, tick)
+                    break
+            text = f"{guild_name} | Leader: {leader_name} | Last Seen: {last_seen}"
+            tooltip_surf = font.render(text, True, tooltip_text_color)
+            tooltip_bg = pygame.Surface((tooltip_surf.get_width() + 8, tooltip_surf.get_height() + 4), pygame.SRCALPHA)
+            tooltip_bg.fill(tooltip_bg_color)
+            mx, my = mouse_pos
+            screen.blit(tooltip_bg, (mx + 12, my + 12))
+            screen.blit(tooltip_surf, (mx + 16, my + 14))
+        if popup_info:
+            guild_name, leader_name, last_seen = popup_info
+            popup_w, popup_h = 280, 110
+            popup_x, popup_y = (w - popup_w) // 2, (h - popup_h) // 2
+            popup_rect = pygame.Rect(popup_x, popup_y, popup_w, popup_h)
+            pygame.draw.rect(screen, popup_bg_color, popup_rect)
+            pygame.draw.rect(screen, (255, 255, 255), popup_rect, 2)
+            guild_text = pygame.font.SysFont(None, 24, bold=True).render(f"Guild: {guild_name}", True, popup_text_color)
+            leader_text = pygame.font.SysFont(None, 24, bold=True).render(f"Leader: {leader_name}", True, popup_text_color)
+            seen_text = pygame.font.SysFont(None, 22).render(f"Last Seen: {last_seen}", True, popup_text_color)
+            screen.blit(guild_text, (popup_x + 10, popup_y + 10))
+            screen.blit(leader_text, (popup_x + 10, popup_y + 40))
+            screen.blit(seen_text, (popup_x + 10, popup_y + 70))
+        input_rect = pygame.Rect(10, h - 36, 200, 26)
+        pygame.draw.rect(screen, input_bg_color, input_rect)
+        border_color = (255, 255, 255) if active_input else (120, 120, 120)
+        pygame.draw.rect(screen, border_color, input_rect, 2)
+        input_surf = font.render(user_input, True, input_text_color)
+        screen.blit(input_surf, (input_rect.x + 5, input_rect.y + 5))
+        instructions = "Press 'F' to search. Type 'Last Seen: 7d' to filter by last seen days."
+        instr_surf = font.render(instructions, True, (255, 255, 255))
+        instr_bg = pygame.Surface((instr_surf.get_width() + 10, instr_surf.get_height() + 6), pygame.SRCALPHA)
+        instr_bg.fill((0, 0, 0, 150))
+        screen.blit(instr_bg, (10, 10))
+        screen.blit(instr_surf, (15, 13))
+        pygame.display.flip()
+        clock.tick(30)
+    pygame.quit()
 def all_in_one_deletion():
     global window, stat_labels, guild_tree, base_tree, player_tree, guild_members_tree
     global guild_search_var, base_search_var, player_search_var, guild_members_search_var
     global guild_result, base_result, player_result
-    
-    def refresh_stats(section):
-        stats = get_current_stats()
-        if section == "Before Deletion":
-            refresh_stats.stats_before = stats
-        update_stats_section(stat_labels, section, stats)
-        if section == "After Deletion" and hasattr(refresh_stats, "stats_before"):
-            before = refresh_stats.stats_before
-            result = {k: before[k] - stats.get(k, 0) for k in before}
-            update_stats_section(stat_labels, "Deletion Result", result)
-    
+    base_dir = os.path.dirname(os.path.abspath(__file__))
     window = tk.Tk()
     window.title("All in One Deletion Tool")
     window.geometry("1400x700")
@@ -768,82 +1018,84 @@ def all_in_one_deletion():
     s = ttk.Style(window)
     s.theme_use('clam')
     try: window.iconbitmap(ICON_PATH)
-    except Exception: pass
-    for opt in [
-        ("Treeview.Heading", {"font": ("Arial", 12, "bold"), "background": "#444", "foreground": "white"}),
-        ("Treeview", {"background": "#333", "foreground": "white", "fieldbackground": "#333"}),
-        ("TFrame", {"background": "#2f2f2f"}),
-        ("TLabel", {"background": "#2f2f2f", "foreground": "white"}),
-        ("TEntry", {"fieldbackground": "#444", "foreground": "white"}),
-        ("Dark.TButton", {"background": "#555555", "foreground": "white", "font": font, "padding": 6}),
-    ]:
-        s.configure(opt[0], **opt[1])
+    except: pass
+    for opt, cfg in [
+        ("Treeview.Heading", {"font":("Arial",12,"bold"),"background":"#444","foreground":"white"}),
+        ("Treeview", {"background":"#333","foreground":"white","fieldbackground":"#333"}),
+        ("TFrame", {"background":"#2f2f2f"}),
+        ("TLabel", {"background":"#2f2f2f","foreground":"white"}),
+        ("TEntry", {"fieldbackground":"#444","foreground":"white"}),
+        ("Dark.TButton", {"background":"#555555","foreground":"white","font":font,"padding":6}),
+    ]: s.configure(opt, **cfg)
     s.map("Dark.TButton",
-          background=[("active", "#666666"), ("!disabled", "#555555")],
-          foreground=[("disabled", "#888888"), ("!disabled", "white")])
-    
+          background=[("active","#666666"),("!disabled","#555555")],
+          foreground=[("disabled","#888888"),("!disabled","white")])
     guild_search_var = tk.StringVar()
-    gframe, guild_tree, guild_search_entry = create_search_panel(window, "Search Guilds:", guild_search_var, on_guild_search,
-        ("Name", "ID"), ("Guild Name", "Guild ID"), (130, 130), 310, 600)
-    gframe.place(x=10, y=40)
-    guild_tree.bind("<<TreeviewSelect>>", on_guild_select)
+    gframe, guild_tree, guild_search_entry = create_search_panel(
+        window,"Search Guilds:",guild_search_var,on_guild_search,
+        ("Name","ID"),("Guild Name","Guild ID"),(130,130),310,600)
+    gframe.place(x=10,y=40)
+    guild_tree.bind("<<TreeviewSelect>>",on_guild_select)
     base_search_var = tk.StringVar()
-    bframe, base_tree, base_search_entry = create_search_panel(window, "Search Bases:", base_search_var, on_base_search,
-        ("ID",), ("Base ID",), (280,), 310, 280)
-    bframe.place(x=330, y=40)
-    base_tree.bind("<<TreeviewSelect>>", on_base_select)
+    bframe, base_tree, base_search_entry = create_search_panel(
+        window,"Search Bases:",base_search_var,on_base_search,
+        ("ID",),("Base ID",),(280,),310,280)
+    bframe.place(x=330,y=40)
+    base_tree.bind("<<TreeviewSelect>>",on_base_select)
     guild_members_search_var = tk.StringVar()
     gm_frame, guild_members_tree, guild_members_search_entry = create_search_panel(
-        window, "Guild Members:", guild_members_search_var, on_guild_members_search,
-        ("Name", "Level", "UID"), ("Member", "Level", "UID"), (100, 50, 140), 310, 320)
-    gm_frame.place(x=330, y=320)
-    guild_members_tree.bind("<<TreeviewSelect>>", on_guild_member_select)
+        window,"Guild Members:",guild_members_search_var,on_guild_members_search,
+        ("Name","Level","UID"),("Member","Level","UID"),(100,50,140),310,320)
+    gm_frame.place(x=330,y=320)
+    guild_members_tree.bind("<<TreeviewSelect>>",on_guild_member_select)
     player_search_var = tk.StringVar()
     pframe, player_tree, player_search_entry = create_search_panel(
-        window, "Search Players:", player_search_var, on_player_search,
-        ("UID", "Name", "GID", "Last", "Level"),
-        ("Player UID", "Player Name", "Guild ID", "Last Seen", "Level"),
-        (100, 120, 120, 90, 50),
-        540, 600)
-    pframe.place(x=650, y=40)
-    player_tree.bind("<<TreeviewSelect>>", on_player_select)
-    guild_result = tk.Label(window, text="Selected Guild: N/A", bg="#2f2f2f", fg="white", font=font)
-    guild_result.place(x=10, y=10)
-    base_result = tk.Label(window, text="Selected Base: N/A", bg="#2f2f2f", fg="white", font=font)
-    base_result.place(x=330, y=10)
-    player_result = tk.Label(window, text="Selected Player: N/A", bg="#2f2f2f", fg="white", font=font)
-    player_result.place(x=650, y=10)
-    btn_save_changes = ttk.Button(window, text="Save Changes", command=save_changes, style="Dark.TButton")
-    btn_save_changes.place(x=650 + 540 - 5 - btn_save_changes.winfo_reqwidth(), y=10)
+        window,"Search Players:",player_search_var,on_player_search,
+        ("UID","Name","GID","Last","Level"),
+        ("Player UID","Player Name","Guild ID","Last Seen","Level"),
+        (100,120,120,90,50),540,600)
+    pframe.place(x=650,y=40)
+    player_tree.bind("<<TreeviewSelect>>",on_player_select)
+    guild_result = tk.Label(window,text="Selected Guild: N/A",bg="#2f2f2f",fg="white",font=font)
+    guild_result.place(x=10,y=10)
+    base_result = tk.Label(window,text="Selected Base: N/A",bg="#2f2f2f",fg="white",font=font)
+    base_result.place(x=330,y=10)
+    player_result = tk.Label(window,text="Selected Player: N/A",bg="#2f2f2f",fg="white",font=font)
+    player_result.place(x=650,y=10)
+    btn_save_changes = ttk.Button(window,text="Save Changes",command=save_changes,style="Dark.TButton")
+    btn_save_changes.place(x=650+540-5-btn_save_changes.winfo_reqwidth(),y=10)
     window.update_idletasks()
-    btn_load_save = ttk.Button(window, text="Load Level.sav", command=load_save, style="Dark.TButton")
-    btn_load_save.place(x=btn_save_changes.winfo_x() - 10 - btn_load_save.winfo_reqwidth(), y=10)
+    btn_load_save = ttk.Button(window,text="Load Level.sav",command=load_save,style="Dark.TButton")
+    btn_load_save.place(x=btn_save_changes.winfo_x()-10-btn_load_save.winfo_reqwidth(),y=10)
     window.update_idletasks()
-    btn_delete_guild = ttk.Button(window, text="Delete Selected Guild", command=delete_selected_guild, style="Dark.TButton")
-    btn_delete_guild.place(x=20, y=40 + 600 + 10)
-    btn_delete_empty_guilds = ttk.Button(window, text="Delete Empty Guilds", command=delete_empty_guilds, style="Dark.TButton")
-    btn_delete_empty_guilds.place(x=20 + btn_delete_guild.winfo_reqwidth() + 10, y=40 + 600 + 10)
-    btn_delete_base = ttk.Button(window, text="Delete Selected Base", command=delete_selected_base, style="Dark.TButton")
-    btn_delete_base.place(x=330 + 5, y=40 + 600 + 10)
-    btn_delete_inactive_bases = ttk.Button(window, text="Delete Inactive Bases", command=delete_inactive_bases, style="Dark.TButton")
-    btn_delete_inactive_bases.place(x=330 + 310 - 5 - btn_delete_inactive_bases.winfo_reqwidth(), y=40 + 600 + 10)
-    y_pos = 40 + 600 + 10
-    base_x = 650
-    panel_width = 540
-    btn_delete_player = ttk.Button(window, text="Delete Selected Player", command=delete_selected_player, style="Dark.TButton")
-    btn_fix_duplicate_players = ttk.Button(window, text="Delete Duplicate Players", command=delete_duplicated_players, style="Dark.TButton")
-    btn_delete_inactive_players = ttk.Button(window, text="Delete Inactive Players", command=delete_inactive_players_button, style="Dark.TButton")
-    btn_delete_player.place(x=base_x + panel_width * 0.18 - (btn_delete_player.winfo_reqwidth() // 2), y=y_pos)
-    btn_fix_duplicate_players.place(x=base_x + panel_width * 0.50 - (btn_fix_duplicate_players.winfo_reqwidth() // 2), y=y_pos)
-    btn_delete_inactive_players.place(x=base_x + panel_width * 0.82 - (btn_delete_inactive_players.winfo_reqwidth() // 2), y=y_pos)
+    btn_delete_guild = ttk.Button(window,text="Delete Selected Guild",command=delete_selected_guild,style="Dark.TButton")
+    btn_delete_guild.place(x=20,y=650)
+    btn_delete_empty_guilds = ttk.Button(window,text="Delete Empty Guilds",command=delete_empty_guilds,style="Dark.TButton")
+    btn_delete_empty_guilds.place(x=20+btn_delete_guild.winfo_reqwidth()+10,y=650)
+    btn_delete_base = ttk.Button(window,text="Delete Selected Base",command=delete_selected_base,style="Dark.TButton")
+    btn_delete_base.place(x=330+5,y=650)
+    btn_delete_inactive_bases = ttk.Button(window,text="Delete Inactive Bases",command=delete_inactive_bases,style="Dark.TButton")
+    btn_delete_inactive_bases.place(x=330+310-5-btn_delete_inactive_bases.winfo_reqwidth(),y=650)
+    y_pos=650; base_x=650; pw=540
+    btn_delete_player=ttk.Button(window,text="Delete Selected Player",command=delete_selected_player,style="Dark.TButton")
+    btn_fix_duplicate_players=ttk.Button(window,text="Delete Duplicate Players",command=delete_duplicated_players,style="Dark.TButton")
+    btn_delete_inactive_players=ttk.Button(window,text="Delete Inactive Players",command=delete_inactive_players_button,style="Dark.TButton")
+    btn_delete_player.place(x=base_x+pw*0.18-(btn_delete_player.winfo_reqwidth()//2),y=y_pos)
+    btn_fix_duplicate_players.place(x=base_x+pw*0.50-(btn_fix_duplicate_players.winfo_reqwidth()//2),y=y_pos)
+    btn_delete_inactive_players.place(x=base_x+pw*0.82-(btn_delete_inactive_players.winfo_reqwidth()//2),y=y_pos)
     stat_labels = create_stats_panel(window)
-    
+    def refresh_stats(section):
+        stats = get_current_stats()
+        if section=="Before Deletion": refresh_stats.stats_before=stats
+        update_stats_section(stat_labels,section,stats)
+        if section=="After Deletion" and hasattr(refresh_stats,"stats_before"):
+            before=refresh_stats.stats_before
+            result={k:before[k]-stats.get(k,0) for k in before}
+            update_stats_section(stat_labels,"Deletion Result",result)
+    btn_show_map=ttk.Button(window,text="Show Base Map",command=show_base_map,style="Dark.TButton")
+    btn_show_map.place(x=1235,y=10)
     def on_exit():
-        if window.winfo_exists():
-            window.destroy()
-        sys.exit()
-    window.protocol("WM_DELETE_WINDOW", on_exit)
+        window.destroy(); sys.exit()
+    window.protocol("WM_DELETE_WINDOW",on_exit)
     window.mainloop()
-
-if __name__ == "__main__":
-    all_in_one_deletion()
+if __name__=="__main__": all_in_one_deletion()
