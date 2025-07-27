@@ -1,7 +1,5 @@
 import sys, os
 from cx_Freeze import setup, Executable
-
-
 def find_customtkinter_assets():
     try:
         import customtkinter
@@ -13,8 +11,6 @@ def find_customtkinter_assets():
     except ImportError:
         pass
     return None
-
-
 def find_ooz_library():
     try:
         import ooz
@@ -24,8 +20,6 @@ def find_ooz_library():
     except ImportError:
         pass
     return None
-
-
 build_exe_options = {
     "packages": [
         "pygame",
@@ -142,7 +136,7 @@ if sys.platform == "win32":
     base = "Console"
 setup(
     name="PalworldSaveTools",
-    version="1.0.73",
+    version="1.0.74",
     description="All-in-one tool for fixing/transferring/editing Palworld saves",
     options={"build_exe": build_exe_options},
     executables=[

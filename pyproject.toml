@@ -1,10 +1,9 @@
 [build-system]
 requires = ["setuptools>=75.6.0", "wheel"]
 build-backend = "setuptools.build_meta"
-
 [project]
 name = "PalworldSaveTools"
-version = "1.0.73"
+version = "1.0.74"
 description = "All-in-one tool for fixing/transferring/editing Palworld saves"
 readme = "readme.md"
 license = "MIT"
@@ -22,7 +21,6 @@ dependencies = [
     "pyooz @ git+https://github.com/oMaN-Rod/pyooz.git",
     "cx-freeze>=8.3.0"
 ]
-
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["Assets*"]

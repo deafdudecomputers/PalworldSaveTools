@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 def parse_log(inactivity_days=None, max_level=None):
     print()
     print("-" * 40)
-    log_file = "scan_save.log"
+    log_file = "Save Scan Logger/scan_save.log"
     if not os.path.exists(log_file):
         return print(f"Log file '{log_file}' not found in the current directory.")    
     with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
@@ -87,9 +87,10 @@ def parse_log(inactivity_days=None, max_level=None):
         print("-" * 40)
     print(f"\nFound {guild_count} guild(s) with {base_count} base(s).")
     if kill_commands:
-        with open("paldefender_bases.log", "w", encoding='utf-8') as log_file:
+        os.makedirs("PalDefender", exist_ok=True)
+        with open("PalDefender/paldefender_bases.log", "w", encoding='utf-8') as log_file:
             log_file.write("\n".join(kill_commands))
-        print(f"Successfully wrote {len(kill_commands)} kill commands to paldefender_bases.log.")
+        print(f"Successfully wrote {len(kill_commands)} kill commands to PalDefender/paldefender_bases.log.")
     else:
         print("No kill commands were generated.")
     if inactivity_days:
@@ -97,7 +98,8 @@ def parse_log(inactivity_days=None, max_level=None):
     if max_level:
         print(f"Player level filter applied: <= {max_level} level(s).")
     if guild_count > 0:
-        with open("paldefender_bases_info.log", "w", encoding='utf-8') as info_log:
+        os.makedirs("PalDefender", exist_ok=True)
+        with open("PalDefender/paldefender_bases_info.log", "w", encoding='utf-8') as info_log:
             info_log.write("-" * 40 + "\n")
             for guild_id, guild_info in inactive_guilds.items():
                 info_log.write(f"Guild: {guild_info['guild_name']} | Guild Leader: {guild_info['guild_leader']} | Guild ID: {guild_id}\n")
@@ -122,8 +124,7 @@ def paldefender_bases(filter_type=None, inactivity_days=None, max_level=None):
         print("1) Inactivity: Guilds qualify if all players exceed >= days.")
         print("2) Level: Guilds qualify if all players are <= level.")
         print("3) Both: Guilds qualify only if all players meet both inactivity and level.")
-        filter_type = input("Enter your choice (1 - 3): ")
-    
+        filter_type = input("Enter your choice (1 - 3): ")    
     try:
         if filter_type == "1":
             if inactivity_days is None:
@@ -150,9 +151,5 @@ def paldefender_bases(filter_type=None, inactivity_days=None, max_level=None):
     except ValueError:
         print("Invalid input. Please enter numeric values where required.")
         return False
-
-def main():
-    paldefender_bases()
-
-if __name__ == "__main__":
-    main()
+def main(): paldefender_bases()
+if __name__ == "__main__": main()

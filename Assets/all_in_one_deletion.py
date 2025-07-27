@@ -33,15 +33,17 @@ def refresh_stats(section):
 def as_uuid(val): return str(val).replace('-', '').lower() if val else ''
 def are_equal_uuids(a,b): return as_uuid(a)==as_uuid(b)
 def backup_whole_directory(source_folder, backup_folder):
+    import datetime as dt
+    def get_timestamp():
+        if hasattr(dt, 'datetime') and hasattr(dt.datetime, 'now'):
+            return dt.datetime.now().strftime("%Y%m%d_%H%M%S")
+        raise RuntimeError("The datetime module is broken or shadowed on this system.")
     if not os.path.isabs(backup_folder):
-        if getattr(sys, 'frozen', False):
-            base_path = os.path.dirname(sys.executable)
-        else:
-            base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        base_path = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         backup_folder = os.path.abspath(os.path.join(base_path, backup_folder))
     if not os.path.exists(backup_folder): os.makedirs(backup_folder)
     print("Now backing up the whole directory of the Level.sav's location...")
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = get_timestamp()
     backup_path = os.path.join(backup_folder, f"PalworldSave_backup_{timestamp}")
     shutil.copytree(source_folder, backup_path)
     print(f"Backup of {source_folder} created at: {backup_path}")
