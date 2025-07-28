@@ -86,10 +86,28 @@ def fix_save(save_path, new_guid, old_guid, guild_fix=True):
         elif isinstance(data, list):
             for item in data:
                 count_owner_uid(item, uid)
+    def ends_with_0001(uid):
+        return uid[-4:] == '0001'
     if old_guid_formatted.endswith('000000000001') or new_guid_formatted.endswith('000000000001'):
         deep_swap_ownership(level_json, old_guid_formatted, new_guid_formatted)
         count = 0
         count_owner_uid(level_json, new_guid_formatted)
+        meta_path = os.path.join(save_path, 'LevelMeta.sav')
+        if os.path.exists(meta_path):
+            meta_json = sav_to_json(meta_path)
+            old_world_name = meta_json['properties']['SaveData']['value'].get('WorldName', {}).get('value', 'Unknown World')
+            rename = messagebox.askyesno("Rename World?", f"Do you want to rename the world? Current name: '{old_world_name}'")
+            if rename:
+                new_world_name = ask_string_with_icon("Rename World Name", "Enter new world name:", ICON_PATH)
+                if new_world_name:
+                    meta_json['properties']['SaveData']['value']['WorldName']['value'] = new_world_name
+            json_to_sav(meta_json, meta_path)
+    copy_dps_file(
+        os.path.join(os.path.dirname(level_sav_path), "Players"),
+        old_guid,
+        os.path.join(os.path.dirname(level_sav_path), "Players"),
+        new_guid
+    )
     backup_whole_directory(os.path.dirname(level_sav_path), "Backups/Fix Host Save")
     json_to_sav(level_json, level_sav_path)
     json_to_sav(old_json, old_sav_path)
@@ -100,6 +118,44 @@ def fix_save(save_path, new_guid, old_guid, guild_fix=True):
     os.rename(tmp_path, os.path.join(save_path, 'Players', new_guid.upper() + '.sav'))
     print(f"Success! Fix has been applied! Have fun!")
     messagebox.showinfo("Success", "Fix has been applied! Have fun!")
+def copy_dps_file(src_folder, src_uid, tgt_folder, tgt_uid):
+    src_file = os.path.join(src_folder, f"{str(src_uid).replace('-', '')}_dps.sav")
+    tgt_file = os.path.join(tgt_folder, f"{str(tgt_uid).replace('-', '')}_dps.sav")
+    if not os.path.exists(src_file):
+        print(f"[DEBUG] Source DPS file missing: {src_file}")
+        return None
+    shutil.copy2(src_file, tgt_file)
+    print(f"[DEBUG] DPS save copied from {src_file} to {tgt_file}")
+def ask_string_with_icon(title, prompt, icon_path):
+    class CustomDialog(simpledialog.Dialog):
+        def __init__(self, parent, title):
+            super().__init__(parent, title)
+        def body(self, master):
+            try: self.iconbitmap(icon_path)
+            except: pass
+            self.geometry("400x120")
+            self.configure(bg="#2f2f2f")
+            master.configure(bg="#2f2f2f")
+            tk.Label(master, text=prompt, bg="#2f2f2f", fg="white", font=("Arial", 10)).grid(row=0, column=0, padx=15, pady=15)
+            self.entry = tk.Entry(master, bg="#444444", fg="white", insertbackground="white", font=("Arial", 10))
+            self.entry.grid(row=1, column=0, padx=15)
+            return self.entry
+        def buttonbox(self):
+            box = tk.Frame(self, bg="#2f2f2f")
+            btn_ok = tk.Button(box, text="OK", width=10, command=self.ok, bg="#555555", fg="white", font=("Arial",10), relief="flat", activebackground="#666666")
+            btn_ok.pack(side="left", padx=5, pady=5)
+            btn_cancel = tk.Button(box, text="Cancel", width=10, command=self.cancel, bg="#555555", fg="white", font=("Arial",10), relief="flat", activebackground="#666666")
+            btn_cancel.pack(side="left", padx=5, pady=5)
+            self.bind("<Return>", lambda event: self.ok())
+            self.bind("<Escape>", lambda event: self.cancel())
+            box.pack()
+        def apply(self):
+            self.result = self.entry.get()
+    root = tk.Tk()
+    root.withdraw()
+    dlg = CustomDialog(root, title)
+    root.destroy()
+    return dlg.result if dlg.result else None
 def sav_to_json(filepath):
     with open(filepath, "rb") as f:
         data = f.read()

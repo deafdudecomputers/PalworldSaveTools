@@ -58,7 +58,7 @@ def json_to_sav(j,path):
     t = 0x32 if "Pal.PalworldSaveGame" in g.header.save_game_class_name else 0x31
     data = compress_gvas_to_sav(g.write(SKP_PALWORLD_CUSTOM_PROPERTIES),t)
     with open(path,"wb") as f: f.write(data)
-def ask_integer_with_icon(title, prompt, icon_path):
+def ask_string_with_icon(title, prompt, icon_path):
     class CustomDialog(simpledialog.Dialog):
         def __init__(self, parent, title):
             super().__init__(parent, title)
@@ -78,12 +78,16 @@ def ask_integer_with_icon(title, prompt, icon_path):
             btn_ok.pack(side="left", padx=5, pady=5)
             btn_cancel = tk.Button(box, text="Cancel", width=10, command=self.cancel, bg="#555555", fg="white", font=("Arial",10), relief="flat", activebackground="#666666")
             btn_cancel.pack(side="left", padx=5, pady=5)
+            self.bind("<Return>", lambda event: self.ok())
+            self.bind("<Escape>", lambda event: self.cancel())
             box.pack()
+        def apply(self):
+            self.result = self.entry.get()
     root = tk.Tk()
     root.withdraw()
     dlg = CustomDialog(root, title)
     root.destroy()
-    return dlg.result
+    return int(dlg.result)
 def clean_character_save_parameter_map(data_source, valid_uids):
     if "CharacterSaveParameterMap" not in data_source: return
     entries = data_source["CharacterSaveParameterMap"].get("value", [])
@@ -415,7 +419,7 @@ def delete_inactive_bases():
     if not folder:
         messagebox.showerror("Error", "No save loaded!")
         return
-    d = ask_integer_with_icon("Delete Inactive Bases", "Delete bases where ALL players inactive for how many days?", ICON_PATH)
+    d = ask_string_with_icon("Delete Inactive Bases", "Delete bases where ALL players inactive for how many days?", ICON_PATH)
     if d is None: return
     wsd = loaded_level_json['properties']['worldSaveData']['value']
     tick = wsd['GameTimeSaveData']['value']['RealDateTimeTicks']['value']
@@ -514,7 +518,7 @@ def delete_inactive_players_button():
     if not folder:
         messagebox.showerror("Error", "No save loaded!")
         return
-    d = ask_integer_with_icon("Delete Inactive Players", "Delete players inactive for days?", ICON_PATH)
+    d = ask_string_with_icon("Delete Inactive Players", "Delete players inactive for days?", ICON_PATH)
     if d is None: return
     delete_inactive_players(folder, inactive_days=d)
 def delete_inactive_players(folder_path, inactive_days=30):
