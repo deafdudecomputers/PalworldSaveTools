@@ -92,9 +92,56 @@ steamapps\common\Palworld\Pal\Saved\SaveGames\0\RANDOMSERVERID\
 11. Click **Migrate**.
 12. After migration is complete, copy the updated **`Level.sav` and `Players` folder** from the temporary folder.
 13. Paste them back into your actual save folder (host or server).
-14. Start the game/server and enjoy your character with all progress intact! 🎉
+14. Start the game/server and enjoy your character with all progress intact! 
 
 ---
+
+# Host Swap Process in Palworld (UID Explained)
+
+## Background
+- **Host always uses `0001.sav`** — same UID for whoever hosts.
+- Each client uses a unique **regular UID save** (e.g. `123xxx.sav`, `987xxx.sav`).
+
+## Key Prerequisite
+Both players (old host and new host) **must have their regular saves generated**.  
+This happens by joining the host’s world and creating a new character if none exists.
+
+---
+
+## Step-by-Step Host Swap
+
+### 1. Ensure Regular Saves Exist
+- Player A (old host) should have a regular save (e.g. `123xxx.sav`).
+- Player B (new host) should have a regular save (e.g. `987xxx.sav`).
+
+### 2. Swap Old Host’s Host Save to Regular Save
+- Use PalworldSaveTools to swap:
+  - Old host’s `0001.sav` → `123xxx.sav`  
+  (This moves old host’s progress from host slot to their regular player slot.)
+
+### 3. Swap New Host’s Regular Save to Host Save
+- Use PalworldSaveTools to swap:
+  - New host’s `987xxx.sav` → `0001.sav`  
+  (This moves new host’s progress into the host slot.)
+
+---
+
+## Result
+- Player B is now the host with their own character and pals in `0001.sav`.
+- Player A becomes a client with their original progress in `123xxx.sav`.
+
+---
+
+## Summary
+- **Swap old host’s `0001.sav` to their regular UID save.**
+- **Swap new host’s regular UID save to `0001.sav`.**
+
+---
+
+This process lets both players keep their characters and pals intact while swapping host roles.
+
+---
+
 
 # Known bugs/issues:
 
