@@ -254,8 +254,8 @@ def replace_character_save_params(param_maps, targ_uid):
         except Exception as e: pass
         new_map.append(character)
     new_map += param_maps
-    print(f"[DEBUG] Removed {removed} old pals from target.")
-    print(f"[DEBUG] Added {len(param_maps)} new pals to target.")
+    print(f"Removed {removed} old pals from target.")
+    print(f"Added {len(param_maps)} new pals to target.")
     targ_lvl["CharacterSaveParameterMap"]["value"] = new_map
 def replace_containers(inv_ids_targ):
     global host_main, host_key, host_weps, host_armor, host_foodbag, host_pals, host_otomo, targ_lvl
@@ -299,11 +299,11 @@ def update_target_character_with_exported_map(targ_uid, exported_map):
             if player_uid == targ_uid and inst_id == targ_instance_id:
                 character['value'] = exported_map['value']
                 updated += 1
-                print(f"[DEBUG] Replaced target character data at index {i} with exported_map for OwnerUID {targ_uid} and InstanceId {targ_instance_id}")
+                print(f"Replaced target character data at index {i} with exported_map for OwnerUID {targ_uid} and InstanceId {targ_instance_id}")
         except Exception as e:
-            print(f"[DEBUG] Exception updating character index {i}: {e}")
+            print(f"Exception updating character index {i}: {e}")
     if updated == 0:
-        print(f"[DEBUG] No matching target characters found with OwnerUID {targ_uid} and InstanceId {targ_instance_id}")
+        print(f"No matching target characters found with OwnerUID {targ_uid} and InstanceId {targ_instance_id}")
     return updated
 def update_guild_data(targ_lvl, targ_json, host_guid, char_instanceid, keep_old_guild_id, source_guild_dict):
     group_id = None
@@ -313,76 +313,31 @@ def update_guild_data(targ_lvl, targ_json, host_guid, char_instanceid, keep_old_
             if group_data["value"]["GroupType"]["value"]["value"] == "EPalGroupType::Guild":
                 if targ_uid in [player_item['player_uid'] for player_item in group_data["value"]["RawData"]["value"]["players"]]:
                     group_id = group_data["value"]["RawData"]["value"]['group_id']
-                    guild_items_json = group_data["value"]["RawData"]["value"]["individual_character_handle_ids"]
                     break
         if group_id is None:
             messagebox.showerror(message='Guild ID not found, aborting...')
             return False
-        guild_item_instances = set(guild_item['instance_id'] for guild_item in guild_items_json)
     else:
-        for group_idx, group_data in enumerate(targ_lvl["GroupSaveDataMap"]["value"]):
+        for group_idx in reversed(range(len(targ_lvl["GroupSaveDataMap"]["value"]))):
+            group_data = targ_lvl["GroupSaveDataMap"]["value"][group_idx]
             if group_data["value"]["GroupType"]["value"]["value"] == "EPalGroupType::Guild" and group_data["key"] not in source_guild_dict:
-                new_character_guild_found = False
-                for player_idx, player_item in enumerate(group_data["value"]["RawData"]["value"]["players"]):
+                players = group_data["value"]["RawData"]["value"]["players"]
+                for player_idx, player_item in enumerate(players):
                     if player_item['player_uid'] == targ_uid:
-                        new_character_guild_found = True
+                        players.pop(player_idx)
+                        if not players:
+                            targ_lvl["GroupSaveDataMap"]["value"].pop(group_idx)
+                        else:
+                            if group_data["value"]["RawData"]["value"]["admin_player_uid"] == targ_uid:
+                                group_data["value"]["RawData"]["value"]["admin_player_uid"] = players[0]['player_uid']
                         break
-                if new_character_guild_found:
-                    group_data["value"]["RawData"]["value"]["players"].pop(player_idx)
-                    if group_data["value"]["RawData"]["value"]["players"]:
-                        if group_data["value"]["RawData"]["value"]["admin_player_uid"] == targ_uid:
-                            group_data["value"]["RawData"]["value"]["admin_player_uid"] = group_data["value"]["RawData"]["value"]["players"][0]['player_uid']
-                        for handle_idx, character_handle_id in enumerate(group_data["value"]["RawData"]["value"]["individual_character_handle_ids"]):
-                            if character_handle_id['guid'] == targ_uid:
-                                group_data["value"]["RawData"]["value"]["individual_character_handle_ids"].pop(handle_idx)
-                    else:
-                        targ_lvl["GroupSaveDataMap"]["value"].pop(group_idx)
-                    break
-        for group_data in targ_lvl["GroupSaveDataMap"]["value"]:
-            if group_data["key"] in source_guild_dict:
-                old_player_found = False
-                for player_item in group_data["value"]["RawData"]["value"]["players"]:
-                    if player_item['player_uid'] == host_guid:
-                        old_player_found = True
-                        player_item['player_uid'] = targ_uid
-                        break
-                if old_player_found:
-                    for character_handle_id in group_data["value"]["RawData"]["value"]["individual_character_handle_ids"]:
-                        if character_handle_id['guid'] == host_guid:
-                            character_handle_id['guid'] = targ_uid
-                            character_handle_id['instance_id'] = char_instanceid
-                            break
-                    if group_data["value"]["RawData"]["value"]["admin_player_uid"] == host_guid:
-                        group_data["value"]["RawData"]["value"]["admin_player_uid"] = targ_uid
-                    group_id = group_data["key"]
-                    break
-        if group_id is None:
-            print("No old guild containing the source player is found in target, moving guilds from old world now...")
-            old_guild = None
-            for group_data in source_guild_dict.values():
-                for player_item in group_data["value"]["RawData"]["value"]["players"]:
-                    if player_item['player_uid'] == host_guid:
-                        old_guild = fast_deepcopy(group_data)
-                        break
-                if old_guild is not None:
-                    break
-            if old_guild is None:
-                messagebox.showerror(message="No guild containing the source player found in the source either, aborting...")
-                return False
-            group_id = old_guild["key"]
-            if old_guild["value"]["RawData"]["value"]["admin_player_uid"] == host_guid:
-                old_guild["value"]["RawData"]["value"]["admin_player_uid"] = targ_uid
-            for player_item in old_guild["value"]["RawData"]["value"]["players"]:
-                if player_item['player_uid'] == host_guid:
-                    player_item['player_uid'] = targ_uid
-                    break
-            for character_handle_id in old_guild["value"]["RawData"]["value"]["individual_character_handle_ids"]:
-                if character_handle_id['guid'] == host_guid:
-                    character_handle_id['guid'] = targ_uid
-                    character_handle_id['instance_id'] = char_instanceid
-                    break
-            targ_lvl["GroupSaveDataMap"]["value"].append(old_guild)
     return True
+def reassign_owner_uid(param_maps, new_owner_uid):
+    for character in param_maps:
+        try:
+            character['value']['RawData']['value']['object']['SaveParameter']['value']['OwnerPlayerUId']['value'] = new_owner_uid
+        except Exception:
+            pass
 def main():
     global host_guid, targ_uid, exported_map
     if not validate_inputs(): return
@@ -396,23 +351,24 @@ def main():
     if not exported_map:
         messagebox.showerror("Error!", f"Couldn't find exported_map for OwnerUID {host_guid}")
         return
-    param_maps, palcount = collect_param_maps(host_guid)[:2]
-    print(f"[DEBUG] Collected {palcount} pals from source.")
+    param_maps, palcount = collect_param_maps(host_guid)
+    reassign_owner_uid(param_maps, targ_uid)
+    print(f"Collected {palcount} pals from source.")
     update_target_character_with_exported_map(targ_uid, exported_map)
     replace_character_save_params(param_maps, targ_uid)
     replace_containers(targ_inv_ids)
     gather_and_update_dynamic_containers()
     if not update_guild_data(targ_lvl, targ_json, host_guid, targ_uid, keep_old_guild_id, source_guild_dict): return
     update_targ_tech_and_data()
-    print("[DEBUG] Writing back modified data.")
+    print("Writing back modified data.")
     def copy_dps_file(src_folder, src_uid, tgt_folder, tgt_uid):
         src_file = os.path.join(src_folder, f"{str(src_uid).replace('-', '')}_dps.sav")
         tgt_file = os.path.join(tgt_folder, f"{str(tgt_uid).replace('-', '')}_dps.sav")
         if not os.path.exists(src_file):
-            print(f"[DEBUG] Source DPS file missing: {src_file}")
+            print(f"Source DPS file missing: {src_file}")
             return None
         shutil.copy2(src_file, tgt_file)
-        print(f"[DEBUG] DPS save copied from {src_file} to {tgt_file}")
+        print(f"DPS save copied from {src_file} to {tgt_file}")
     copy_dps_file(
         os.path.join(os.path.dirname(level_sav_path), "Players"),
         host_guid,
@@ -423,7 +379,7 @@ def main():
     messagebox.showinfo(title="Transfer Successful!", message='Transfer Successful!')
 def save_and_backup():
     global targ_json_gvas
-    print("[DEBUG] Now saving the data...")
+    print("Now saving the data...")
     WORLDSAVESIZEPREFIX = b'\x0e\x00\x00\x00worldSaveData\x00\x0f\x00\x00\x00StructProperty\x00'
     size_idx = target_raw_gvas.find(WORLDSAVESIZEPREFIX) + len(WORLDSAVESIZEPREFIX)
     output_data = MyWriter(custom_properties=PALWORLD_CUSTOM_PROPERTIES).write_sections(targ_lvl, target_section_ranges, target_raw_gvas, size_idx)
@@ -440,7 +396,7 @@ def save_and_backup():
     backup_whole_directory(os.path.dirname(t_level_sav_path), backup_folder)
     gvas_to_sav(t_level_sav_path, output_data)
     gvas_to_sav(t_host_sav_path, targ_json_gvas.write())
-    print("[DEBUG] Done saving the data!")
+    print("Done saving the data!")
 def sav_to_gvas(file):
     with open(file, 'rb') as f:
         data = f.read()
@@ -519,7 +475,7 @@ def source_level_file():
         if not raw_gvas:
             messagebox.showerror("Error!", "Invalid file, must be Level.sav!")
             return
-        print("[DEBUG] Now loading the data from Source Save...")
+        print("Now loading the data from Source Save...")
         reader = MyReader(raw_gvas, PALWORLD_TYPE_HINTS, PALWORLD_CUSTOM_PROPERTIES)
         group_save_section, _ = reader.load_section('GroupSaveDataMap', MAP_START, reverse=True)
         source_section_load_handle = threading.Thread(target=load_all_source_sections_async, args=(group_save_section, reader))
@@ -530,7 +486,7 @@ def source_level_file():
         level_sav_path = tmp
         selected_source_player = None
         current_selection_label.config(text=f"Source: {selected_source_player}, Target: {selected_target_player}")
-        print("[DEBUG] Done loading the data from Source Save!")
+        print("Done loading the data from Source Save!")
 def load_all_target_sections_async(group_save_section, group_save_section_range, reader):
     global targ_lvl, target_section_ranges
     targ_lvl, target_section_ranges = reader.load_sections([
@@ -552,7 +508,7 @@ def target_level_file():
         if not raw_gvas:
             messagebox.showerror("Error!", "Invalid file, must be Level.sav!")
             return
-        print("[DEBUG] Now loading the data from Target Save...")
+        print("Now loading the data from Target Save...")
         target_raw_gvas = raw_gvas
         reader = MyReader(raw_gvas, PALWORLD_TYPE_HINTS, PALWORLD_CUSTOM_PROPERTIES)
         group_save_section, group_save_section_range = reader.load_section('GroupSaveDataMap', MAP_START, reverse=True)
@@ -563,7 +519,7 @@ def target_level_file():
         t_level_sav_path = tmp
         selected_target_player = None
         current_selection_label.config(text=f"Source: {selected_source_player}, Target: {selected_target_player}")
-        print("[DEBUG] Done loading the data from Target Save!")
+        print("Done loading the data from Target Save!")
 def on_selection_of_source_player(event):
     global selected_source_player
     selections = source_player_list.selection()
@@ -599,88 +555,85 @@ def filter_treeview(tree, query, is_source):
             tree.reattach(row, '', 'end')
         else:
             tree.detach(row)
-window = tk.Tk()
-window.title("Character Transfer")
-window.geometry("")
-window.minsize(1100, 500)
-window.config(bg="#2f2f2f")
-try:
-    window.iconbitmap(ICON_PATH)
-except Exception as e:
-    print(f"Could not set icon: {e}")
-font_style = ("Arial", 10)
-heading_font = ("Arial", 12, "bold")
-style = ttk.Style(window)
-style.theme_use('clam')
-style.configure("Treeview.Heading", font=heading_font, background="#444444", foreground="white")
-style.configure("Treeview", background="#333333", foreground="white", rowheight=25, fieldbackground="#333333", borderwidth=0)
-style.configure("TFrame", background="#2f2f2f")
-style.configure("TLabel", background="#2f2f2f", foreground="white")
-style.configure("TEntry", fieldbackground="#444444", foreground="white")
-style.configure("Dark.TButton", background="#555555", foreground="white", padding=6)
-style.map("Dark.TButton", background=[("active", "#666666"), ("!disabled", "#555555")], foreground=[("disabled", "#888888"), ("!disabled", "white")])
-window.columnconfigure(0, weight=0)
-window.columnconfigure(1, weight=0)
-window.rowconfigure(1, weight=1)
-source_frame = ttk.Frame(window, style="TFrame")
-source_frame.grid(row=0, column=0, padx=10, pady=5, sticky="ew")
-ttk.Label(source_frame, text="Search Source Player:", font=font_style, style="TLabel").pack(side="top", anchor="w", padx=(0, 5))
-source_search_var = tk.StringVar()
-source_search_entry = ttk.Entry(source_frame, textvariable=source_search_var, font=font_style, style="TEntry", width=20)
-source_search_entry.pack(side="top", fill="x", expand=True)
-source_search_entry.bind("<KeyRelease>", lambda e: filter_treeview(source_player_list, source_search_entry.get(), is_source=True))
-target_frame = ttk.Frame(window, style="TFrame")
-target_frame.grid(row=0, column=1, padx=10, pady=5, sticky="ew")
-ttk.Label(target_frame, text="Search Target Player:", font=font_style, style="TLabel").pack(side="top", anchor="w", padx=(0, 5))
-target_search_var = tk.StringVar()
-target_search_entry = ttk.Entry(target_frame, textvariable=target_search_var, font=font_style, style="TEntry", width=20)
-target_search_entry.pack(side="top", fill="x", expand=True)
-target_search_entry.bind("<KeyRelease>", lambda e: filter_treeview(target_player_list, target_search_entry.get(), is_source=False))
-ttk.Button(window, text='Select Source Level File', command=source_level_file, style="Dark.TButton").grid(row=2, column=0, padx=10, pady=10, sticky="ew")
-ttk.Button(window, text='Select Target Level File', command=target_level_file, style="Dark.TButton").grid(row=2, column=1, padx=10, pady=10, sticky="ew")
-source_level_path_label = ttk.Label(window, text="Please select a file:", font=font_style, style="TLabel", wraplength=600)
-source_level_path_label.grid(row=3, column=0, padx=10, sticky="ew")
-target_level_path_label = ttk.Label(window, text="Please select a file:", font=font_style, style="TLabel", wraplength=600)
-target_level_path_label.grid(row=3, column=1, padx=10, sticky="ew")
-source_player_list = ttk.Treeview(window, columns=(0, 1, 2), show='headings', style="Treeview")
-source_player_list.grid(row=1, column=0, padx=10, pady=10, sticky='nw')
-for col in (0, 1, 2): source_player_list.column(col, anchor='center', width=180, stretch=False)
-source_player_list.tag_configure("even", background="#333333", foreground="white")
-source_player_list.tag_configure("odd", background="#444444", foreground="white")
-source_player_list.tag_configure("selected", background="#555555", foreground="white")
-source_player_list.heading(0, text='Guild ID', command=lambda: sort_treeview_column(source_player_list, 0, False))
-source_player_list.heading(1, text='Player UID', command=lambda: sort_treeview_column(source_player_list, 1, False))
-source_player_list.heading(2, text='Nickname', command=lambda: sort_treeview_column(source_player_list, 2, False))
-source_player_list.bind('<<TreeviewSelect>>', on_selection_of_source_player)
-target_player_list = ttk.Treeview(window, columns=(0, 1, 2), show='headings', style="Treeview")
-target_player_list.grid(row=1, column=1, padx=10, pady=10, sticky='nw')
-for col in (0, 1, 2): target_player_list.column(col, anchor='center', width=180, stretch=False)
-target_player_list.tag_configure("even", background="#333333", foreground="white")
-target_player_list.tag_configure("odd", background="#444444", foreground="white")
-target_player_list.tag_configure("selected", background="#555555", foreground="white")
-target_player_list.heading(0, text='Guild ID', command=lambda: sort_treeview_column(target_player_list, 0, False))
-target_player_list.heading(1, text='Player UID', command=lambda: sort_treeview_column(target_player_list, 1, False))
-target_player_list.heading(2, text='Nickname', command=lambda: sort_treeview_column(target_player_list, 2, False))
-target_player_list.bind('<<TreeviewSelect>>', on_selection_of_target_player)
-current_selection_label = ttk.Label(window, text="Source: N/A, Target: N/A", font=font_style, style="TLabel", anchor="w", wraplength=600)
-current_selection_label.grid(row=4, column=0, columnspan=2, padx=10, pady=10, sticky="ew")
-window.grid_columnconfigure(0, weight=1)
-window.grid_columnconfigure(1, weight=1)
-keep_old_guild_id = True
-def toggle_keep_old_guild():
-    global keep_old_guild_id
-    keep_old_guild_id = not keep_old_guild_id
-    txt = "☑ " if keep_old_guild_id else "☐ "
-    btn_toggle.config(text=txt + "Keep old Guild ID after Transfer")
-    print("Keep old guild id after transfer:", "on" if keep_old_guild_id else "off")
-btn_toggle = tk.Button(window, text="☑ Keep old Guild ID after Transfer", command=toggle_keep_old_guild, relief="flat", fg="white", bg="#2f2f2f", activebackground="black", activeforeground="white")
-btn_toggle.grid(row=5, column=0, sticky='w', padx=10, pady=(0, 10))
-ttk.Button(window, text='Start Transfer!', command=main, style="Dark.TButton").grid(row=5, column=1, padx=10, pady=10, sticky="ew")
 def character_transfer():
-    def on_exit():
-        if window.winfo_exists():
-            window.destroy()
-        sys.exit()
+    global source_player_list, target_player_list, source_level_path_label, target_level_path_label, current_selection_label, btn_toggle, keep_old_guild_id
+    window = tk.Toplevel()
+    window.title("Character Transfer")
+    window.minsize(1100, 500)
+    window.config(bg="#2f2f2f")
+    try:
+        window.iconbitmap(ICON_PATH)
+    except Exception as e:
+        print(f"Could not set icon: {e}")
+    font_style = ("Arial", 10)
+    heading_font = ("Arial", 12, "bold")
+    style = ttk.Style(window)
+    style.theme_use('clam')
+    style.configure("Treeview.Heading", font=heading_font, background="#444444", foreground="white")
+    style.configure("Treeview", background="#333333", foreground="white", rowheight=25, fieldbackground="#333333", borderwidth=0)
+    style.configure("TFrame", background="#2f2f2f")
+    style.configure("TLabel", background="#2f2f2f", foreground="white")
+    style.configure("TEntry", fieldbackground="#444444", foreground="white")
+    style.configure("Dark.TButton", background="#555555", foreground="white", padding=6)
+    style.map("Dark.TButton", background=[("active", "#666666"), ("!disabled", "#555555")], foreground=[("disabled", "#888888"), ("!disabled", "white")])
+    window.columnconfigure(0, weight=0)
+    window.columnconfigure(1, weight=0)
+    window.rowconfigure(1, weight=1)
+    source_frame = ttk.Frame(window, style="TFrame")
+    source_frame.grid(row=0, column=0, padx=10, pady=5, sticky="ew")
+    ttk.Label(source_frame, text="Search Source Player:", font=font_style, style="TLabel").pack(side="top", anchor="w", padx=(0, 5))
+    source_search_var = tk.StringVar()
+    source_search_entry = ttk.Entry(source_frame, textvariable=source_search_var, font=font_style, style="TEntry", width=20)
+    source_search_entry.pack(side="top", fill="x", expand=True)
+    source_search_entry.bind("<KeyRelease>", lambda e: filter_treeview(source_player_list, source_search_entry.get(), is_source=True))
+    target_frame = ttk.Frame(window, style="TFrame")
+    target_frame.grid(row=0, column=1, padx=10, pady=5, sticky="ew")
+    ttk.Label(target_frame, text="Search Target Player:", font=font_style, style="TLabel").pack(side="top", anchor="w", padx=(0, 5))
+    target_search_var = tk.StringVar()
+    target_search_entry = ttk.Entry(target_frame, textvariable=target_search_var, font=font_style, style="TEntry", width=20)
+    target_search_entry.pack(side="top", fill="x", expand=True)
+    target_search_entry.bind("<KeyRelease>", lambda e: filter_treeview(target_player_list, target_search_entry.get(), is_source=False))
+    ttk.Button(window, text='Select Source Level File', command=source_level_file, style="Dark.TButton").grid(row=2, column=0, padx=10, pady=10, sticky="ew")
+    ttk.Button(window, text='Select Target Level File', command=target_level_file, style="Dark.TButton").grid(row=2, column=1, padx=10, pady=10, sticky="ew")
+    source_level_path_label = ttk.Label(window, text="Please select a file:", font=font_style, style="TLabel", wraplength=600)
+    source_level_path_label.grid(row=3, column=0, padx=10, sticky="ew")
+    target_level_path_label = ttk.Label(window, text="Please select a file:", font=font_style, style="TLabel", wraplength=600)
+    target_level_path_label.grid(row=3, column=1, padx=10, sticky="ew")
+    source_player_list = ttk.Treeview(window, columns=(0, 1, 2), show='headings', style="Treeview")
+    source_player_list.grid(row=1, column=0, padx=10, pady=10, sticky='nw')
+    for col in (0, 1, 2): source_player_list.column(col, anchor='center', width=180, stretch=False)
+    source_player_list.tag_configure("even", background="#333333", foreground="white")
+    source_player_list.tag_configure("odd", background="#444444", foreground="white")
+    source_player_list.tag_configure("selected", background="#555555", foreground="white")
+    source_player_list.heading(0, text='Guild ID', command=lambda: sort_treeview_column(source_player_list, 0, False))
+    source_player_list.heading(1, text='Player UID', command=lambda: sort_treeview_column(source_player_list, 1, False))
+    source_player_list.heading(2, text='Nickname', command=lambda: sort_treeview_column(source_player_list, 2, False))
+    source_player_list.bind('<<TreeviewSelect>>', on_selection_of_source_player)
+    target_player_list = ttk.Treeview(window, columns=(0, 1, 2), show='headings', style="Treeview")
+    target_player_list.grid(row=1, column=1, padx=10, pady=10, sticky='nw')
+    for col in (0, 1, 2): target_player_list.column(col, anchor='center', width=180, stretch=False)
+    target_player_list.tag_configure("even", background="#333333", foreground="white")
+    target_player_list.tag_configure("odd", background="#444444", foreground="white")
+    target_player_list.tag_configure("selected", background="#555555", foreground="white")
+    target_player_list.heading(0, text='Guild ID', command=lambda: sort_treeview_column(target_player_list, 0, False))
+    target_player_list.heading(1, text='Player UID', command=lambda: sort_treeview_column(target_player_list, 1, False))
+    target_player_list.heading(2, text='Nickname', command=lambda: sort_treeview_column(target_player_list, 2, False))
+    target_player_list.bind('<<TreeviewSelect>>', on_selection_of_target_player)
+    current_selection_label = ttk.Label(window, text="Source: N/A, Target: N/A", font=font_style, style="TLabel", anchor="w", wraplength=600)
+    current_selection_label.grid(row=4, column=0, columnspan=2, padx=10, pady=10, sticky="ew")
+    window.grid_columnconfigure(0, weight=1)
+    window.grid_columnconfigure(1, weight=1)
+    keep_old_guild_id = True
+    def toggle_keep_old_guild():
+        global keep_old_guild_id
+        keep_old_guild_id = not keep_old_guild_id
+        txt = "☑ " if keep_old_guild_id else "☐ "
+        btn_toggle.config(text=txt + "Keep old Guild ID after Transfer")
+        print("Keep old guild id after transfer:", "on" if keep_old_guild_id else "off")
+    btn_toggle = tk.Button(window, text="☑ Keep old Guild ID after Transfer", command=toggle_keep_old_guild,
+                           relief="flat", fg="white", bg="#2f2f2f", activebackground="black", activeforeground="white")
+    btn_toggle.grid(row=5, column=0, sticky='w', padx=10, pady=(0, 10))
+    ttk.Button(window, text='Start Transfer!', command=main, style="Dark.TButton").grid(row=5, column=1, padx=10, pady=10, sticky="ew")
+    def on_exit(): window.destroy()
     window.protocol("WM_DELETE_WINDOW", on_exit)
-    window.mainloop()
-if __name__ == "__main__": character_transfer()
+    return window

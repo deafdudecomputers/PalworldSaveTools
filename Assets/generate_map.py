@@ -64,7 +64,7 @@ def sanitize_text(text):
 def extract_info_from_log():
     print(f"Now extracting the info from log...")
     try:
-        with open('Save Scan Logger/scan_save.log', 'r', encoding='utf-8') as file:
+        with open('Scan Save Logger/scan_save.log', 'r', encoding='utf-8') as file:
             log_content = file.read()
     except UnicodeDecodeError:
         raise ValueError("Failed to read log file with utf-8 encoding.")
@@ -139,15 +139,14 @@ def generate_map():
     start_time = time.time()
     script_dir = os.path.dirname(os.path.abspath(__file__))
     main_dir = os.path.dirname(script_dir)
-    log_file_path = os.path.join(main_dir, 'Save Scan Logger', 'scan_save.log')    
+    log_file_path = os.path.join(main_dir, 'Scan Save Logger', 'scan_save.log')    
     if not os.path.exists(log_file_path):
         print("Please run the Scan Save Tool first before using this.")
         return False    
     try:
         guild_data, base_keys = parse_logfile(log_file_path)
         write_csv(guild_data, base_keys, 'bases.csv')
-        create_world_map()
-        
+        create_world_map()        
         map_path = os.path.join(main_dir, "updated_worldmap.png")
         if os.path.exists(map_path):
             print("Opening updated_worldmap.png...")

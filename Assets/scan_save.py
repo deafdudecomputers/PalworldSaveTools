@@ -10,26 +10,58 @@ def set_console_title(title):
             os.system(f"echo -ne '\033]0;{title}\007'")
     except Exception as e:
         pass
-batch_title = f"Pylar's Save Tool"
-set_console_title(batch_title)
-if getattr(sys, 'frozen', False):
-    base_path = os.path.dirname(sys.executable)
-else:
-    base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-log_folder = os.path.join(base_path, "Save Scan Logger")
-os.makedirs(log_folder, exist_ok=True)
-log_file = os.path.join(log_folder, "scan_save.log")
-player_log_file = os.path.join(log_folder, "players.log")
-logging.basicConfig(level=logging.INFO, format='%(message)s',
-                    handlers=[
-                        logging.FileHandler(log_file, encoding='utf-8', errors='replace'), 
-                        logging.StreamHandler(sys.stdout)])
-player_logger = logging.getLogger('playerLogger')
-player_logger.setLevel(logging.INFO)
-player_logger.propagate = False
-player_file_handler = logging.FileHandler(player_log_file, encoding='utf-8', errors='replace')
-player_file_handler.setFormatter(logging.Formatter('%(message)s'))
-player_logger.addHandler(player_file_handler)
+def setup_logging():
+    batch_title = f"Pylar's Save Tool"
+    set_console_title(batch_title)
+    if getattr(sys, 'frozen', False):
+        base_path = os.path.dirname(sys.executable)
+    else:
+        base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    log_folder = os.path.join(base_path, "Scan Save Logger")
+    for logger_name in ['scanLogger', 'playerLogger']:
+        logger = logging.getLogger(logger_name)
+        for handler in logger.handlers[:]:
+            try:
+                handler.flush()
+                handler.close()
+            except Exception:
+                pass
+            logger.removeHandler(handler)
+    if os.path.exists(log_folder): 
+        print("Deleting Scan Save Logger...")
+        shutil.rmtree(log_folder)
+    print("Making Scan Save Logger...")
+    os.makedirs(log_folder, exist_ok=True)
+    log_file = os.path.join(log_folder, "scan_save.log")
+    player_log_file = os.path.join(log_folder, "players.log")
+    scan_logger = logging.getLogger("scanLogger")
+    scan_logger.setLevel(logging.INFO)
+    scan_logger.propagate = False
+    file_handler = logging.FileHandler(log_file, encoding='utf-8', errors='replace')
+    file_handler.setFormatter(logging.Formatter('%(message)s'))
+    stream_handler = logging.StreamHandler(sys.stdout)
+    stream_handler.setFormatter(logging.Formatter('%(message)s'))
+    scan_logger.handlers.clear()
+    scan_logger.addHandler(file_handler)
+    scan_logger.addHandler(stream_handler)
+    player_logger = logging.getLogger('playerLogger')
+    player_logger.setLevel(logging.INFO)
+    player_logger.propagate = False
+    player_file_handler = logging.FileHandler(player_log_file, mode='w', encoding='utf-8', errors='replace')
+    player_file_handler.setFormatter(logging.Formatter('%(message)s'))
+    player_logger.handlers.clear()
+    player_logger.addHandler(player_file_handler)
+    return scan_logger, player_logger, log_folder
+def close_all_log_handlers():
+    for logger_name in ['scanLogger', 'playerLogger']:
+        logger = logging.getLogger(logger_name)
+        for handler in logger.handlers[:]:
+            try:
+                handler.flush()
+                handler.close()
+                logger.removeHandler(handler)
+            except Exception:
+                pass
 wsd: Optional[dict] = None
 output_file = None
 gvas_file = None
@@ -47,41 +79,10 @@ delete_files = []
 loadingStatistics = {}
 MappingCache: MappingCacheObject = None
 loadingTitle = ""
-def main_editor():
-    print(f"Now starting the tool...")
-    global output_file, output_path, args, gui, playerMapping
-    parser = argparse.ArgumentParser(prog="palworld-save-editor", description="Editor for the Level.sav")
-    parser.add_argument("filename")
-    args = parser.parse_args(sys.argv[1:])
-    if not os.path.exists(args.filename):
-        logging.info(f"{args.filename} does not exist.")
-        exit(1)
-    if not os.path.isfile(args.filename):
-        logging.info(f"{args.filename} is not a file.")
-        exit(1)
-    t1 = time.time()
-    try:
-        input_file_size = os.path.getsize(args.filename)
-        logging.info(f"Size Level.sav: {input_file_size} bytes")
-        LoadFile(args.filename)
-    except Exception as e:
-        logging.info("Corrupted Save File", exc_info=True)
-        sys.exit(0)
-    try:
-        logging.info(f"Now checking the data...")
-        ShowPlayers()
-        logging.info("Data has been fully checked...\n")
-    except KeyError as e:
-        traceback.print_exception(e)
-        logging.info("Corrupted Save File", exc_info=True)
-        sys.exit(0)
-    print("Total time taken: %.2fs" % (time.time() - t1))
-    print("\n")
-    output_path = args.filename
-    return None
 def LoadFile(filename):
     global filetime, gvas_file, wsd, MappingCache, backup_path, players_path
     print(f"Loading {filename}...", end="", flush=True)
+    print("")
     filetime = os.stat(filename).st_mtime
     backup_path = os.path.join(os.path.dirname(os.path.abspath(filename)), "backup/%s" % datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
     players_path = os.path.join(os.path.dirname(filename), "Players")
@@ -91,6 +92,7 @@ def LoadFile(filename):
         raw_gvas, save_type = decompress_sav_to_gvas(data)
         print("Done in %.2fs." % (time.time() - start_time))
         print(f"Parsing {filename}...", end="", flush=True)
+        print("")
         start_time = time.time()
         gvas_file = GvasFile.read(raw_gvas, PALWORLD_TYPE_HINTS, SKP_PALWORLD_CUSTOM_PROPERTIES, allow_nan=True)
         print("Done in %.2fs." % (time.time() - start_time))
@@ -108,7 +110,7 @@ def safe_str(s):
     return s.encode('utf-8', 'replace').decode('utf-8')
 def sanitize_filename(name):
     return ''.join(c if c.isalnum() or c in (' ', '_', '-', '(', ')') else '_')
-def count_pals_found(data, player_pals_count):
+def count_pals_found(data, player_pals_count, log_folder):
     from collections import defaultdict
     owner_pals_info = defaultdict(list)
     non_owner_pals_info = []
@@ -174,8 +176,8 @@ def count_pals_found(data, player_pals_count):
         )
         base_count[base] += 1
         if not player_uid:
-            pal_name = pal_info.split(",")[0].strip()
-            if pal_name != "None":
+            pal_name_only = pal_info.split(",")[0].strip()
+            if pal_name_only != "None":
                 non_owner_pals_info.append(pal_info)
                 non_owner_pals_info_with_base.append(f"{pal_info} (ID: {base})")
                 base_id_groups[base].append(pal_info)
@@ -193,7 +195,6 @@ def count_pals_found(data, player_pals_count):
                 for base_id, pals in base_id_groups.items():
                     count = len(pals)
                     non_owner_file.write(f"ID: {base_id} (Count: {count})\n")
-                    non_owner_file.write("----------------")
                     non_owner_file.write("-" * (len(f"ID: {base_id} (Count: {count})")) + "\n")
                     non_owner_file.write("\n".join(pals) + "\n\n")
         except Exception as e:
@@ -203,10 +204,7 @@ def count_pals_found(data, player_pals_count):
         for pal in pals_list:
             if "ID:" in pal:
                 base_id = pal.split("ID:")[1].strip()
-                if base_id:
-                    pals_by_base_id[base_id].append(pal)
-                else:
-                    pals_by_base_id["Unknown"].append(pal)
+                pals_by_base_id[base_id if base_id else "Unknown"].append(pal)
         player_name = owner_nicknames.get(player_uid, 'Unknown')
         if player_name == 'Unknown':
             print(f"No nickname found for {player_uid}")
@@ -218,7 +216,7 @@ def count_pals_found(data, player_pals_count):
         owner_logger.propagate = False
         if not owner_logger.hasHandlers():
             try:
-                owner_file_handler = logging.FileHandler(log_file, encoding='utf-8', errors='replace')
+                owner_file_handler = logging.FileHandler(log_file, mode='w', encoding='utf-8', errors='replace')
                 owner_file_handler.setFormatter(logging.Formatter('%(message)s'))
                 owner_logger.addHandler(owner_file_handler)
             except Exception as e:
@@ -233,7 +231,15 @@ def count_pals_found(data, player_pals_count):
             sanitized_pals = [safe_str(pal) for pal in sorted(pals)]
             owner_logger.info("\n".join(sanitized_pals))
             owner_logger.info("----------------")
-def ShowPlayers():
+    for player_uid in owner_pals_info.keys():
+        logger_name = ''.join(c if c.isalnum() or c in ('_', '-') else '_' for c in f"logger_{player_uid}")
+        owner_logger = logging.getLogger(logger_name)
+        handlers = owner_logger.handlers[:]
+        for handler in handlers:
+            handler.flush()
+            handler.close()
+            owner_logger.removeHandler(handler)
+def ShowPlayers(scan_logger, player_logger, log_folder):
     data_source = wsd
     base_locations = {}
     srcGuildMapping = MappingCacheObject.get(data_source, use_mp=not getattr(args, "reduce_memory", False))
@@ -286,7 +292,7 @@ def ShowPlayers():
                 pal_deck_unlocked = len(pal_deck_unlock_flag_list) if pal_deck_unlock_flag_list else 0
                 pal_deck_unlocked = unique_captured if unique_captured > pal_deck_unlocked else pal_deck_unlocked
                 return unique_captured, total_captured, pal_deck_unlocked
-            except Exception as e:
+            except Exception:
                 print(f"Error processing .sav file for {nickname}({os.path.basename(sav_file)}): Save not found...")
                 return 0, 0, 0   
         clean_uid = str(player_uid).replace("-", "")
@@ -350,11 +356,11 @@ def ShowPlayers():
                                 total_pals_count[0] += 1
     print("Processing the players saves done in %.2fs." % (time.time() - start_time))
     start_time = time.time()
-    logging.info(f"Now counting pals...")
-    count_pals_found(data_source, player_pals_count)
+    scan_logger.info(f"Now counting pals...")
+    count_pals_found(data_source, player_pals_count, log_folder)
     print("Counting pals done in %.2fs." % (time.time() - start_time))
     start_time = time.time()
-    logging.info(f"Now populating the information...")
+    scan_logger.info(f"Now populating the information...")
     for playerUId in playerMapping:
         playerMeta = playerMapping[playerUId]
         try:
@@ -372,8 +378,7 @@ def ShowPlayers():
                 try:
                     last_online_local = TickToLocal(last_online)
                     last_online_human = TickToHuman(last_online) + " ago"
-                except Exception as e:
-                    logging.error(f"Error converting Last Online info: {e}")
+                except Exception:
                     last_online_local = 'Unknown'
                     last_online_human = 'Unknown'
             else:
@@ -423,7 +428,7 @@ def ShowPlayers():
                 else:
                     base_locations[base_id] = f"Base ID: {base_id} | Unknown, Unknown"
         else:
-            logging.info(f"Inactive Guild: {mapObjectMeta.get('guild_name', 'Unnamed Guild')} | Guild ID: {group_id} | Reason: No players found.")
+            scan_logger.info(f"Inactive Guild: {mapObjectMeta.get('guild_name', 'Unnamed Guild')} | Guild ID: {group_id} | Reason: No players found.")
             to_delete.append(group_id)
             deleted_guilds_count += 1
     for group_id in to_delete:
@@ -435,12 +440,12 @@ def ShowPlayers():
             base_locations_count = len(guild['base_camps'])
             base_locations_str = "\n".join([f"Base {i + 1}: {base_locations.get(base_id, 'Unknown, Unknown')}" for i, (base_id, _) in enumerate(guild['base_camps'])])
             if base_locations_count > 0:
-                logging.info(
+                scan_logger.info(
                     f"\nGuild: {guild['name']} | Guild Leader: {guild['admin_name']} | Guild ID: {guild['group_id']}\n"
                     f"Base Locations: {base_locations_count}\n{base_locations_str}\n"
                     f"Guild Players: {guild_player_count[group_id]}")
             else:
-                logging.info(
+                scan_logger.info(
                     f"\nGuild: {guild['name']} | Guild Leader: {guild['admin_name']} | Guild ID: {guild['group_id']}\n"
                     f"Base Locations: {base_locations_count}\n"
                     f"Guild Players: {guild_player_count[group_id]}")
@@ -455,11 +460,11 @@ def ShowPlayers():
                     pal_caught_unique = player_pal_caught_unique.get(player_uid, 0)
                     pal_encounter_count = player_pal_encounter_count.get(player_uid, 0)
                     message = f"Player: {nickname} | UID: {player_uid} | Level: {level} | Caught: {pal_caught_count} | Owned: {pal_count} | Encounters: {pal_encounter_count} | Uniques: {pal_caught_unique} | Last Online: {TickToLocal(player['player_info']['last_online_real_time'])} ({TickToHuman(player['player_info']['last_online_real_time'])} ago)"
-                    logging.info(message)
+                    scan_logger.info(message)
                     player_logger.info(message)
     print("Populating information done in %.2fs." % (time.time() - start_time))
     total_caught_pals = sum(player_pal_caught_count.values())
-    logging.info(f"\n")
+    scan_logger.info(f"\n")
     total_worker_dropped_pals = total_pals_count[0] - total_pals
     total_pals_count = total_pals_count[0]
     total_guilds = len(guild_data)
@@ -484,14 +489,14 @@ def ShowPlayers():
         f"Total Inactive Guilds: {deleted_guilds_count} \n"
         f"Total Active Guilds: {total_guilds} \n"
         f"Total Bases: {total_bases} \n")
-    logging.info(header_line)
+    scan_logger.info(header_line)
 def resort_player_log(file_path, header_line):
     if not os.path.isabs(file_path):
         if getattr(sys, 'frozen', False):
             base_dir = os.path.dirname(sys.executable)
         else:
             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        log_folder = os.path.abspath(os.path.join(base_dir, "Save Scan Logger"))
+        log_folder = os.path.abspath(os.path.join(base_dir, "Scan Save Logger"))
         os.makedirs(log_folder, exist_ok=True)
         file_path = os.path.join(log_folder, file_path)
     if not os.path.exists(file_path):
@@ -527,77 +532,38 @@ def TickToLocal(tick):
     ts = filetime + (tick - wsd['GameTimeSaveData']['value']['RealDateTimeTicks']['value']) / 1e7
     t = datetime.datetime.fromtimestamp(ts)
     return t.strftime("%Y-%m-%d %H:%M:%S")
-def backup_file(source_file):
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    backup_folder = os.path.join(os.path.dirname(source_file), "Backup")
-    os.makedirs(backup_folder, exist_ok=True)
-    backup_filename = f"Level_{timestamp}.sav"
-    backup_path = os.path.join(backup_folder, backup_filename)
-    print(f"\nCreating backup file: {backup_path}", end="", flush=True)
-    shutil.copy2(source_file, backup_path)
-    print("\nDone")
-def Save(exit_now=True):
-    print("Processing GVAS to Sav file...", end="", flush=True)
-    if "Pal.PalworldSaveGame" in gvas_file.header.save_game_class_name or "Pal.PalLocalWorldSaveGame" in gvas_file.header.save_game_class_name:
-        save_type = 0x32
-    else:
-        save_type = 0x31
-    fixed_folder = os.path.join(os.path.dirname(output_path), "Fixed")
-    os.makedirs(fixed_folder, exist_ok=True)
-    fixed_output_path = os.path.join(fixed_folder, os.path.basename(output_path))
-    backup_file(output_path)
-    sav_file = compress_gvas_to_sav(gvas_file.write(SKP_PALWORLD_CUSTOM_PROPERTIES), save_type)
-    print("Done")
-    print("Saving Sav file...", end="", flush=True)
-    with open(fixed_output_path, "wb") as f:
-        f.write(sav_file)
-    print("Done")
-    print(f"File saved to {fixed_output_path}")
-    for del_file in delete_files:
-        try:
-            os.unlink(del_file)
-        except FileNotFoundError:
-            pass
-    if exit_now:
-        sys.exit(0)
 def scan_save(filename):
     global output_file, output_path, args, gui, playerMapping
-    
+    scan_logger, player_logger, log_folder = setup_logging()
     if not os.path.exists(filename):
-        logging.info(f"{filename} does not exist.")
+        scan_logger.info(f"{filename} does not exist.")
         return False
     if not os.path.isfile(filename):
-        logging.info(f"{filename} is not a file.")
+        scan_logger.info(f"{filename} is not a file.")
         return False
-    
     t1 = time.time()
     try:
         input_file_size = os.path.getsize(filename)
-        logging.info(f"Size Level.sav: {input_file_size} bytes")
-        
-        # Simulate args for the existing code
+        scan_logger.info(f"Size Level.sav: {input_file_size} bytes")
         class Args:
             def __init__(self, filename):
                 self.filename = filename
         args = Args(filename)
-        
         LoadFile(filename)
     except Exception as e:
-        logging.info("Corrupted Save File", exc_info=True)
+        scan_logger.info("Corrupted Save File", exc_info=True)
         return False
-    
     try:
-        logging.info(f"Now checking the data...")
-        ShowPlayers()
-        logging.info("Data has been fully checked...\n")
+        scan_logger.info(f"Now checking the data...")
+        ShowPlayers(scan_logger, player_logger, log_folder)
+        scan_logger.info("Data has been fully checked...\n")
     except KeyError as e:
         traceback.print_exception(e)
-        logging.info("Corrupted Save File", exc_info=True)
+        scan_logger.info("Corrupted Save File", exc_info=True)
         return False
-    
     print("Total time taken: %.2fs" % (time.time() - t1))
     print("\n")
+    close_all_log_handlers()
+    logging.shutdown()
     return True
-
-if __name__ == "__main__": 
-    main_editor()
+if __name__ == "__main__": scan_save()

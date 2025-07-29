@@ -26,7 +26,7 @@ class LazyImporter:
         self._common_funcs = None    
     def _try_import(self, module_name):
         if module_name in self._modules:
-            return self._modules[module_name]        
+            return self._modules[module_name]
         try:
             module = importlib.import_module(module_name)
             self._modules[module_name] = module
@@ -34,10 +34,7 @@ class LazyImporter:
         except ImportError:
             pass
         try:
-            if is_frozen():
-                full_module_name = f"Assets.{module_name}"
-            else:
-                full_module_name = f"Assets.{module_name}"
+            full_module_name = f"Assets.{module_name}"
             module = importlib.import_module(full_module_name)
             self._modules[module_name] = module
             return module
@@ -54,8 +51,8 @@ class LazyImporter:
                     self._modules[module_name] = module
                     return module
         except Exception:
-            pass        
-        raise ImportError(f"Could not import module: {module_name}")    
+            pass
+        raise ImportError(f"Could not import module: {module_name}")
     def get_module(self, module_name):
         return self._try_import(module_name)    
     def get_function(self, module_name, function_name):
@@ -131,14 +128,12 @@ def display_logo():
     print(f"{center_text(f'{RED_FONT}IF YOU DO NOT UPDATE YOUR SAVES, YOU WILL GET ERRORS!{RESET_FONT}')}")
     print(center_text("=" * 85))
 def run_tool(choice):
-    """Run a tool using the lazy importer system."""
     def import_and_call(module_name, function_name, *args):
         try:
             func = lazy_importer.get_function(module_name, function_name)
             return func(*args) if args else func()
         except ImportError as e:
-            raise ImportError(f"Module not found and could not be imported: {module_name}") from e
-    
+            raise ImportError(f"Module not found and could not be imported: {module_name}") from e    
     tool_lists = [
         [
             lambda: import_and_call("convert_level_location_finder", "convert_level_location_finder", "json"),
@@ -160,28 +155,23 @@ def run_tool(choice):
             generate_map,
             lambda: import_and_call("character_transfer", "character_transfer"),
             lambda: import_and_call("fix_host_save", "fix_host_save"),
-            lambda: import_and_call("fix_host_save_manual", "fix_host_save_manual"),
+            #lambda: import_and_call("fix_host_save_manual", "fix_host_save_manual"),
             lambda: import_and_call("restore_map", "restore_map"),
         ]
     ]
     try:
         category_index, tool_index = choice
-        tool_lists[category_index][tool_index]()
+        return tool_lists[category_index][tool_index]()
     except Exception as e:
         print(f"Invalid choice or error running tool: {e}")
         raise
 def scan_save():
     try:
-        scan_save_func = lazy_importer.get_function("scan_save", "scan_save")
-        
         if is_frozen():
-            base_path = os.path.dirname(sys.executable)
+            base_path = getattr(sys, '_MEIPASS', os.path.dirname(sys.executable))
         else:
-            base_path = os.path.abspath(".")
-        
-        for file in ["scan_save.log", "players.log", "sort_players.log"]:
-            Path(file).unlink(missing_ok=True)
-        
+            base_path = os.path.dirname(os.path.abspath(__file__))
+        scan_save_func = lazy_importer.get_function("scan_save", "scan_save")
         level_sav_path = os.path.join(base_path, "PalworldSave", "Level.sav")
         if os.path.exists(level_sav_path):
             print(f"Found Level.sav at: {level_sav_path}")
@@ -196,21 +186,10 @@ def scan_save():
             print("Make sure to place your Level.sav file in the PalworldSave folder.")
     except ImportError as e:
         print(f"Error importing scan_save: {e}")
-
 def generate_map():
-    """Generate map using the lazy importer system."""
     try:
-        generate_map_func = lazy_importer.get_function("bases", "generate_map")
-        
-        success = generate_map_func()
-        if success:
-            if Path("updated_worldmap.png").exists():
-                print(f"{GREEN_FONT}Opening updated_worldmap.png...{RESET_FONT}")
-                open_file_with_default_app("updated_worldmap.png")
-            else: 
-                print(f"{RED_FONT}updated_worldmap.png not found.{RESET_FONT}")
-        else:
-            print(f"{RED_FONT}Error generating map!{RESET_FONT}")
+        generate_map_func = lazy_importer.get_function("generate_map", "generate_map")
+        generate_map_func()
     except ImportError as e:
         print(f"Error importing generate_map: {e}")
 converting_tools = [
@@ -229,7 +208,7 @@ management_tools = [
     "Generate Map",
     "Character Transfer",
     "Fix Host Save",
-    "Fix Host Save Manual",
+#    "Fix Host Save Manual",
     "Restore Map"
 ]
 cleaning_tools = [
@@ -264,7 +243,6 @@ class MenuGUI(tk.Tk):
         logo_lines = logo_text.strip('\n').split('\n')
         for line in logo_lines:
             tk.Label(container, text=line, fg="#ccc", bg="#1e1e1e", font=ascii_font).pack(anchor="center")
-        #tk.Label(container, text="PalworldSaveTools", fg="#9cf", bg="#1e1e1e", font=version_font).pack(pady=(10,0))
         tools_version, game_version = get_versions()
         info_lines = [
             f"v{tools_version} - Working as of v{game_version}",
@@ -308,11 +286,21 @@ class MenuGUI(tk.Tk):
                             command=lambda idx=idx: self.run_tool(idx))
             btn.pack(fill="x", pady=3, padx=5)
     def run_tool(self, choice):
+        tool_name = ""
+        try:
+            category_index, tool_index = choice
+            if category_index == 0: tool_name = converting_tools[tool_index]
+            elif category_index == 1: tool_name = cleaning_tools[tool_index]
+            elif category_index == 2: tool_name = management_tools[tool_index]
+        except Exception:
+            tool_name = str(choice)
+        print(f'Now opening "{tool_name}"...')
         self.withdraw()
         try:
-            run_tool(choice)
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to run tool {choice}.\n{e}")
+            tool_window = run_tool(choice)
+            if tool_window: tool_window.wait_window()
+        except Exception: pass
+        print(f'Now closing "{tool_name}"...')
         self.deiconify()
 def on_exit():
     app.destroy()
@@ -322,5 +310,4 @@ if __name__ == "__main__":
     set_console_title(f"PalworldSaveTools v{tools_version}")
     clear_console() 
     app = MenuGUI()
-    app.protocol("WM_DELETE_WINDOW", lambda: (app.destroy(), sys.exit(0)))
     app.mainloop()

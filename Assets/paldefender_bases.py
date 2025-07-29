@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 def parse_log(inactivity_days=None, max_level=None):
     print()
     print("-" * 40)
-    log_file = "Save Scan Logger/scan_save.log"
+    log_file = "Scan Save Logger/scan_save.log"
     if not os.path.exists(log_file):
         return print(f"Log file '{log_file}' not found in the current directory.")    
     with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:

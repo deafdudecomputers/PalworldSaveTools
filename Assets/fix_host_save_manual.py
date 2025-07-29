@@ -122,10 +122,10 @@ def copy_dps_file(src_folder, src_uid, tgt_folder, tgt_uid):
     src_file = os.path.join(src_folder, f"{str(src_uid).replace('-', '')}_dps.sav")
     tgt_file = os.path.join(tgt_folder, f"{str(tgt_uid).replace('-', '')}_dps.sav")
     if not os.path.exists(src_file):
-        print(f"[DEBUG] Source DPS file missing: {src_file}")
+        print(f"Source DPS file missing: {src_file}")
         return None
     shutil.copy2(src_file, tgt_file)
-    print(f"[DEBUG] DPS save copied from {src_file} to {tgt_file}")
+    print(f"DPS save copied from {src_file} to {tgt_file}")
 def ask_string_with_icon(title, prompt, icon_path):
     class CustomDialog(simpledialog.Dialog):
         def __init__(self, parent, title):
@@ -168,75 +168,71 @@ def json_to_sav(json_data, output_filepath):
     sav_file = compress_gvas_to_sav(gvas_file.write(SKP_PALWORLD_CUSTOM_PROPERTIES), save_type)
     with open(output_filepath, "wb") as f:
         f.write(sav_file)
-window = tk.Tk()
-window.title("Fix Host Save - GUID Migrator (Manual IDs)")
-window.geometry("820x200")
-window.config(bg="#2f2f2f")
-try:
-    window.iconbitmap(ICON_PATH)
-except Exception as e:
-    print(f"Could not set icon: {e}")
-font_style = ("Arial", 12)
-style = ttk.Style(window)
-style.theme_use('clam')
-for opt in [
-    ("TFrame", {"background": "#2f2f2f"}),
-    ("TLabel", {"background": "#2f2f2f", "foreground": "white", "font": font_style}),
-    ("TEntry", {"fieldbackground": "#444444", "foreground": "white", "font": font_style}),
-    ("Dark.TButton", {"background": "#555555", "foreground": "white", "font": font_style, "padding": 6}),
-]:
-    style.configure(opt[0], **opt[1])
-style.map("Dark.TButton",
-    background=[("active", "#666666"), ("!disabled", "#555555")],
-    foreground=[("disabled", "#888888"), ("!disabled", "white")]
-)
-frame = ttk.Frame(window, style="TFrame")
-frame.pack(padx=20, pady=20, fill='x')
-ttk.Label(frame, text="Level.sav File Path:", style="TLabel").grid(row=0, column=0, sticky='w')
-level_file_entry = ttk.Entry(frame, style="TEntry")
-level_file_entry.grid(row=0, column=1, padx=5, sticky='ew')
-def browse_file():
-    path = filedialog.askopenfilename(title="Select Level.sav", filetypes=[("SAV Files", "*.sav")])
-    if path:
-        if not path.endswith("Level.sav"):
-            messagebox.showerror("Error!", "This is NOT Level.sav. Please select Level.sav file.")
-            return
-        level_file_entry.delete(0, 'end')
-        level_file_entry.insert(0, path)
-ttk.Button(frame, text="Browse", command=browse_file, style="Dark.TButton").grid(row=0, column=2, padx=5)
-ttk.Label(frame, text="Old GUID:", style="TLabel").grid(row=1, column=0, sticky='w', pady=10)
-old_guid_entry = ttk.Entry(frame, style="TEntry")
-old_guid_entry.grid(row=1, column=1, padx=5, sticky='ew')
-ttk.Label(frame, text="New GUID:", style="TLabel").grid(row=2, column=0, sticky='w')
-new_guid_entry = ttk.Entry(frame, style="TEntry")
-new_guid_entry.grid(row=2, column=1, padx=5, sticky='ew')
-def manual_fix():
-    level_sav_path = level_file_entry.get().strip()
-    old_guid = old_guid_entry.get().strip()
-    new_guid = new_guid_entry.get().strip()
-    if not level_sav_path or not old_guid or not new_guid:
-        messagebox.showerror("Error", "Please fill all fields.")
-        return
-    if not os.path.exists(level_sav_path):
-        messagebox.showerror("Error", f"File does not exist: {level_sav_path}")
-        return
-    if old_guid == new_guid:
-        messagebox.showerror("Error", "Old GUID and New GUID cannot be the same.")
-        return
-    try:
-        folder_path = os.path.dirname(level_sav_path)
-        fix_save(folder_path, new_guid, old_guid)
-    except Exception as e:
-        messagebox.showerror("Error", f"Failed to fix save:\n{e}")
-ttk.Button(frame, text="Apply Manual GUID Swap", command=manual_fix, style="Dark.TButton").grid(row=3, column=0, columnspan=3, pady=20)
-frame.grid_columnconfigure(0, weight=0)
-frame.grid_columnconfigure(1, weight=1)
-frame.grid_columnconfigure(2, weight=0)
-def on_exit():
-    if window.winfo_exists():
-        window.destroy()
-    sys.exit()
 def fix_host_save_manual():
-    window.protocol("WM_DELETE_WINDOW", on_exit)
-    window.mainloop()
+    global level_file_entry, old_guid_entry, new_guid_entry
+    root = tk.Tk()
+    root.title("Fix Host Save - GUID Migrator (Manual IDs)")
+    root.geometry("820x200")
+    root.config(bg="#2f2f2f")
+    try:
+        root.iconbitmap(ICON_PATH)
+    except Exception as e:
+        print(f"Could not set icon: {e}")
+    font_style = ("Arial", 12)
+    style = ttk.Style(root)
+    style.theme_use('clam')
+    for opt in [
+        ("TFrame", {"background": "#2f2f2f"}),
+        ("TLabel", {"background": "#2f2f2f", "foreground": "white", "font": font_style}),
+        ("TEntry", {"fieldbackground": "#444444", "foreground": "white", "font": font_style}),
+        ("Dark.TButton", {"background": "#555555", "foreground": "white", "font": font_style, "padding": 6}),
+    ]: style.configure(opt[0], **opt[1])
+    style.map("Dark.TButton",
+        background=[("active", "#666666"), ("!disabled", "#555555")],
+        foreground=[("disabled", "#888888"), ("!disabled", "white")]
+    )
+    frame = ttk.Frame(root, style="TFrame")
+    frame.pack(padx=20, pady=20, fill='x')
+    ttk.Label(frame, text="Level.sav File Path:", style="TLabel").grid(row=0, column=0, sticky='w')
+    level_file_entry = ttk.Entry(frame, style="TEntry")
+    level_file_entry.grid(row=0, column=1, padx=5, sticky='ew')
+    def browse_file():
+        path = filedialog.askopenfilename(title="Select Level.sav", filetypes=[("SAV Files", "*.sav")])
+        if path:
+            if not path.endswith("Level.sav"):
+                messagebox.showerror("Error!", "This is NOT Level.sav. Please select Level.sav file.")
+                return
+            level_file_entry.delete(0, 'end')
+            level_file_entry.insert(0, path)
+    ttk.Button(frame, text="Browse", command=browse_file, style="Dark.TButton").grid(row=0, column=2, padx=5)
+    ttk.Label(frame, text="Old GUID:", style="TLabel").grid(row=1, column=0, sticky='w', pady=10)
+    old_guid_entry = ttk.Entry(frame, style="TEntry")
+    old_guid_entry.grid(row=1, column=1, padx=5, sticky='ew')
+    ttk.Label(frame, text="New GUID:", style="TLabel").grid(row=2, column=0, sticky='w')
+    new_guid_entry = ttk.Entry(frame, style="TEntry")
+    new_guid_entry.grid(row=2, column=1, padx=5, sticky='ew')
+    def manual_fix():
+        level_sav_path = level_file_entry.get().strip()
+        old_guid = old_guid_entry.get().strip()
+        new_guid = new_guid_entry.get().strip()
+        if not level_sav_path or not old_guid or not new_guid:
+            messagebox.showerror("Error", "Please fill all fields.")
+            return
+        if not os.path.exists(level_sav_path):
+            messagebox.showerror("Error", f"File does not exist: {level_sav_path}")
+            return
+        if old_guid == new_guid:
+            messagebox.showerror("Error", "Old GUID and New GUID cannot be the same.")
+            return
+        try:
+            folder_path = os.path.dirname(level_sav_path)
+            fix_save(folder_path, new_guid, old_guid)
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to fix save:\n{e}")
+    ttk.Button(frame, text="Apply Manual GUID Swap", command=manual_fix, style="Dark.TButton").grid(row=3, column=0, columnspan=3, pady=20)
+    frame.grid_columnconfigure(0, weight=0)
+    frame.grid_columnconfigure(1, weight=1)
+    frame.grid_columnconfigure(2, weight=0)
+    root.protocol("WM_DELETE_WINDOW", root.destroy)
+    return root
 if __name__ == "__main__": fix_host_save_manual()

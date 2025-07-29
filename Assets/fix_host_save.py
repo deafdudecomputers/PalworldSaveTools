@@ -124,10 +124,10 @@ def copy_dps_file(src_folder, src_uid, tgt_folder, tgt_uid):
     src_file = os.path.join(src_folder, f"{str(src_uid).replace('-', '')}_dps.sav")
     tgt_file = os.path.join(tgt_folder, f"{str(tgt_uid).replace('-', '')}_dps.sav")
     if not os.path.exists(src_file):
-        print(f"[DEBUG] Source DPS file missing: {src_file}")
+        print(f"Source DPS file missing: {src_file}")
         return None
     shutil.copy2(src_file, tgt_file)
-    print(f"[DEBUG] DPS save copied from {src_file} to {tgt_file}")
+    print(f"DPS save copied from {src_file} to {tgt_file}")
 def ask_string_with_icon(title, prompt, icon_path):
     class CustomDialog(simpledialog.Dialog):
         def __init__(self, parent, title):
@@ -268,108 +268,101 @@ def sort_treeview_column(treeview, col, reverse):
     for index, (_, k) in enumerate(data):
         treeview.move(k, '', index)
     treeview.heading(col, command=lambda: sort_treeview_column(treeview, col, not reverse))
-window = tk.Tk()
-window.title("Fix Host Save - GUID Migrator")
-window.geometry("1200x600")
-window.config(bg="#2f2f2f")
-try:
-    window.iconbitmap(ICON_PATH)
-except Exception as e:
-    print(f"Could not set icon: {e}")
-font_style = ("Arial", 10)
-style = ttk.Style(window)
-style.theme_use('clam')
-for opt in [
-    ("Treeview.Heading", {"font": ("Arial", 12, "bold"), "background": "#444444", "foreground": "white"}),
-    ("Treeview", {"background": "#333333", "foreground": "white", "rowheight": 25, "fieldbackground": "#333333", "borderwidth": 0}),
-    ("TFrame", {"background": "#2f2f2f"}),
-    ("TLabel", {"background": "#2f2f2f", "foreground": "white"}),
-    ("TEntry", {"fieldbackground": "#444444", "foreground": "white"}),
-    ("Dark.TButton", {"background": "#555555", "foreground": "white", "font": font_style, "padding": 6}),
-]:
-    style.configure(opt[0], **opt[1])
-style.map("Dark.TButton",
-    background=[("active", "#666666"), ("!disabled", "#555555")],
-    foreground=[("disabled", "#888888"), ("!disabled", "white")]
-)
-file_frame = ttk.Frame(window, style="TFrame")
-file_frame.pack(fill='x', padx=10, pady=10)
-ttk.Label(file_frame, text='Select Level.sav file:', font=font_style, style="TLabel").pack(side='left')
-level_sav_entry = ttk.Entry(file_frame, width=65, font=font_style, style="TEntry")
-level_sav_entry.pack(side='left', padx=5)
-browse_button = ttk.Button(file_frame, text="Browse", command=choose_level_file, style="Dark.TButton")
-browse_button.pack(side='left')
-migrate_button = ttk.Button(file_frame, text="Migrate", command=fix_save_wrapper, style="Dark.TButton")
-migrate_button.pack(side='right')
-old_frame = ttk.Frame(window, style="TFrame")
-old_frame.pack(side='left', fill='both', expand=True, padx=(10,5), pady=10)
-search_frame_old = ttk.Frame(old_frame, style="TFrame")
-search_frame_old.pack(fill='x', pady=5)
-old_search_var = tk.StringVar()
-old_search_entry = ttk.Entry(search_frame_old, textvariable=old_search_var, font=font_style, style="TEntry")
-ttk.Label(search_frame_old, text="Search Source Player:", font=font_style, style="TLabel").pack(side='left', padx=(0,5))
-old_search_entry.pack(side='left', fill='x', expand=True)
-old_search_entry.bind('<KeyRelease>', lambda e: filter_treeview(old_tree, old_search_entry.get()))
-old_tree = ttk.Treeview(old_frame, columns=("GUID", "Name", "GuildID"), show='headings', selectmode='browse', style="Treeview")
-old_tree.pack(fill='both', expand=True)
-old_tree.heading("GUID", text="GUID", command=lambda: sort_treeview_column(old_tree, "GUID", False))
-old_tree.heading("Name", text="Name", command=lambda: sort_treeview_column(old_tree, "Name", False))
-old_tree.heading("GuildID", text="Guild ID", command=lambda: sort_treeview_column(old_tree, "GuildID", False))
-old_tree.column("GUID", width=150, anchor='center')
-old_tree.column("Name", width=200, anchor='center')
-old_tree.column("GuildID", width=150, anchor='center')
-old_tree.tag_configure("even", background="#333333")
-old_tree.tag_configure("odd", background="#444444")
-old_tree.tag_configure("selected", background="#555555")
-new_frame = ttk.Frame(window, style="TFrame")
-new_frame.pack(side='left', fill='both', expand=True, padx=(5,10), pady=10)
-search_frame_new = ttk.Frame(new_frame, style="TFrame")
-search_frame_new.pack(fill='x', pady=5)
-new_search_var = tk.StringVar()
-new_search_entry = ttk.Entry(search_frame_new, textvariable=new_search_var, font=font_style, style="TEntry")
-ttk.Label(search_frame_new, text="Search Target Player:", font=font_style, style="TLabel").pack(side='left', padx=(0,5))
-new_search_entry.pack(side='left', fill='x', expand=True)
-new_search_entry.bind('<KeyRelease>', lambda e: filter_treeview(new_tree, new_search_entry.get()))
-new_tree = ttk.Treeview(new_frame, columns=("GUID", "Name", "GuildID"), show='headings', selectmode='browse', style="Treeview")
-new_tree.pack(fill='both', expand=True)
-new_tree.heading("GUID", text="GUID", command=lambda: sort_treeview_column(new_tree, "GUID", False))
-new_tree.heading("Name", text="Name", command=lambda: sort_treeview_column(new_tree, "Name", False))
-new_tree.heading("GuildID", text="Guild ID", command=lambda: sort_treeview_column(new_tree, "GuildID", False))
-new_tree.column("GUID", width=150, anchor='center')
-new_tree.column("Name", width=200, anchor='center')
-new_tree.column("GuildID", width=150, anchor='center')
-new_tree.tag_configure("even", background="#333333")
-new_tree.tag_configure("odd", background="#444444")
-new_tree.tag_configure("selected", background="#555555")
-old_tree.original_rows = []
-new_tree.original_rows = []
-old_search_var.trace_add('write', lambda *args: filter_treeview(old_tree, old_search_var.get()))
-new_search_var.trace_add('write', lambda *args: filter_treeview(new_tree, new_search_var.get()))
-source_result_label = ttk.Label(old_frame, text="Source Player: N/A", font=font_style, style="TLabel")
-source_result_label.pack(fill='x', pady=(5,0))
-target_result_label = ttk.Label(new_frame, text="Target Player: N/A", font=font_style, style="TLabel")
-target_result_label.pack(fill='x', pady=(5,0))
-def update_source_selection(event):
-    selected = old_tree.selection()
-    if selected:
-        values = old_tree.item(selected[0], 'values')
-        source_result_label.config(text=f"Source Player: {values[1]} ({values[0]})")
-    else:
-        source_result_label.config(text="Source Player: N/A")
-def update_target_selection(event):
-    selected = new_tree.selection()
-    if selected:
-        values = new_tree.item(selected[0], 'values')
-        target_result_label.config(text=f"Target Player: {values[1]} ({values[0]})")
-    else:
-        target_result_label.config(text="Target Player: N/A")
-old_tree.bind('<<TreeviewSelect>>', update_source_selection)
-new_tree.bind('<<TreeviewSelect>>', update_target_selection)
-def on_exit():
-    if window.winfo_exists():
-        window.destroy()
-    sys.exit()
 def fix_host_save():
+    global window, level_sav_entry, old_tree, new_tree, source_result_label, target_result_label, old_search_var, new_search_var
+    window = tk.Toplevel()
+    window.title("Fix Host Save - GUID Migrator")
+    window.geometry("1200x600")
+    window.config(bg="#2f2f2f")
+    try:
+        window.iconbitmap(ICON_PATH)
+    except Exception as e:
+        print(f"Could not set icon: {e}")
+    font_style = ("Arial", 10)
+    style = ttk.Style(window)
+    style.theme_use('clam')
+    for opt in [
+        ("Treeview.Heading", {"font": ("Arial", 12, "bold"), "background": "#444444", "foreground": "white"}),
+        ("Treeview", {"background": "#333333", "foreground": "white", "rowheight": 25, "fieldbackground": "#333333", "borderwidth": 0}),
+        ("TFrame", {"background": "#2f2f2f"}),
+        ("TLabel", {"background": "#2f2f2f", "foreground": "white"}),
+        ("TEntry", {"fieldbackground": "#444444", "foreground": "white"}),
+        ("Dark.TButton", {"background": "#555555", "foreground": "white", "font": font_style, "padding": 6}),
+    ]: style.configure(opt[0], **opt[1])
+    style.map("Dark.TButton", background=[("active", "#666666"), ("!disabled", "#555555")], foreground=[("disabled", "#888888"), ("!disabled", "white")])
+    file_frame = ttk.Frame(window, style="TFrame")
+    file_frame.pack(fill='x', padx=10, pady=10)
+    ttk.Label(file_frame, text='Select Level.sav file:', font=font_style, style="TLabel").pack(side='left')
+    level_sav_entry = ttk.Entry(file_frame, width=65, font=font_style, style="TEntry")
+    level_sav_entry.pack(side='left', padx=5)
+    browse_button = ttk.Button(file_frame, text="Browse", command=choose_level_file, style="Dark.TButton")
+    browse_button.pack(side='left')
+    migrate_button = ttk.Button(file_frame, text="Migrate", command=fix_save_wrapper, style="Dark.TButton")
+    migrate_button.pack(side='right')
+    old_frame = ttk.Frame(window, style="TFrame")
+    old_frame.pack(side='left', fill='both', expand=True, padx=(10,5), pady=10)
+    search_frame_old = ttk.Frame(old_frame, style="TFrame")
+    search_frame_old.pack(fill='x', pady=5)
+    old_search_var = tk.StringVar()
+    old_search_entry = ttk.Entry(search_frame_old, textvariable=old_search_var, font=font_style, style="TEntry")
+    ttk.Label(search_frame_old, text="Search Source Player:", font=font_style, style="TLabel").pack(side='left', padx=(0,5))
+    old_search_entry.pack(side='left', fill='x', expand=True)
+    old_search_entry.bind('<KeyRelease>', lambda e: filter_treeview(old_tree, old_search_entry.get()))
+    old_tree = ttk.Treeview(old_frame, columns=("GUID", "Name", "GuildID"), show='headings', selectmode='browse', style="Treeview")
+    old_tree.pack(fill='both', expand=True)
+    old_tree.heading("GUID", text="GUID", command=lambda: sort_treeview_column(old_tree, "GUID", False))
+    old_tree.heading("Name", text="Name", command=lambda: sort_treeview_column(old_tree, "Name", False))
+    old_tree.heading("GuildID", text="Guild ID", command=lambda: sort_treeview_column(old_tree, "GuildID", False))
+    old_tree.column("GUID", width=150, anchor='center')
+    old_tree.column("Name", width=200, anchor='center')
+    old_tree.column("GuildID", width=150, anchor='center')
+    old_tree.tag_configure("even", background="#333333")
+    old_tree.tag_configure("odd", background="#444444")
+    old_tree.tag_configure("selected", background="#555555")
+    new_frame = ttk.Frame(window, style="TFrame")
+    new_frame.pack(side='left', fill='both', expand=True, padx=(5,10), pady=10)
+    search_frame_new = ttk.Frame(new_frame, style="TFrame")
+    search_frame_new.pack(fill='x', pady=5)
+    new_search_var = tk.StringVar()
+    new_search_entry = ttk.Entry(search_frame_new, textvariable=new_search_var, font=font_style, style="TEntry")
+    ttk.Label(search_frame_new, text="Search Target Player:", font=font_style, style="TLabel").pack(side='left', padx=(0,5))
+    new_search_entry.pack(side='left', fill='x', expand=True)
+    new_search_entry.bind('<KeyRelease>', lambda e: filter_treeview(new_tree, new_search_entry.get()))
+    new_tree = ttk.Treeview(new_frame, columns=("GUID", "Name", "GuildID"), show='headings', selectmode='browse', style="Treeview")
+    new_tree.pack(fill='both', expand=True)
+    new_tree.heading("GUID", text="GUID", command=lambda: sort_treeview_column(new_tree, "GUID", False))
+    new_tree.heading("Name", text="Name", command=lambda: sort_treeview_column(new_tree, "Name", False))
+    new_tree.heading("GuildID", text="Guild ID", command=lambda: sort_treeview_column(new_tree, "GuildID", False))
+    new_tree.column("GUID", width=150, anchor='center')
+    new_tree.column("Name", width=200, anchor='center')
+    new_tree.column("GuildID", width=150, anchor='center')
+    new_tree.tag_configure("even", background="#333333")
+    new_tree.tag_configure("odd", background="#444444")
+    new_tree.tag_configure("selected", background="#555555")
+    old_tree.original_rows = []
+    new_tree.original_rows = []
+    old_search_var.trace_add('write', lambda *args: filter_treeview(old_tree, old_search_var.get()))
+    new_search_var.trace_add('write', lambda *args: filter_treeview(new_tree, new_search_var.get()))
+    source_result_label = ttk.Label(old_frame, text="Source Player: N/A", font=font_style, style="TLabel")
+    source_result_label.pack(fill='x', pady=(5,0))
+    target_result_label = ttk.Label(new_frame, text="Target Player: N/A", font=font_style, style="TLabel")
+    target_result_label.pack(fill='x', pady=(5,0))
+    def update_source_selection(event):
+        selected = old_tree.selection()
+        if selected:
+            values = old_tree.item(selected[0], 'values')
+            source_result_label.config(text=f"Source Player: {values[1]} ({values[0]})")
+        else:
+            source_result_label.config(text="Source Player: N/A")
+    def update_target_selection(event):
+        selected = new_tree.selection()
+        if selected:
+            values = new_tree.item(selected[0], 'values')
+            target_result_label.config(text=f"Target Player: {values[1]} ({values[0]})")
+        else:
+            target_result_label.config(text="Target Player: N/A")
+    old_tree.bind('<<TreeviewSelect>>', update_source_selection)
+    new_tree.bind('<<TreeviewSelect>>', update_target_selection)
+    def on_exit(): window.destroy()
     window.protocol("WM_DELETE_WINDOW", on_exit)
-    window.mainloop()
-if __name__ == "__main__": fix_host_save()
+    return window

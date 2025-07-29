@@ -120,11 +120,10 @@ class SlotNumUpdaterApp(tk.Tk):
         json_to_sav(level_json, filepath)
         messagebox.showinfo("Success", f"Updated {updated_count} SlotNum entries from {current_val} to {new_value} in Level.sav!")
 def slot_injector():
-    def on_exit():
-        try: app.destroy()
-        except: pass
-        sys.exit()
+    def on_exit(): app.destroy()
     app = SlotNumUpdaterApp()
-    app.protocol("WM_DELETE_WINDOW", on_exit)
+    app.protocol("WM_DELETE_WINDOW", app.destroy)
+    return app
+if __name__ == "__main__":
+    app = slot_injector()
     app.mainloop()
-if __name__ == "__main__": slot_injector()

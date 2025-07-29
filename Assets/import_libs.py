@@ -14,7 +14,7 @@ from palobject import *
 from palworld_save_tools.gvas import *
 from palworld_save_tools.rawdata import *
 from palworld_save_tools.json_tools import *
-from bases import *
+from generate_map import *
 from pal_names import *
 from pal_passives import *
 from coords import sav_to_map, map_to_sav

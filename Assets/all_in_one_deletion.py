@@ -1016,7 +1016,7 @@ def all_in_one_deletion():
     global guild_search_var, base_search_var, player_search_var, guild_members_search_var
     global guild_result, base_result, player_result
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    window = tk.Tk()
+    window = tk.Toplevel()
     window.title("All in One Deletion Tool")
     window.geometry("1400x700")
     window.config(bg="#2f2f2f")
@@ -1100,8 +1100,7 @@ def all_in_one_deletion():
             update_stats_section(stat_labels,"Deletion Result",result)
     btn_show_map=ttk.Button(window,text="Show Base Map",command=show_base_map,style="Dark.TButton")
     btn_show_map.place(x=1235,y=10)
-    def on_exit():
-        window.destroy(); sys.exit()
-    window.protocol("WM_DELETE_WINDOW",on_exit)
-    window.mainloop()
+    def on_exit(): window.destroy()
+    window.protocol("WM_DELETE_WINDOW", on_exit)
+    return window
 if __name__=="__main__": all_in_one_deletion()

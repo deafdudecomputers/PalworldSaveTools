@@ -9,25 +9,36 @@ if getattr(sys, 'frozen', False):
 else:
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 root_dir = base_dir
-def get_save_game_pass():
+def get_save_game_pass(progressbar):
     default_source = os.path.expandvars(
         r"%LOCALAPPDATA%\Packages\PocketpairInc.Palworld_ad4psfrxyesvt\SystemAppData\wgs"
     )
     if not os.path.exists(default_source):
         default_source = os.path.join(root_dir, "saves")
-    source_folder = filedialog.askdirectory(title="Select GamePass Save ZIP Source Folder", initialdir=default_source)
+    source_folder = filedialog.askdirectory(
+        title="Select GamePass Save ZIP Source Folder",
+        initialdir=default_source
+    )
     if not source_folder:
         print("No source folder selected.")
         return
-    default_dest = os.path.expandvars(r"%localappdata%\Pal\Saved\SaveGames")
-    destination_folder = filedialog.askdirectory(title="Select Output Folder for Converted Save", initialdir=default_dest)
+    default_dest = os.path.expandvars(
+        r"%localappdata%\Pal\Saved\SaveGames"
+    )
+    destination_folder = filedialog.askdirectory(
+        title="Select Output Folder for Converted Save",
+        initialdir=default_dest
+    )
     if not destination_folder:
         print("No destination folder selected.")
         return
-    progressbar.set(0.0)
-    threading.Thread(target=check_for_zip_files, args=(source_folder,), daemon=True).start()
-    threading.Thread(target=check_progress, args=(progressbar,), daemon=True).start()
+    progressbar['value'] = 0.0
+    print(f"Destination folder set to: {destination_folder}")
     save_converter_done.destination_folder = destination_folder
+    print("Starting thread: check_for_zip_files")
+    threading.Thread(target=check_for_zip_files, args=(source_folder,), daemon=True).start()
+    print("Starting thread: check_progress")
+    threading.Thread(target=check_progress, args=(progressbar,), daemon=True).start()
 def get_save_steam():
     folder = filedialog.askdirectory(title="Select Steam Save Folder to Transfer")
     if not folder:
@@ -35,18 +46,18 @@ def get_save_steam():
         return
     threading.Thread(target=transfer_steam_to_gamepass, args=(folder,), daemon=True).start()
 def check_progress(progressbar):
-    if save_extractor_done.is_set():
-        progressbar.set(0.5)
-        print("Attempting to convert the save files...")
-        threading.Thread(target=convert_save_files, args=(progressbar,), daemon=True).start()
-    else:
-        window.after(1000, check_progress, progressbar)
+    print("check_progress started, waiting for save_extractor_done...")
+    while not save_extractor_done.is_set(): time.sleep(0.2)
+    print("save_extractor_done set, starting convert_save_files thread...")
+    threading.Thread(target=convert_save_files, args=(progressbar,), daemon=True).start()
 def check_for_zip_files(search_dir):
+    print(f"check_for_zip_files started with search_dir: {search_dir}")
     saves_path = os.path.join(root_dir, "saves")
     if not find_zip_files(saves_path):
-        print("Fetching zip files from local directory...")
+        print("No zip files found in saves_path, running extractor...")
         threading.Thread(target=run_save_extractor, args=(search_dir,), daemon=True).start()
     else:
+        print("Zip files found, processing...")
         process_zip_files()
 def process_zip_files():
     saves_path = os.path.join(root_dir, "saves")
@@ -60,6 +71,9 @@ def process_zip_files():
         else:
             print("No save files found on XGP please reinstall the game on XGP and try again")
             window.quit()
+    else:
+        print("Saves folder not empty, assuming extraction done")
+        save_extractor_done.set()
 def process_zip_file(file_path: str):
     saves_path = os.path.join(root_dir, "saves")
     unzip_file(file_path, saves_path)
@@ -68,17 +82,22 @@ def process_zip_file(file_path: str):
     shutil.copy2(file_path, os.path.join(xgp_original_saves_path, os.path.basename(file_path)))
     save_extractor_done.set()
 def convert_save_files(progressbar):
+    progressbar.start()
     saves_path = os.path.join(root_dir, "saves")
     saveFolders = list_folders_in_directory(saves_path)
+    print("Found save folders:", saveFolders)
     if not saveFolders:
         print("No save files found")
+        progressbar.stop()
+        progressbar.destroy()
         return
     saveList = []
     for saveName in saveFolders:
         name = convert_sav_JSON(saveName)
         if name:
             saveList.append(name)
-    update_combobox(saveList)
+    window.after(0, lambda: update_combobox(saveList))
+    progressbar.stop()
     progressbar.destroy()
     print("Choose a save to convert:")
 def run_save_extractor(search_dir):
@@ -232,37 +251,45 @@ def transfer_steam_to_gamepass(source_folder):
 def update_combobox(saveList):
     global saves
     saves = saveList
-    for widget in save_frame.winfo_children():
-        widget.destroy()
+    for widget in save_frame.winfo_children(): widget.destroy()
     if saves:
-        combobox = customtkinter.CTkComboBox(save_frame, values=saves, width=320, font=("Arial", 14))
-        combobox.pack(pady=(10, 10))
+        combobox = ttk.Combobox(save_frame, values=saves, font=("Arial", 12))
+        combobox.pack(pady=(10, 10), fill='x')
         combobox.set("Choose a save to convert:")
-        button = customtkinter.CTkButton(save_frame, width=150, text="Convert Save", command=lambda: convert_JSON_sav(combobox.get()))
-        button.pack(pady=(0, 10))
-def on_exit():
-    try:
-        window.destroy()
-    except Exception:
-        pass
-    sys.exit()
+        button = ttk.Button(save_frame, text="Convert Save", command=lambda: convert_JSON_sav(combobox.get()))
+        button.pack(pady=(0, 10), fill='x')
 def game_pass_save_fix():
+    default_source = os.path.join(root_dir, "saves")
+    if os.path.exists(default_source): shutil.rmtree(default_source)
     global window, progressbar, save_frame
-    window = customtkinter.CTk()
+    window = tk.Toplevel()
     window.title("Palworld Save Converter")
-    window.geometry("400x200")
-    window.iconbitmap(ICON_PATH)
-    main_frame = customtkinter.CTkFrame(window, fg_color="transparent")
-    main_frame.pack(expand=True, fill="both")
-    xgp_button = customtkinter.CTkButton(main_frame, text="GamePass", command=get_save_game_pass, width=150)
-    xgp_button.pack(pady=(20, 10))
-    steam_button = customtkinter.CTkButton(main_frame, text="Steam", command=get_save_steam, width=150)
-    steam_button.pack(pady=(0, 10))
-    progressbar = customtkinter.CTkProgressBar(main_frame, orientation="horizontal", mode="determinate", width=350)
-    progressbar.set(0)
-    progressbar.pack(pady=(0, 10))
-    save_frame = customtkinter.CTkFrame(main_frame, fg_color="transparent")
-    save_frame.pack(pady=(10, 10))
+    window.geometry("480x230")
+    window.config(bg="#2f2f2f")
+    try: window.iconbitmap(ICON_PATH)
+    except Exception as e: print(f"Could not set icon: {e}")
+    font_style = ("Arial", 11)
+    style = ttk.Style(window)
+    style.theme_use('clam')
+    for opt in [
+        ("TFrame", {"background": "#2f2f2f"}),
+        ("TLabel", {"background": "#2f2f2f", "foreground": "white", "font": font_style}),
+        ("TButton", {"background": "#555555", "foreground": "white", "font": font_style, "padding": 6}),
+        ("Horizontal.TProgressbar", {"background": "#666666"}),
+        ("TCombobox", {"fieldbackground": "#444444", "background": "#333333", "foreground": "white", "font": font_style}),
+    ]: style.configure(opt[0], **opt[1])
+    style.map("TButton", background=[("active", "#666666"), ("!disabled", "#555555")], foreground=[("disabled", "#888888"), ("!disabled", "white")])
+    main_frame = ttk.Frame(window, style="TFrame")
+    main_frame.pack(expand=True, fill="both", padx=20, pady=20)
+    progressbar = ttk.Progressbar(main_frame, orient="horizontal", mode="determinate")
+    progressbar.pack(fill='x', pady=(0, 10))
+    xgp_button = ttk.Button(main_frame, text="GamePass Save Folder", command=lambda: get_save_game_pass(progressbar))
+    xgp_button.pack(pady=(0, 10), fill='x')
+    steam_button = ttk.Button(main_frame, text="Steam Save Folder", command=get_save_steam)
+    steam_button.pack(pady=(0, 20), fill='x')
+    save_frame = ttk.Frame(main_frame, style="TFrame")
+    save_frame.pack(fill='both', expand=True)
+    def on_exit(): window.destroy()
     window.protocol("WM_DELETE_WINDOW", on_exit)
-    window.mainloop()
+    return window
 if __name__ == "__main__": game_pass_save_fix()
