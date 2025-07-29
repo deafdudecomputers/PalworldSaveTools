@@ -114,21 +114,6 @@ except OSError:
     columns = 80
 def center_text(text):
     return "\n".join(line.center(columns) for line in text.splitlines())
-def display_logo():
-    os.system('cls' if os.name == 'nt' else 'clear')
-    print(center_text("=" * 85))
-    text = r"""     
-  ___      _                _    _ ___              _____         _    
- | _ \__ _| |_ __ _____ _ _| |__| / __| __ ___ ____|_   _|__  ___| |___
- |  _/ _` | \ V  V / _ \ '_| / _` \__ \/ _` \ V / -_)| |/ _ \/ _ \ (_-<
- |_| \__,_|_|\_/\_/\___/_| |_\__,_|___/\__,_|\_/\___||_|\___/\___/_/__/
-    """
-    print(center_text(text))
-    print(f"{center_text(f'{GREEN_FONT}v{tools_version} - Working as of v{game_version} Patch{RESET_FONT}')}")
-    print(f"{center_text(f'{RED_FONT}WARNING: ALWAYS BACKUP YOUR SAVES BEFORE USING THIS TOOL!{RESET_FONT}')}")
-    print(f"{center_text(f'{RED_FONT}MAKE SURE TO UPDATE YOUR SAVES ON/AFTER THE v{game_version} PATCH!{RESET_FONT}')}")
-    print(f"{center_text(f'{RED_FONT}IF YOU DO NOT UPDATE YOUR SAVES, YOU WILL GET ERRORS!{RESET_FONT}')}")
-    print(center_text("=" * 85))
 def run_tool(choice):
     def import_and_call(module_name, function_name, *args):
         try:
