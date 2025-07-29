@@ -2,7 +2,9 @@ import os, sys, shutil
 from pathlib import Path
 import importlib.util
 import tkinter as tk
+from tkinter import ttk
 from tkinter import messagebox
+from PIL import Image, ImageTk
 def is_frozen():
     return getattr(sys, 'frozen', False)
 def get_assets_path():
@@ -223,26 +225,40 @@ class MenuGUI(tk.Tk):
                 self.iconbitmap(ICON_PATH)
         except Exception as e:
             print(f"Could not set icon: {e}")
+        style = ttk.Style(self)
+        style.theme_use('clam')
+        style.configure("TFrame", background="#2f2f2f")
+        style.configure("TLabel", background="#2f2f2f", foreground="white")
+        style.configure("TEntry", fieldbackground="#444444", foreground="white")
+        style.configure("Treeview.Heading", font=("Arial", 12, "bold"), background="#444444", foreground="white")
+        style.configure("Treeview", background="#333333", foreground="white", rowheight=25, fieldbackground="#333333", borderwidth=0)
+        style.configure("Dark.TButton", background="#555555", foreground="white", padding=6)
+        style.map("Dark.TButton", background=[("active", "#666666"), ("!disabled", "#555555")], foreground=[("disabled", "#888888"), ("!disabled", "white")])
         tools_version, _ = get_versions()
         self.title(f"PalworldSaveTools v{tools_version}")
-        self.configure(bg="#1e1e1e")
-        self.geometry("800x650")
+        self.configure(bg="#2f2f2f")
+        self.geometry("800x680")
         self.resizable(False, True)
         self.setup_ui()
     def setup_ui(self):
-        container = tk.Frame(self, bg="#1e1e1e")
+        container = ttk.Frame(self, style="TFrame")
         container.pack(fill="both", expand=True, padx=10, pady=10)
-        ascii_font = ("Consolas", 12)
-        version_font = ("Consolas", 13, "bold")
-        logo_text = r"""
-  ___      _                _    _ ___              _____         _    
- | _ \__ _| |_ __ _____ _ _| |__| / __| __ ___ ____|_   _|__  ___| |___
- |  _/ _` | \ V  V / _ \ '_| / _` \__ \/ _` \ V / -_)| |/ _ \/ _ \ (_-<
- |_| \__,_|_|\_/\_/\___/_| |_\__,_|___/\__,_|\_/\___||_|\___/\___/_/__/
-        """
-        logo_lines = logo_text.strip('\n').split('\n')
-        for line in logo_lines:
-            tk.Label(container, text=line, fg="#ccc", bg="#1e1e1e", font=ascii_font).pack(anchor="center")
+        logo_path = os.path.join("Assets", "resources", "PalworldSaveTools.png")
+        if os.path.exists(logo_path):
+            img = Image.open(logo_path)
+            img = img.resize((400, 100), Image.LANCZOS)
+            self.logo_img = ImageTk.PhotoImage(img)
+            ttk.Label(container, image=self.logo_img, style="TLabel").pack(anchor="center", pady=(0,10))
+        else:
+            ascii_font = ("Consolas", 12)
+            logo_text = r"""
+          ___      _                _    _ ___              _____         _    
+         | _ \__ _| |_ __ _____ _ _| |__| / __| __ ___ ____|_   _|__  ___| |___
+         |  _/ _` | \ V  V / _ \ '_| / _` \__ \/ _` \ V / -_)| |/ _ \/ _ \ (_-<
+         |_| \__,_|_|\_/\_/\___/_| |_\__,_|___/\__,_|\_/\___||_|\___/\___/_/__/
+                """
+            for line in logo_text.strip('\n').split('\n'):
+                ttk.Label(container, text=line, font=ascii_font, style="TLabel").pack(anchor="center")
         tools_version, game_version = get_versions()
         info_lines = [
             f"v{tools_version} - Working as of v{game_version}",
@@ -253,14 +269,20 @@ class MenuGUI(tk.Tk):
         colors = ["#6f9", "#f44", "#f44", "#f44"]
         fonts = [("Consolas", 10)] + [("Consolas", 9, "bold")] * 3
         for text, color, font in zip(info_lines, colors, fonts):
-            tk.Label(container, text=text, fg=color, bg="#1e1e1e", font=font).pack(pady=(0,2))
-        tk.Label(container, text="="*85, fg="#ccc", bg="#1e1e1e", font=ascii_font).pack(pady=(5,10))
-        tools_frame = tk.Frame(container, bg="#1e1e1e")
+            label = ttk.Label(container, text=text, style="TLabel")
+            label.configure(foreground=color, font=font)
+            label.pack(pady=(0,2))
+        ttk.Label(container, text="="*85, font=("Consolas", 12), style="TLabel").pack(pady=(5,10))
+        tools_frame = ttk.Frame(container, style="TFrame")
         tools_frame.pack(fill="both", expand=True)
-        left_frame = tk.Frame(tools_frame, bg="#1e1e1e")
-        left_frame.pack(side="left", fill="both", expand=True, padx=(0,5))
-        right_frame = tk.Frame(tools_frame, bg="#1e1e1e")
-        right_frame.pack(side="left", fill="both", expand=True, padx=(5,0))
+        tools_frame.columnconfigure(0, weight=1)
+        tools_frame.columnconfigure(1, weight=1)
+        left_frame = ttk.Frame(tools_frame, style="TFrame")
+        left_frame.grid(row=0, column=0, sticky="nsew", padx=(0,5))
+        left_frame.columnconfigure(0, weight=1)
+        right_frame = ttk.Frame(tools_frame, style="TFrame")
+        right_frame.grid(row=0, column=1, sticky="nsew", padx=(5,0))
+        right_frame.columnconfigure(0, weight=1)
         left_categories = [
             ("Converting Tools", converting_tools, "#2196F3"),
             ("Cleaning Tools", cleaning_tools, "#FFC107")
@@ -269,22 +291,26 @@ class MenuGUI(tk.Tk):
             ("Management Tools", management_tools, "#4CAF50")
         ]
         for idx, (title, tools, color) in enumerate(left_categories):
-            frame = tk.LabelFrame(left_frame, text=title, fg=color, bg="#2a2a2a", font=("Consolas", 12, "bold"),
-                                  bd=2, relief="groove", labelanchor="n")
-            frame.pack(fill="x", pady=5)
-            self.populate_tools(frame, tools, idx, color)
+            frame = self.create_labeled_frame(left_frame, title, color)
+            frame.columnconfigure(0, weight=1)
+            self.populate_tools(frame, tools, idx)
         for idx, (title, tools, color) in enumerate(right_categories, start=len(left_categories)):
-            frame = tk.LabelFrame(right_frame, text=title, fg=color, bg="#2a2a2a", font=("Consolas", 12, "bold"),
-                                  bd=2, relief="groove", labelanchor="n")
-            frame.pack(fill="x", pady=5)
-            self.populate_tools(frame, tools, idx, color)
-    def populate_tools(self, parent, tools, category_offset, color):
+            frame = self.create_labeled_frame(right_frame, title, color)
+            frame.columnconfigure(0, weight=1)
+            self.populate_tools(frame, tools, idx)
+    def create_labeled_frame(self, parent, title, color):
+        style_name = f"{title.replace(' ', '')}.TLabelframe"
+        ttk.Style().configure(style_name, background="#2a2a2a", foreground=color, font=("Consolas", 12, "bold"), labelanchor="n")
+        ttk.Style().configure(f"{style_name}.Label", background="#2a2a2a", foreground=color, font=("Consolas", 12, "bold"))
+        frame = ttk.LabelFrame(parent, text=title, style=style_name, labelanchor="n")
+        frame.pack(fill="x", pady=5)
+        return frame
+    def populate_tools(self, parent, tools, category_offset):
+        parent.columnconfigure(0, weight=1)
         for i, tool in enumerate(tools):
             idx = (category_offset, i)
-            btn = tk.Button(parent, text=tool, font=("Consolas", 9), bg="#333", fg=color,
-                            activebackground="#444", relief="flat", anchor="w",
-                            command=lambda idx=idx: self.run_tool(idx))
-            btn.pack(fill="x", pady=3, padx=5)
+            btn = ttk.Button(parent, text=tool, style="Dark.TButton", command=lambda idx=idx: self.run_tool(idx))
+            btn.grid(row=i, column=0, sticky="ew", pady=3, padx=5)
     def run_tool(self, choice):
         tool_name = ""
         try:
@@ -299,7 +325,8 @@ class MenuGUI(tk.Tk):
         try:
             tool_window = run_tool(choice)
             if tool_window: tool_window.wait_window()
-        except Exception: pass
+        except Exception:
+            pass
         print(f'Now closing "{tool_name}"...')
         self.deiconify()
 def on_exit():
