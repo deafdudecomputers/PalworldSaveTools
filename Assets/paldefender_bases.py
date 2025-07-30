@@ -5,9 +5,9 @@ def parse_log(inactivity_days=None, max_level=None):
     print("-" * 40)
     log_file = "Scan Save Logger/scan_save.log"
     if not os.path.exists(log_file):
-        return print(f"Log file '{log_file}' not found in the current directory.")    
+        return print(f"Log file '{log_file}' not found in the current directory.")
     with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
-        content = f.read()    
+        content = f.read()
     guilds = content.split("\n\n")
     threshold_time = None
     inactive_guilds = {}
@@ -69,9 +69,9 @@ def parse_log(inactivity_days=None, max_level=None):
         guild_count += 1
         base_count += len(bases)
         for _, raw_data in bases:
-            base_coords_str = raw_data.replace(',', '').split()
-            if len(base_coords_str) >= 3:
-                x, y, z = float(base_coords_str[0]), float(base_coords_str[1]), float(base_coords_str[2])
+            coord_match = re.findall(r"[-+]?\d*\.\d+|[-+]?\d+", raw_data)
+            if len(coord_match) >= 3:
+                x, y, z = map(float, coord_match[:3])
                 base_coords = sav_to_map(x, y)
                 kill_commands.append(
                     f"killnearestbase {base_coords.x:.2f} {base_coords.y:.2f} {z:.2f}"
@@ -108,9 +108,9 @@ def parse_log(inactivity_days=None, max_level=None):
                     info_log.write(f"  Player: {player['name']} | UID: {player['uid']} | Level: {player['level']} | Caught: {player['caught']} | Owned: {player['owned']} | Encounters: {player['encounters']} | Uniques: {player['uniques']} | Last Online: {player['last_online']}\n")
                 info_log.write(f"Base Locations: {len(guild_info['bases'])}\n")
                 for base_id, raw_data in guild_info["bases"]:
-                    base_coords_str = raw_data.replace(',', '').split()
-                    if len(base_coords_str) >= 3:
-                        x, y, z = float(base_coords_str[0]), float(base_coords_str[1]), float(base_coords_str[2])
+                    coord_match = re.findall(r"[-+]?\d*\.\d+|[-+]?\d+", raw_data)
+                    if len(coord_match) >= 3:
+                        x, y, z = map(float, coord_match[:3])
                         map_coords = sav_to_map(x, y)
                         info_log.write(f"  Base ID: {base_id} | Map Coords: X: {map_coords.x:.2f}, Y: {map_coords.y:.2f}, Z: {z:.2f}\n")
                     else:
