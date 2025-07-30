@@ -364,15 +364,13 @@ def main():
     def copy_dps_file(src_folder, src_uid, tgt_folder, tgt_uid):
         src_file = os.path.join(src_folder, f"{str(src_uid).replace('-', '')}_dps.sav")
         tgt_file = os.path.join(tgt_folder, f"{str(tgt_uid).replace('-', '')}_dps.sav")
-        if not os.path.exists(src_file):
-            print(f"Source DPS file missing: {src_file}")
-            return None
+        if not os.path.exists(src_file): return None
         shutil.copy2(src_file, tgt_file)
         print(f"DPS save copied from {src_file} to {tgt_file}")
     copy_dps_file(
         os.path.join(os.path.dirname(level_sav_path), "Players"),
         host_guid,
-        os.path.join(os.path.dirname(level_sav_path), "Players"),
+        os.path.join(os.path.dirname(t_level_sav_path), "Players"),
         targ_uid
     )
     save_and_backup()
