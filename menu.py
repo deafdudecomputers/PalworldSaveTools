@@ -142,7 +142,6 @@ def run_tool(choice):
             generate_map,
             lambda: import_and_call("character_transfer", "character_transfer"),
             lambda: import_and_call("fix_host_save", "fix_host_save"),
-            lambda: import_and_call("fix_missions", "fix_missions"),
             lambda: import_and_call("restore_map", "restore_map"),
         ]
     ]
@@ -195,7 +194,6 @@ management_tools = [
     "Generate Map",
     "Character Transfer",
     "Fix Host Save",
-    "Fix Missions",
     "Restore Map"
 ]
 cleaning_tools = [
