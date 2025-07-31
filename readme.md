@@ -170,7 +170,7 @@ This process lets both players keep their characters and pals intact while swapp
    - Ensure your saves were updated **on or after** the current game patch to prevent `struct.error`.  
    - This works because the game rewrites save data structures between versions during play.
 
-5. **Character Transfer not transferring players properly?***
+5. **Character Transfer not transferring players properly?**
    - This happens when you are using same Level.sav and Players folder as source and target from different times.
    - Workaround: Untick the option that says Keep old guild after transfer.
    - They will be able to log in with their characters again.
