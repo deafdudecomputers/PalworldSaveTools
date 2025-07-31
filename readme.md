@@ -143,34 +143,43 @@ This process lets both players keep their characters and pals intact while swapp
 ---
 
 
-# Known bugs/issues:
+# Known Bugs / Issues
 
-1. **Hostile Pals After Character Transfer**  
-   - After transferring a character, some Pals may act aggressive due to ownership issues.  
-   - **Workaround:** Add the affected Pal to your party, drop it, then pick it up again to fix ownership.
+## 1. Character Transfer Issues
 
-2. **Steam to GamePass Converter Not Working or Not Keeping Changes**  
-   - Please make sure to **close the game** on GamePass.  
-   - Wait a few minutes.  
-   - Run the **Steam to GamePass converter**.  
-   - Wait a few more minutes.  
-   - Open the game on GamePass and enjoy your updated save.
+**Summary:** Character transfers are intended for cross-world/server moves. They transfer your character, inventory, and Pals—but not your guild or ownership flags. Here's how to handle the known quirks:
 
-3. **Character Transfer: Guild Not Included**  
-   - Guilds do **not** transfer with your character—this is intentional.  
-   - `Character Transfer` is meant for **cross-world/server transfers**.  
-   - It moves your **character, inventory, and Pals**, but **not your guild**.  
-   - **Solutions:**  
-     - Use `Fix Host Save` for transfers **within the same save** to keep your guild.  
-     - Make someone else the **guild leader**, leave the guild, transfer, then get re-invited.
+- **Hostile Pals After Transfer**  
+  Some Pals may behave aggressively due to ownership issues.  
+  **Workaround:** Add the Pal to your party, drop it, and then pick it up again to reassign ownership.
 
-4. **struct.error when parsing the save**  
-   - Put the outdated save on Solo, Coop, or Dedicated Server.
-   - Load the save and play **once** to let the game auto-update the save file structure.  
-   - Ensure your saves were updated **on or after** the current game patch to prevent `struct.error`.  
-   - This works because the game rewrites save data structures between versions during play.
+- **Guild Not Transferred**  
+  Guilds are not included in Character Transfers by design.  
+  **Solutions:**  
+  - Use `Fix Host Save` when transferring within the same world/save to preserve the guild.  
+  - Alternatively, promote another player to guild leader, leave the guild, transfer, then get re-invited.
 
-5. **Character Transfer not transferring players properly?**
-   - This happens when you are using same Level.sav and Players folder as source and target from different times.
-   - Workaround: Untick the option that says Keep old guild after transfer.
-   - They will be able to log in with their characters again.
+- **Players Not Appearing Post-Transfer**  
+  **Fix:** Uncheck the "Keep old guild" option during transfer. This ensures the transferred character is recognized and can log in.
+
+---
+
+## 2. Steam to GamePass Converter Not Working
+
+**Issue:** Changes made via the converter aren't applied or retained.  
+**Steps to Fix:**  
+1. Close the GamePass version of Palworld.  
+2. Wait a few minutes.  
+3. Run the Steam to GamePass converter.  
+4. Wait again.  
+5. Launch the game on GamePass and confirm the updated save is working.
+
+---
+
+## 3. `struct.error` When Parsing the Save
+
+**Cause:** The save file format is outdated and incompatible with current tools.  
+**Solution:**  
+- Place the outdated save into Solo, Coop, or Dedicated Server mode.  
+- Load the game once to trigger an automatic structure update.  
+- Make sure the save was last updated on or after the latest game patch.
