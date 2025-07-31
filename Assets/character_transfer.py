@@ -170,24 +170,6 @@ def load_json_files():
     if not targ_json_gvas: return False
     targ_json = targ_json_gvas.properties
     return True
-def update_targ_tech_and_data():
-    global host_json, targ_json
-    targ_save = targ_json["SaveData"]["value"]
-    host_save = host_json["SaveData"]["value"]
-    if "TechnologyPoint" in host_save:
-        targ_save["TechnologyPoint"] = fast_deepcopy(host_save["TechnologyPoint"])
-    elif "TechnologyPoint" in targ_save:
-        targ_save["TechnologyPoint"]["value"] = 0
-    if "bossTechnologyPoint" in host_save:
-        targ_save["bossTechnologyPoint"] = fast_deepcopy(host_save["bossTechnologyPoint"])
-    elif "bossTechnologyPoint" in targ_save:
-        targ_save["bossTechnologyPoint"]["value"] = 0
-    targ_save["UnlockedRecipeTechnologyNames"] = fast_deepcopy(host_save.get("UnlockedRecipeTechnologyNames", {}))
-    targ_save["PlayerCharacterMakeData"] = fast_deepcopy(host_save.get("PlayerCharacterMakeData", {}))
-    if 'RecordData' in host_save:
-        targ_save["RecordData"] = fast_deepcopy(host_save["RecordData"])
-    elif 'RecordData' in targ_save:
-        del targ_save['RecordData']
 def gather_inventory_ids(json_data):
     inv_info = json_data["SaveData"]["value"]["InventoryInfo"]["value"]
     return {
@@ -338,6 +320,26 @@ def reassign_owner_uid(param_maps, new_owner_uid):
             character['value']['RawData']['value']['object']['SaveParameter']['value']['OwnerPlayerUId']['value'] = new_owner_uid
         except Exception:
             pass
+modified_target_players = set()
+modified_targets_data = {}
+def update_targ_tech_and_data():
+    global host_json, targ_json
+    targ_save = targ_json["SaveData"]["value"]
+    host_save = host_json["SaveData"]["value"]
+    if "TechnologyPoint" in host_save:
+        targ_save["TechnologyPoint"] = fast_deepcopy(host_save["TechnologyPoint"])
+    elif "TechnologyPoint" in targ_save:
+        targ_save["TechnologyPoint"]["value"] = 0
+    if "bossTechnologyPoint" in host_save:
+        targ_save["bossTechnologyPoint"] = fast_deepcopy(host_save["bossTechnologyPoint"])
+    elif "bossTechnologyPoint" in targ_save:
+        targ_save["bossTechnologyPoint"]["value"] = 0
+    targ_save["UnlockedRecipeTechnologyNames"] = fast_deepcopy(host_save.get("UnlockedRecipeTechnologyNames", {}))
+    targ_save["PlayerCharacterMakeData"] = fast_deepcopy(host_save.get("PlayerCharacterMakeData", {}))
+    if 'RecordData' in host_save:
+        targ_save["RecordData"] = fast_deepcopy(host_save["RecordData"])
+    elif 'RecordData' in targ_save:
+        del targ_save['RecordData']
 def main():
     global host_guid, targ_uid, exported_map
     if not all([level_sav_path, t_level_sav_path, selected_source_player, selected_target_player]):
@@ -385,6 +387,8 @@ def main():
     print("Updated guild data.")
     update_targ_tech_and_data()
     print("Updated target tech and data.")
+    modified_target_players.add(selected_target_player)
+    modified_targets_data[selected_target_player] = (fast_deepcopy(targ_json), targ_json_gvas)
     def copy_dps_file(src_folder, src_uid, tgt_folder, tgt_uid):
         src_file = os.path.join(src_folder, f"{str(src_uid).replace('-', '')}_dps.sav")
         tgt_file = os.path.join(tgt_folder, f"{str(tgt_uid).replace('-', '')}_dps.sav")
@@ -399,25 +403,20 @@ def main():
     print("Transfer successful in memory!\nHit 'Finalize Transfer' to save.")
     messagebox.showinfo(title="Transfer Successful!", message='Transfer successful in memory!\nHit "Finalize Transfer" to save.')
 def save_and_backup():
-    global targ_json_gvas
     print("Now saving the data...")
     WORLDSAVESIZEPREFIX = b'\x0e\x00\x00\x00worldSaveData\x00\x0f\x00\x00\x00StructProperty\x00'
     size_idx = target_raw_gvas.find(WORLDSAVESIZEPREFIX) + len(WORLDSAVESIZEPREFIX)
     output_data = MyWriter(custom_properties=PALWORLD_CUSTOM_PROPERTIES).write_sections(targ_lvl, target_section_ranges, target_raw_gvas, size_idx)
-    from scan_save import GvasFile
-    if targ_json_gvas is None or not hasattr(targ_json_gvas, 'header'):
-        targ_json_gvas = load_player_file(t_level_sav_path, selected_target_player)
-        if targ_json_gvas is None:
-            raise RuntimeError("Failed to load target player's GvasFile for saving.")
-    targ_json_gvas.properties = targ_json
-    t_host_sav_path = os.path.join(os.path.dirname(t_level_sav_path), 'Players', selected_target_player + '.sav')
-    if not os.path.exists(t_host_sav_path):
-        t_host_sav_path = os.path.join(os.path.dirname(t_level_sav_path), '../Players', selected_target_player + '.sav')
     backup_folder = "Backups/Character Transfer"
     backup_whole_directory(os.path.dirname(t_level_sav_path), backup_folder)
     gvas_to_sav(t_level_sav_path, output_data)
-    gvas_to_sav(t_host_sav_path, targ_json_gvas.write())
-    print("Done saving the data!")
+    for target_player, (json_data, gvas_obj) in modified_targets_data.items():
+        t_host_sav_path = os.path.join(os.path.dirname(t_level_sav_path), 'Players', target_player + '.sav')
+        if not os.path.exists(t_host_sav_path):
+            t_host_sav_path = os.path.join(os.path.dirname(t_level_sav_path), '../Players', target_player + '.sav')
+        gvas_obj.properties = json_data
+        gvas_to_sav(t_host_sav_path, gvas_obj.write())
+    print("Done saving all modified target players!")
 def sav_to_gvas(file):
     with open(file, 'rb') as f:
         data = f.read()
