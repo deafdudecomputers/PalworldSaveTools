@@ -340,41 +340,62 @@ def reassign_owner_uid(param_maps, new_owner_uid):
             pass
 def main():
     global host_guid, targ_uid, exported_map
-    if not validate_inputs(): return
-    host_guid = UUID.from_str(selected_source_player)
-    targ_uid = UUID.from_str(selected_target_player)
-    if not load_json_files(): return
+    print("Starting main()")
+    print(f"Selected source player: {selected_source_player}")
+    print(f"Selected target player: {selected_target_player}")
+    try:
+        host_guid = UUID.from_str(selected_source_player)
+        targ_uid = UUID.from_str(selected_target_player)
+    except Exception as e:
+        messagebox.showerror("UUID Error", f"Invalid UUID format: {e}")
+        return
+    print(f"Parsed host_guid: {host_guid}, targ_uid: {targ_uid}")
+    if not load_json_files():
+        messagebox.showerror("Load Error", "Failed to load JSON files.")
+        return
+    print("Loaded JSON files.")
     host_inv_ids = gather_inventory_ids(host_json)
     targ_inv_ids = gather_inventory_ids(targ_json)
+    print(f"Host inventory IDs: {host_inv_ids}")
+    print(f"Target inventory IDs: {targ_inv_ids}")
     gather_host_containers(host_inv_ids)
+    print(f"Gathered host containers: main={bool(host_main)}, key={bool(host_key)}, weps={bool(host_weps)}, armor={bool(host_armor)}, foodbag={bool(host_foodbag)}, pals={bool(host_pals)}, otomo={bool(host_otomo)}")
     exported_map = get_exported_map(host_guid)
     if not exported_map:
         messagebox.showerror("Error!", f"Couldn't find exported_map for OwnerUID {host_guid}")
         return
+    print("Found exported_map.")
     param_maps, palcount = collect_param_maps(host_guid)
-    reassign_owner_uid(param_maps, targ_uid)
     print(f"Collected {palcount} pals from source.")
-    update_target_character_with_exported_map(targ_uid, exported_map)
+    reassign_owner_uid(param_maps, targ_uid)
+    print("Reassigned owner UIDs in param_maps.")
+    updated_count = update_target_character_with_exported_map(targ_uid, exported_map)
+    print(f"Updated {updated_count} target character(s) with exported map.")
     replace_character_save_params(param_maps, targ_uid)
+    print("Replaced character save params.")
     replace_containers(targ_inv_ids)
+    print("Replaced containers.")
     gather_and_update_dynamic_containers()
-    if not update_guild_data(targ_lvl, targ_json, host_guid, targ_uid, keep_old_guild_id, source_guild_dict): return
+    print("Gathered and updated dynamic containers.")
+    if not update_guild_data(targ_lvl, targ_json, host_guid, targ_uid, keep_old_guild_id, source_guild_dict):
+        print("Guild update failed.")
+        return
+    print("Updated guild data.")
     update_targ_tech_and_data()
-    print("Writing back modified data.")
+    print("Updated target tech and data.")
     def copy_dps_file(src_folder, src_uid, tgt_folder, tgt_uid):
         src_file = os.path.join(src_folder, f"{str(src_uid).replace('-', '')}_dps.sav")
         tgt_file = os.path.join(tgt_folder, f"{str(tgt_uid).replace('-', '')}_dps.sav")
-        if not os.path.exists(src_file): return None
+        if not os.path.exists(src_file):
+            print(f"DPS source file missing: {src_file}")
+            return None
         shutil.copy2(src_file, tgt_file)
         print(f"DPS save copied from {src_file} to {tgt_file}")
-    copy_dps_file(
-        os.path.join(os.path.dirname(level_sav_path), "Players"),
-        host_guid,
-        os.path.join(os.path.dirname(t_level_sav_path), "Players"),
-        targ_uid
-    )
-    save_and_backup()
-    messagebox.showinfo(title="Transfer Successful!", message='Transfer Successful!')
+    src_players_folder = os.path.join(os.path.dirname(level_sav_path), "Players")
+    tgt_players_folder = os.path.join(os.path.dirname(t_level_sav_path), "Players")
+    copy_dps_file(src_players_folder, host_guid, tgt_players_folder, targ_uid)
+    print("Transfer successful in memory!\nHit 'Finalize Transfer' to save.")
+    messagebox.showinfo(title="Transfer Successful!", message='Transfer successful in memory!\nHit "Finalize Transfer" to save.')
 def save_and_backup():
     global targ_json_gvas
     print("Now saving the data...")
@@ -553,6 +574,19 @@ def filter_treeview(tree, query, is_source):
             tree.reattach(row, '', 'end')
         else:
             tree.detach(row)
+def finalize_save(window):
+    if not validate_inputs(): return
+    try:
+        save_and_backup()
+        messagebox.showinfo("Save Complete", "Changes saved successfully.")
+        window.destroy()
+    except Exception as e:
+        print(f"Exception in finalize_save: {e}")
+        messagebox.showerror("Save Failed", f"Save failed:\n{e}")
+        try:
+            window.after(100, window.destroy)
+        except:
+            pass
 def character_transfer():
     global source_player_list, target_player_list, source_level_path_label, target_level_path_label, current_selection_label, btn_toggle, keep_old_guild_id
     window = tk.Toplevel()
@@ -631,7 +665,8 @@ def character_transfer():
     btn_toggle = tk.Button(window, text="☑ Keep old Guild ID after Transfer", command=toggle_keep_old_guild,
                            relief="flat", fg="white", bg="#2f2f2f", activebackground="black", activeforeground="white")
     btn_toggle.grid(row=5, column=0, sticky='w', padx=10, pady=(0, 10))
-    ttk.Button(window, text='Start Transfer!', command=main, style="Dark.TButton").grid(row=5, column=1, padx=10, pady=10, sticky="ew")
+    ttk.Button(window, text='Transfer', command=lambda: main(), style="Dark.TButton").grid(row=5, column=1, padx=10, pady=(10, 0), sticky="ew")
+    ttk.Button(window, text='Save Changes', command=lambda: finalize_save(window), style="Dark.TButton").grid(row=6, column=1, padx=10, pady=(0, 10), sticky="ew")
     def on_exit(): window.destroy()
     window.protocol("WM_DELETE_WINDOW", on_exit)
     return window
