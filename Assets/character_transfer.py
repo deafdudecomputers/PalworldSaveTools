@@ -340,7 +340,9 @@ def reassign_owner_uid(param_maps, new_owner_uid):
             pass
 def main():
     global host_guid, targ_uid, exported_map
-    print("Starting main()")
+    if not all([level_sav_path, t_level_sav_path, selected_source_player, selected_target_player]):
+        messagebox.showerror("Error!", "Please have both level files and players selected before starting transfer.")
+        return False
     print(f"Selected source player: {selected_source_player}")
     print(f"Selected target player: {selected_target_player}")
     try:
