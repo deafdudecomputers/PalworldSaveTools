@@ -400,8 +400,8 @@ def main():
     src_players_folder = os.path.join(os.path.dirname(level_sav_path), "Players")
     tgt_players_folder = os.path.join(os.path.dirname(t_level_sav_path), "Players")
     copy_dps_file(src_players_folder, host_guid, tgt_players_folder, targ_uid)
-    print("Transfer successful in memory!\nHit 'Finalize Transfer' to save.")
-    messagebox.showinfo(title="Transfer Successful!", message='Transfer successful in memory!\nHit "Finalize Transfer" to save.')
+    print("Transfer successful in memory!\nHit 'Save Changes' to save.")
+    messagebox.showinfo(title="Transfer Successful!", message='Transfer successful in memory!\nHit "Save Changes" to save.')
 def save_and_backup():
     print("Now saving the data...")
     WORLDSAVESIZEPREFIX = b'\x0e\x00\x00\x00worldSaveData\x00\x0f\x00\x00\x00StructProperty\x00'
