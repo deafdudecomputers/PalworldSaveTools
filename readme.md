@@ -159,9 +159,6 @@ This process lets both players keep their characters and pals intact while swapp
   - Use `Fix Host Save` when transferring within the same world/save to preserve the guild.  
   - Alternatively, promote another player to guild leader, leave the guild, transfer, then get re-invited.
 
-- **Players Not Appearing Post-Transfer**  
-  **Fix:** Uncheck the "Keep old guild" option during transfer. This ensures the transferred character is recognized and can log in.
-
 ---
 
 ## 2. Steam to GamePass Converter Not Working

@@ -295,24 +295,76 @@ def update_guild_data(targ_lvl, targ_json, host_guid, char_instanceid, keep_old_
             if group_data["value"]["GroupType"]["value"]["value"] == "EPalGroupType::Guild":
                 if targ_uid in [player_item['player_uid'] for player_item in group_data["value"]["RawData"]["value"]["players"]]:
                     group_id = group_data["value"]["RawData"]["value"]['group_id']
+                    guild_items_json = group_data["value"]["RawData"]["value"]["individual_character_handle_ids"]
                     break
         if group_id is None:
-            messagebox.showerror(message='Guild ID not found, aborting...')
-            return False
+            messagebox.showerror(message='Guild ID not found, aboorting')
+            return
+        guild_item_instances = set()
+        for guild_item in guild_items_json:
+            guild_item_instances.add(guild_item['instance_id'])
     else:
-        for group_idx in reversed(range(len(targ_lvl["GroupSaveDataMap"]["value"]))):
-            group_data = targ_lvl["GroupSaveDataMap"]["value"][group_idx]
+        for group_idx, group_data in enumerate(targ_lvl["GroupSaveDataMap"]["value"]):
             if group_data["value"]["GroupType"]["value"]["value"] == "EPalGroupType::Guild" and group_data["key"] not in source_guild_dict:
-                players = group_data["value"]["RawData"]["value"]["players"]
-                for player_idx, player_item in enumerate(players):
+                new_character_guild_found = False
+                for player_idx, player_item in enumerate(group_data["value"]["RawData"]["value"]["players"]):
                     if player_item['player_uid'] == targ_uid:
-                        players.pop(player_idx)
-                        if not players:
-                            targ_lvl["GroupSaveDataMap"]["value"].pop(group_idx)
-                        else:
-                            if group_data["value"]["RawData"]["value"]["admin_player_uid"] == targ_uid:
-                                group_data["value"]["RawData"]["value"]["admin_player_uid"] = players[0]['player_uid']
+                        new_character_guild_found = True
                         break
+                if new_character_guild_found:
+                    group_data["value"]["RawData"]["value"]["players"].pop(player_idx)
+                    if len(group_data["value"]["RawData"]["value"]["players"]) > 0:
+                        if group_data["value"]["RawData"]["value"]["admin_player_uid"] == targ_uid:
+                            group_data["value"]["RawData"]["value"]["admin_player_uid"] = group_data["value"]["RawData"]["value"]["players"][0]['player_uid']
+                        for handle_idx, character_handle_id in enumerate(group_data["value"]["RawData"]["value"]["individual_character_handle_ids"]):
+                            if character_handle_id['guid'] == targ_uid:
+                                group_data["value"]["RawData"]["value"]["individual_character_handle_ids"].pop(handle_idx)
+                    else:
+                        targ_lvl["GroupSaveDataMap"]["value"].pop(group_idx)
+                    break
+        for group_data in targ_lvl["GroupSaveDataMap"]["value"]:
+            if group_data["key"] in source_guild_dict:
+                old_player_found = False
+                for player_item in group_data["value"]["RawData"]["value"]["players"]:
+                    if player_item['player_uid'] == host_guid:
+                        old_player_found = True
+                        player_item['player_uid'] = targ_uid
+                        break
+                if old_player_found:
+                    for character_handle_id in group_data["value"]["RawData"]["value"]["individual_character_handle_ids"]:
+                        if character_handle_id['guid'] == host_guid:
+                            character_handle_id['guid'] = targ_uid
+                            character_handle_id['instance_id'] = char_instanceid
+                            break
+                    if group_data["value"]["RawData"]["value"]["admin_player_uid"] == host_guid:
+                        group_data["value"]["RawData"]["value"]["admin_player_uid"] = targ_uid
+                    group_id = group_data["key"]
+                    break
+        if group_id is None:
+            print("No old guild containing the source player is found in target, moving guilds from old world now...")
+            old_guild = None
+            for group_data in source_guild_dict.values():
+                for player_item in group_data["value"]["RawData"]["value"]["players"]:
+                    if player_item['player_uid'] == host_guid:
+                        old_guild = fast_deepcopy(group_data)
+                        break
+            if old_guild is None:
+                print("No guild containing the source player is found in the source either, either this is a bug or the files are corrupted. Aborting.")
+                messagebox.showerror(message="No guild containing the source player is found in the source either, either this is a bug or the files are corrupted. Aborting.")
+                return
+            group_id = old_guild["key"]
+            if old_guild["value"]["RawData"]["value"]["admin_player_uid"] == host_guid:
+                old_guild["value"]["RawData"]["value"]["admin_player_uid"] = targ_uid
+            for player_item in old_guild["value"]["RawData"]["value"]["players"]:
+                if player_item['player_uid'] == host_guid:
+                    player_item['player_uid'] = targ_uid
+                    break
+            for character_handle_id in old_guild["value"]["RawData"]["value"]["individual_character_handle_ids"]:
+                if character_handle_id['guid'] == host_guid:
+                    character_handle_id['guid'] = targ_uid
+                    character_handle_id['instance_id'] = char_instanceid
+                    break
+            targ_lvl["GroupSaveDataMap"]["value"].append(old_guild)
     return True
 def reassign_owner_uid(param_maps, new_owner_uid):
     for character in param_maps:
