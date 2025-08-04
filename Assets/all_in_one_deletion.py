@@ -88,7 +88,7 @@ def ask_string_with_icon(title, prompt, icon_path):
     root.withdraw()
     dlg = CustomDialog(root, title)
     root.destroy()
-    return int(dlg.result)
+    return dlg.result if dlg.result else None
 def clean_character_save_parameter_map(data_source, valid_uids):
     if "CharacterSaveParameterMap" not in data_source: return
     entries = data_source["CharacterSaveParameterMap"].get("value", [])
