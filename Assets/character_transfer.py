@@ -430,6 +430,11 @@ def update_pal_params(param_maps, targ_uid, inv_pals_id, inv_otomo_id, host_pals
                     save_param["OwnerPlayerUId"] = targ_uid if not isinstance(targ_uid, dict) else targ_uid.get("value", targ_uid)
             if group_id and "GroupId" in save_param:
                 save_param["GroupId"] = group_id
+            if "MapObjectConcreteInstanceIdAssignedToExpedition" in save_param:
+                char_id = save_param.get("CharacterID", {}).get("value", "Unknown")
+                nickname = save_param.get("NickName", {}).get("value", "")
+                print(f"[DEBUG] Expedition flag found for Pal: {char_id} ({nickname}), removing assignment.")
+                del save_param["MapObjectConcreteInstanceIdAssignedToExpedition"]
             obj["SaveParameter"]["value"] = save_param
             pal_data["object"] = obj
             pal_param['value']['RawData']['value'] = pal_data
