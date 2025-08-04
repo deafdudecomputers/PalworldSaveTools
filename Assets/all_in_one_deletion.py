@@ -82,13 +82,20 @@ def ask_string_with_icon(title, prompt, icon_path):
             self.bind("<Return>", lambda event: self.ok())
             self.bind("<Escape>", lambda event: self.cancel())
             box.pack()
+        def validate(self):
+            try:
+                int(self.entry.get())
+                return True
+            except ValueError:
+                messagebox.showerror("Invalid Input", "Please enter a valid number.")
+                return False
         def apply(self):
-            self.result = self.entry.get()
+            self.result = int(self.entry.get())
     root = tk.Tk()
     root.withdraw()
     dlg = CustomDialog(root, title)
     root.destroy()
-    return dlg.result if dlg.result else None
+    return dlg.result
 def clean_character_save_parameter_map(data_source, valid_uids):
     if "CharacterSaveParameterMap" not in data_source: return
     entries = data_source["CharacterSaveParameterMap"].get("value", [])
