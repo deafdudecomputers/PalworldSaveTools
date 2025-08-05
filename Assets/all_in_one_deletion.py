@@ -594,7 +594,6 @@ def delete_unreferenced_data():
                                   .get('OwnerPlayerUId'))
         if uid: char_uids.add(uid)
         if owner_uid: char_uids.add(owner_uid)
-    print(f"Collected {len(char_uids)} unique UIDs from CharacterSaveParameterMap.")
     unreferenced_uids, invalid_uids, removed_guilds = [], [], 0
     for group in group_data_list[:]:
         if group['value']['GroupType']['value']['value'] != 'EPalGroupType::Guild': continue
