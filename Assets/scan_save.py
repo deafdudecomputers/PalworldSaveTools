@@ -274,11 +274,14 @@ def ShowPlayers(scan_logger, player_logger, log_folder):
     deleted_guilds_count = 0
     to_delete = []
     def process_player_file(player_uid, nickname, players_folder):
+        def safe_text(text):
+            return str(text).encode("utf-8", "replace").decode("utf-8")
+        nickname_safe = safe_text(nickname)
         if player_uid in processed_uids:
-            print(f"{nickname}({player_uid}) already processed")
+            print(f"{nickname_safe}({player_uid}) already processed")
             return        
         def get_paltotalcount_from_sav(sav_file):
-            print(f"Now processing... {nickname}({os.path.basename(sav_file)})")
+            print(f"Now processing... {nickname_safe}({os.path.basename(sav_file)})")
             try:
                 with open(sav_file, "rb") as file:
                     data = file.read()
@@ -293,7 +296,7 @@ def ShowPlayers(scan_logger, player_logger, log_folder):
                 pal_deck_unlocked = unique_captured if unique_captured > pal_deck_unlocked else pal_deck_unlocked
                 return unique_captured, total_captured, pal_deck_unlocked
             except Exception:
-                print(f"Error processing .sav file for {nickname}({os.path.basename(sav_file)}): Save not found...")
+                print(f"Error processing .sav file for {nickname_safe}({os.path.basename(sav_file)}): Save not found...")
                 return 0, 0, 0   
         clean_uid = str(player_uid).replace("-", "")
         sav_files = [f for f in os.listdir(players_folder) if f.lower() == f"{clean_uid}.sav".lower()]
@@ -305,7 +308,7 @@ def ShowPlayers(scan_logger, player_logger, log_folder):
             player_pal_encounter_count[player_uid] = pal_deck_unlocked
             processed_uids.add(player_uid)
         else:
-            print(f"Save file for {nickname}({player_uid}) not found.")
+            print(f"Save file for {nickname_safe}({player_uid}) not found.")
     start_time = time.time()
     print(f"Now processing the players saves...")
     for key, value in data_source.items():

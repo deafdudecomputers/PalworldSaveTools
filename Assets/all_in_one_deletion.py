@@ -234,12 +234,21 @@ def build_player_levels():
     char_map = loaded_level_json['properties']['worldSaveData']['value'].get('CharacterSaveParameterMap', {}).get('value', [])
     uid_level_map = defaultdict(lambda: '?')
     for entry in char_map:
-        key = entry.get('key', {})
-        val = entry.get('value', {}).get('RawData', {}).get('value', {})
-        uid_obj = key.get('PlayerUId', {})
-        uid = str(uid_obj.get('value', '') if isinstance(uid_obj, dict) else uid_obj)
-        level = extract_level(val.get('object', {}).get('SaveParameter', {}).get('value', {}).get('Level', '?'))
-        if uid: uid_level_map[uid.replace('-', '')] = level
+        try:
+            sp = entry['value']['RawData']['value']['object']['SaveParameter']
+            if sp['struct_type'] != 'PalIndividualCharacterSaveParameter':
+                continue
+            sp_val = sp['value']
+            if not sp_val.get('IsPlayer', {}).get('value', False):
+                continue
+            key = entry.get('key', {})
+            uid_obj = key.get('PlayerUId', {})
+            uid = str(uid_obj.get('value', '') if isinstance(uid_obj, dict) else uid_obj)
+            level = extract_value(sp_val, 'Level', '?')
+            if uid:
+                uid_level_map[uid.replace('-', '')] = level
+        except Exception:
+            continue
     player_levels = dict(uid_level_map)
 def on_guild_select(evt):
     sel = guild_tree.selection()
@@ -561,6 +570,88 @@ def delete_inactive_players_button():
     d = ask_string_with_icon("Delete Inactive Players", "Delete players inactive for days?", ICON_PATH)
     if d is None: return
     delete_inactive_players(folder, inactive_days=d)
+def delete_unreferenced_data():
+    global files_to_delete
+    folder_path = current_save_path
+    if not folder_path:
+        messagebox.showerror("Error", "No save loaded!")
+        return
+    players_folder = os.path.join(folder_path, 'Players')
+    if not os.path.exists(players_folder):
+        print("Players folder not found, aborting.")
+        return
+    def normalize_uid(uid):
+        if isinstance(uid, dict): uid = uid.get('value', '')
+        return str(uid).replace('-', '').lower()
+    wsd = loaded_level_json['properties']['worldSaveData']['value']
+    group_data_list = wsd.get('GroupSaveDataMap', {}).get('value', [])
+    char_map = wsd.get('CharacterSaveParameterMap', {}).get('value', [])
+    char_uids = set()
+    for entry in char_map:
+        uid = normalize_uid(entry.get('key', {}).get('PlayerUId'))
+        owner_uid = normalize_uid(entry.get('value', {}).get('RawData', {}).get('value', {})
+                                  .get('object', {}).get('SaveParameter', {}).get('value', {})
+                                  .get('OwnerPlayerUId'))
+        if uid: char_uids.add(uid)
+        if owner_uid: char_uids.add(owner_uid)
+    print(f"Collected {len(char_uids)} unique UIDs from CharacterSaveParameterMap.")
+    unreferenced_uids, invalid_uids, removed_guilds = [], [], 0
+    for group in group_data_list[:]:
+        if group['value']['GroupType']['value']['value'] != 'EPalGroupType::Guild': continue
+        raw = group['value']['RawData']['value']
+        players = raw.get('players', [])
+        valid_players = []
+        all_invalid = True
+        for p in players:
+            pid = normalize_uid(p.get('player_uid'))
+            if pid not in char_uids:
+                name = p.get('player_info', {}).get('player_name', 'Unknown')
+                print(f"Removing unreferenced player {name} ({pid})")
+                unreferenced_uids.append(pid)
+                continue
+            level = player_levels.get(pid, None)
+            if is_valid_level(level):
+                all_invalid = False
+                valid_players.append(p)
+            else:
+                name = p.get('player_info', {}).get('player_name', 'Unknown')
+                print(f"Removing invalid player {name} ({pid})")
+                invalid_uids.append(pid)
+        if not valid_players or all_invalid:
+            gid = group['key']
+            for b in wsd.get('BaseCampSaveData', {}).get('value', [])[:]:
+                if are_equal_uuids(b['value']['RawData']['value'].get('group_id_belong_to'), gid):
+                    delete_base_camp(b, gid, loaded_level_json)
+            group_data_list.remove(group)
+            removed_guilds += 1
+            print(f"Removed guild {gid} (Empty or invalid players).")
+            continue
+        raw['players'] = valid_players
+        admin_uid = normalize_uid(raw.get('admin_player_uid'))
+        keep_uids = {normalize_uid(p.get('player_uid')) for p in valid_players}
+        if admin_uid not in keep_uids:
+            raw['admin_player_uid'] = valid_players[0]['player_uid']
+            print(f"Admin reassigned in group {group['key']} to {raw['admin_player_uid']}")
+    char_map[:] = [entry for entry in char_map
+                   if normalize_uid(entry.get('key', {}).get('PlayerUId')) not in unreferenced_uids + invalid_uids
+                   and normalize_uid(entry.get('value', {}).get('RawData', {}).get('value', {})
+                                     .get('object', {}).get('SaveParameter', {}).get('value', {})
+                                     .get('OwnerPlayerUId')) not in unreferenced_uids + invalid_uids]
+    all_removed_uids = set(unreferenced_uids + invalid_uids)
+    files_to_delete.update(all_removed_uids)
+    removed_pals = delete_player_pals(wsd, all_removed_uids)
+    delete_orphaned_bases()
+    build_player_levels()
+    refresh_all()
+    refresh_stats("After Cleaning Players Without References")
+    result_msg = (
+        f"Players removed: {len(all_removed_uids)} "
+        f"(Unreferenced: {len(unreferenced_uids)}, Invalid: {len(invalid_uids)})\n"
+        f"Pals deleted: {removed_pals}\n"
+        f"Guilds removed: {removed_guilds}"
+    )
+    print(result_msg)
+    messagebox.showinfo("Done", result_msg)
 def delete_inactive_players(folder_path, inactive_days=30):
     global files_to_delete
     players_folder = os.path.join(folder_path, 'Players')
@@ -746,8 +837,14 @@ def get_current_stats():
     total_players = sum(len(g['value']['RawData']['value'].get('players', [])) for g in group_data if g['value']['GroupType']['value']['value'] == 'EPalGroupType::Guild')
     total_guilds = sum(1 for g in group_data if g['value']['GroupType']['value']['value'] == 'EPalGroupType::Guild')
     total_bases = len(base_data)
-    total_pals_raw = sum(1 for c in char_data if c['value']['RawData']['value']['object']['SaveParameter']['struct_type'] == 'PalIndividualCharacterSaveParameter')
-    total_pals = total_pals_raw - total_players
+    total_pals = 0
+    for c in char_data:
+        val = c.get('value', {}).get('RawData', {}).get('value', {})
+        struct_type = val.get('object', {}).get('SaveParameter', {}).get('struct_type')
+        if struct_type == 'PalIndividualCharacterSaveParameter':
+            if 'IsPlayer' in val.get('object', {}).get('SaveParameter', {}).get('value', {}) and val['object']['SaveParameter']['value']['IsPlayer'].get('value'):
+                continue
+            total_pals += 1
     return dict(Players=total_players, Guilds=total_guilds, Bases=total_bases, Pals=total_pals)
 def create_stats_panel(parent):
     stat_frame = ttk.Frame(parent, style="TFrame")
@@ -1141,6 +1238,8 @@ def all_in_one_deletion():
     btn_delete_player.place(x=base_x+pw*0.18-(btn_delete_player.winfo_reqwidth()//2),y=y_pos)
     btn_fix_duplicate_players.place(x=base_x+pw*0.50-(btn_fix_duplicate_players.winfo_reqwidth()//2),y=y_pos)
     btn_delete_inactive_players.place(x=base_x+pw*0.82-(btn_delete_inactive_players.winfo_reqwidth()//2),y=y_pos)
+    btn_delete_unreferenced = ttk.Button(window, text="Delete Unreferenced Data", command=delete_unreferenced_data, style="Dark.TButton")
+    btn_delete_unreferenced.place(x=base_x+pw*1.15-(btn_delete_unreferenced.winfo_reqwidth()//2), y=y_pos)
     stat_labels=create_stats_panel(window)
     btn_show_map=ttk.Button(window,text="Show Base Map",command=show_base_map,style="Dark.TButton")
     btn_show_map.place(x=1235,y=10)
@@ -1154,8 +1253,8 @@ def all_in_one_deletion():
     exclusions_guilds_tree.pack()
     btn_frame_guild=ttk.Frame(guild_ex_frame)
     btn_frame_guild.pack(pady=5)
-    ttk.Button(btn_frame_guild,text="Add Guild",width=12,style="Dark.TButton",command=lambda:add_exclusion(guild_tree,"guilds")).pack(side='left',padx=6)
-    ttk.Button(btn_frame_guild,text="Remove Guild",width=12,style="Dark.TButton",command=lambda:remove_selected_exclusion(exclusions_guilds_tree,"guilds")).pack(side='left',padx=6)
+    ttk.Button(btn_frame_guild, text="Add Guild", style="Dark.TButton", command=lambda: add_exclusion(guild_tree, "guilds")).pack(side='left', padx=6)
+    ttk.Button(btn_frame_guild, text="Remove Guild", style="Dark.TButton", command=lambda: remove_selected_exclusion(exclusions_guilds_tree, "guilds")).pack(side='left', padx=6)
     player_ex_frame=ttk.Frame(exclusions_container)
     player_ex_frame.pack(side='left', padx=3, fill='y', expand=False)
     exclusions_players_tree=ttk.Treeview(player_ex_frame,columns=("ID",),show="headings",height=5)
@@ -1164,8 +1263,8 @@ def all_in_one_deletion():
     exclusions_players_tree.pack()
     btn_frame_player=ttk.Frame(player_ex_frame)
     btn_frame_player.pack(pady=5)
-    ttk.Button(btn_frame_player,text="Add Player",width=12,style="Dark.TButton",command=lambda:add_exclusion(player_tree,"players")).pack(side='left',padx=6)
-    ttk.Button(btn_frame_player,text="Remove Player",width=12,style="Dark.TButton",command=lambda:remove_selected_exclusion(exclusions_players_tree,"players")).pack(side='left',padx=6)
+    ttk.Button(btn_frame_player, text="Add Player", style="Dark.TButton", command=lambda: add_exclusion(player_tree, "players")).pack(side='left', padx=6)
+    ttk.Button(btn_frame_player, text="Remove Player", style="Dark.TButton", command=lambda: remove_selected_exclusion(exclusions_players_tree, "players")).pack(side='left', padx=6)
     base_ex_frame=ttk.Frame(exclusions_container)
     base_ex_frame.pack(side='left', padx=3, fill='y', expand=False)
     exclusions_bases_tree=ttk.Treeview(base_ex_frame,columns=("ID",),show="headings",height=5)
