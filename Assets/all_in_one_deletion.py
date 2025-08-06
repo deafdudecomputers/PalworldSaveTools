@@ -845,28 +845,13 @@ def get_current_stats():
                 continue
             total_pals += 1
     return dict(Players=total_players, Guilds=total_guilds, Bases=total_bases, Pals=total_pals)
-def create_stats_panel(parent):
-    stat_frame = ttk.Frame(parent, style="TFrame")
-    stat_frame.place(x=1190, y=80, width=200, height=340)
-    ttk.Label(stat_frame, text="Stats", font=("Arial", 12, "bold"), style="TLabel").pack(anchor="w", padx=5, pady=(0,5))
-    sections = ["Before Deletion", "After Deletion", "Deletion Result"]
-    stat_labels = {}
-    for sec in sections:
-        ttk.Label(stat_frame, text=f"{sec}:", font=("Arial", 10, "bold"), style="TLabel").pack(anchor="w", padx=5, pady=(5,0))
-        key_sec = sec.lower().replace(" ", "")
-        for field in ["Guilds", "Bases", "Players", "Pals"]:
-            key = f"{key_sec}_{field.lower()}"
-            lbl = ttk.Label(stat_frame, text=f"{field}: 0", style="TLabel", font=("Arial", 10))
-            lbl.pack(anchor="w", padx=15)
-            stat_labels[key] = lbl
-    return stat_labels
 def update_stats_section(stat_labels, section, data):
     section_key = section.lower().replace(" ", "")
     for key, val in data.items():
         label_key = f"{section_key}_{key.lower()}"
         if label_key in stat_labels:
             stat_labels[label_key].config(text=f"{key.capitalize()}: {val}")
-def create_search_panel(parent, label_text, search_var, search_callback, tree_columns, tree_headings, tree_col_widths, width, height, tree_height=24):
+def create_search_panel(parent, label_text, search_var, search_callback, tree_columns, tree_headings, tree_col_widths, width, height, tree_height=12):
     panel = ttk.Frame(parent, style="TFrame")
     panel.place(width=width, height=height)
     topbar = ttk.Frame(panel, style="TFrame")
@@ -1176,6 +1161,23 @@ def load_exclusions():
     with open(EXCLUSIONS_FILE, "r") as f:
         exclusions.update(json.load(f))
 load_exclusions()
+def create_stats_panel(parent, style):
+    style.configure("Stat.TFrame", background="#444444")
+    style.configure("Stat.TLabel", background="#444444", foreground="white", font=("Arial", 10))
+    stat_frame = ttk.Frame(parent, style="Stat.TFrame", borderwidth=2, relief="solid")
+    sections = ["Before Deletion", "After Deletion", "Deletion Result"]
+    fields = ["Guilds", "Bases", "Players", "Pals"]
+    stat_labels = {}
+    for col, sec in enumerate(sections):
+        ttk.Label(stat_frame, text=sec, style="Stat.TLabel", font=("Arial", 10, "bold")).grid(row=0, column=col, padx=20, pady=5)
+        key_sec = sec.lower().replace(" ", "")
+        for row, field in enumerate(fields, start=1):
+            key = f"{key_sec}_{field.lower()}"
+            lbl = ttk.Label(stat_frame, text=f"{field}: 0", style="Stat.TLabel")
+            lbl.grid(row=row, column=col, sticky="w", padx=20)
+            stat_labels[key] = lbl
+    stat_frame.lift()
+    return stat_frame, stat_labels
 def all_in_one_deletion():
     global window, stat_labels, guild_tree, base_tree, player_tree, guild_members_tree
     global guild_search_var, base_search_var, player_search_var, guild_members_search_var
@@ -1183,98 +1185,70 @@ def all_in_one_deletion():
     base_dir = os.path.dirname(os.path.abspath(__file__))
     window = tk.Toplevel()
     window.title("All in One Deletion Tool")
-    window.geometry("1400x900")
+    window.geometry("1200x660")
     window.config(bg="#2f2f2f")
     font = ("Arial", 10)
     s = ttk.Style(window)
     s.theme_use('clam')
+    s.configure("Treeview.Heading", font=("Arial",12,"bold"), background="#444", foreground="white")
+    s.configure("Treeview", background="#333", foreground="white", fieldbackground="#333")
+    s.configure("TFrame", background="#2f2f2f")
+    s.configure("TLabel", background="#2f2f2f", foreground="white")
+    s.configure("TEntry", fieldbackground="#444", foreground="white")
+    s.configure("Dark.TButton", background="#555555", foreground="white", font=font, padding=6)
+    s.map("Dark.TButton", background=[("active","#666666"),("!disabled","#555555")], foreground=[("disabled","#888888"),("!disabled","white")])
     try: window.iconbitmap(ICON_PATH)
     except: pass
-    for opt,cfg in [
-        ("Treeview.Heading",{"font":("Arial",12,"bold"),"background":"#444","foreground":"white"}),
-        ("Treeview",{"background":"#333","foreground":"white","fieldbackground":"#333"}),
-        ("TFrame",{"background":"#2f2f2f"}),
-        ("TLabel",{"background":"#2f2f2f","foreground":"white"}),
-        ("TEntry",{"fieldbackground":"#444","foreground":"white"}),
-        ("Dark.TButton",{"background":"#555555","foreground":"white","font":font,"padding":6}),
-    ]: s.configure(opt,**cfg)
-    s.map("Dark.TButton",
-          background=[("active","#666666"),("!disabled","#555555")],
-          foreground=[("disabled","#888888"),("!disabled","white")])
-    guild_search_var=tk.StringVar()
-    gframe,guild_tree,guild_search_entry=create_search_panel(window,"Search Guilds:",guild_search_var,on_guild_search,("Name","ID"),("Guild Name","Guild ID"),(130,130),310,600)
-    gframe.place(x=10,y=40)
-    guild_tree.bind("<<TreeviewSelect>>",on_guild_select)
-    base_search_var=tk.StringVar()
-    bframe,base_tree,base_search_entry=create_search_panel(window,"Search Bases:",base_search_var,on_base_search,("ID",),("Base ID",),(280,),310,280)
-    bframe.place(x=330,y=40)
-    base_tree.bind("<<TreeviewSelect>>",on_base_select)
-    guild_members_search_var=tk.StringVar()
-    gm_frame,guild_members_tree,guild_members_search_entry=create_search_panel(window,"Guild Members:",guild_members_search_var,on_guild_members_search,("Name","Level","UID"),("Member","Level","UID"),(100,50,140),310,320)
-    gm_frame.place(x=330,y=320)
-    guild_members_tree.bind("<<TreeviewSelect>>",on_guild_member_select)
-    player_search_var=tk.StringVar()
-    pframe,player_tree,player_search_entry=create_search_panel(window,"Search Players:",player_search_var,on_player_search,("UID","Name","GID","Last","Level"),("Player UID","Player Name","Guild ID","Last Seen","Level"),(100,120,120,90,50),540,600)
-    pframe.place(x=650,y=40)
-    player_tree.bind("<<TreeviewSelect>>",on_player_select)
-    guild_result=tk.Label(window,text="Selected Guild: N/A",bg="#2f2f2f",fg="white",font=font);guild_result.place(x=10,y=10)
-    base_result=tk.Label(window,text="Selected Base: N/A",bg="#2f2f2f",fg="white",font=font);base_result.place(x=330,y=10)
-    player_result=tk.Label(window,text="Selected Player: N/A",bg="#2f2f2f",fg="white",font=font);player_result.place(x=650,y=10)
-    btn_save_changes=ttk.Button(window,text="Save Changes",command=save_changes,style="Dark.TButton")
-    btn_save_changes.place(x=650+540-5-btn_save_changes.winfo_reqwidth(),y=10)
-    window.update_idletasks()
-    btn_load_save=ttk.Button(window,text="Load Level.sav",command=load_save,style="Dark.TButton")
-    btn_load_save.place(x=btn_save_changes.winfo_x()-10-btn_load_save.winfo_reqwidth(),y=10)
-    window.update_idletasks()
-    btn_delete_guild=ttk.Button(window,text="Delete Selected Guild",command=delete_selected_guild,style="Dark.TButton");btn_delete_guild.place(x=20,y=650)
-    btn_delete_empty_guilds=ttk.Button(window,text="Delete Empty Guilds",command=delete_empty_guilds,style="Dark.TButton");btn_delete_empty_guilds.place(x=20+btn_delete_guild.winfo_reqwidth()+10,y=650)
-    btn_delete_base=ttk.Button(window,text="Delete Selected Base",command=delete_selected_base,style="Dark.TButton");btn_delete_base.place(x=330+5,y=650)
-    btn_delete_inactive_bases=ttk.Button(window,text="Delete Inactive Bases",command=delete_inactive_bases,style="Dark.TButton");btn_delete_inactive_bases.place(x=330+310-5-btn_delete_inactive_bases.winfo_reqwidth(),y=650)
-    y_pos=650;base_x=650;pw=540
-    btn_delete_player=ttk.Button(window,text="Delete Selected Player",command=delete_selected_player,style="Dark.TButton")
-    btn_fix_duplicate_players=ttk.Button(window,text="Delete Duplicate Players",command=delete_duplicated_players,style="Dark.TButton")
-    btn_delete_inactive_players=ttk.Button(window,text="Delete Inactive Players",command=delete_inactive_players_button,style="Dark.TButton")
-    btn_delete_player.place(x=base_x+pw*0.18-(btn_delete_player.winfo_reqwidth()//2),y=y_pos)
-    btn_fix_duplicate_players.place(x=base_x+pw*0.50-(btn_fix_duplicate_players.winfo_reqwidth()//2),y=y_pos)
-    btn_delete_inactive_players.place(x=base_x+pw*0.82-(btn_delete_inactive_players.winfo_reqwidth()//2),y=y_pos)
-    btn_delete_unreferenced = ttk.Button(window, text="Delete Unreferenced Data", command=delete_unreferenced_data, style="Dark.TButton")
-    btn_delete_unreferenced.place(x=base_x+pw*1.15-(btn_delete_unreferenced.winfo_reqwidth()//2), y=y_pos)
-    stat_labels=create_stats_panel(window)
-    btn_show_map=ttk.Button(window,text="Show Base Map",command=show_base_map,style="Dark.TButton")
-    btn_show_map.place(x=1235,y=10)
+    guild_search_var = tk.StringVar()
+    gframe, guild_tree, guild_search_entry = create_search_panel(window, "Search Guilds:", guild_search_var, on_guild_search,
+    ("Name", "ID"), ("Guild Name", "Guild ID"), (130, 130), 310, 410, tree_height=18)
+    gframe.place(x=10, y=40)
+    guild_tree.bind("<<TreeviewSelect>>", on_guild_select)
+    base_search_var = tk.StringVar()
+    bframe, base_tree, base_search_entry = create_search_panel(window, "Search Bases:", base_search_var, on_base_search,
+    ("ID",), ("Base ID",), (280,), 310, 200, tree_height=8)
+    bframe.place(x=330, y=40)
+    base_tree.bind("<<TreeviewSelect>>", on_base_select)
+    guild_members_search_var = tk.StringVar()
+    gm_frame, guild_members_tree, guild_members_search_entry = create_search_panel(window, "Guild Members:", guild_members_search_var,
+    on_guild_members_search, ("Name", "Level", "UID"), ("Member", "Level", "UID"), (100, 50, 140), 310, 200, tree_height=8)
+    gm_frame.place(x=330, y=250)
+    guild_members_tree.bind("<<TreeviewSelect>>", on_guild_member_select)
+    player_search_var = tk.StringVar()
+    pframe, player_tree, player_search_entry = create_search_panel(window, "Search Players:", player_search_var, on_player_search,
+    ("UID", "Name", "GID", "Last", "Level"), ("Player UID", "Player Name", "Guild ID", "Last Seen", "Level"),
+    (100, 120, 120, 90, 50), 540, 410, tree_height=18)
+    pframe.place(x=650, y=40)
+    player_tree.bind("<<TreeviewSelect>>", on_player_select)
+    guild_result = tk.Label(window, text="Selected Guild: N/A", bg="#2f2f2f", fg="white", font=font)
+    guild_result.place(x=10, y=10)
+    base_result = tk.Label(window, text="Selected Base: N/A", bg="#2f2f2f", fg="white", font=font)
+    base_result.place(x=330, y=10)
+    player_result = tk.Label(window, text="Selected Player: N/A", bg="#2f2f2f", fg="white", font=font)
+    player_result.place(x=650, y=10)
+    stat_frame, stat_labels = create_stats_panel(window, s)
+    stat_frame.place(x=700, y=470, width=420, height=158)
+    stat_frame.lift()
     exclusions_container = ttk.Frame(window)
-    exclusions_container.place(x=10,y=700,width=1380,height=230)
-    guild_ex_frame=ttk.Frame(exclusions_container)
-    guild_ex_frame.pack(side='left', padx=3, fill='y', expand=False)
-    exclusions_guilds_tree=ttk.Treeview(guild_ex_frame,columns=("ID",),show="headings",height=5)
-    exclusions_guilds_tree.heading("ID",text="Excluded Guild ID")
-    exclusions_guilds_tree.column("ID",width=320)
+    exclusions_container.place(x=25, y=470, width=600, height=180)
+    guild_ex_frame = ttk.Frame(exclusions_container)
+    guild_ex_frame.pack(side='left', fill='y', expand=False)
+    exclusions_guilds_tree = ttk.Treeview(guild_ex_frame, columns=("ID",), show="headings", height=5)
+    exclusions_guilds_tree.heading("ID", text="Excluded Guild ID")
+    exclusions_guilds_tree.column("ID", width=200)
     exclusions_guilds_tree.pack()
-    btn_frame_guild=ttk.Frame(guild_ex_frame)
-    btn_frame_guild.pack(pady=5)
-    ttk.Button(btn_frame_guild, text="Add Guild", style="Dark.TButton", command=lambda: add_exclusion(guild_tree, "guilds")).pack(side='left', padx=6)
-    ttk.Button(btn_frame_guild, text="Remove Guild", style="Dark.TButton", command=lambda: remove_selected_exclusion(exclusions_guilds_tree, "guilds")).pack(side='left', padx=6)
-    player_ex_frame=ttk.Frame(exclusions_container)
-    player_ex_frame.pack(side='left', padx=3, fill='y', expand=False)
-    exclusions_players_tree=ttk.Treeview(player_ex_frame,columns=("ID",),show="headings",height=5)
-    exclusions_players_tree.heading("ID",text="Excluded Player UID")
-    exclusions_players_tree.column("ID",width=320)
+    player_ex_frame = ttk.Frame(exclusions_container)
+    player_ex_frame.pack(side='left', fill='y', expand=False)
+    exclusions_players_tree = ttk.Treeview(player_ex_frame, columns=("ID",), show="headings", height=5)
+    exclusions_players_tree.heading("ID", text="Excluded Player UID")
+    exclusions_players_tree.column("ID", width=200)
     exclusions_players_tree.pack()
-    btn_frame_player=ttk.Frame(player_ex_frame)
-    btn_frame_player.pack(pady=5)
-    ttk.Button(btn_frame_player, text="Add Player", style="Dark.TButton", command=lambda: add_exclusion(player_tree, "players")).pack(side='left', padx=6)
-    ttk.Button(btn_frame_player, text="Remove Player", style="Dark.TButton", command=lambda: remove_selected_exclusion(exclusions_players_tree, "players")).pack(side='left', padx=6)
-    base_ex_frame=ttk.Frame(exclusions_container)
-    base_ex_frame.pack(side='left', padx=3, fill='y', expand=False)
-    exclusions_bases_tree=ttk.Treeview(base_ex_frame,columns=("ID",),show="headings",height=5)
-    exclusions_bases_tree.heading("ID",text="Excluded Bases")
-    exclusions_bases_tree.column("ID",width=320)
+    base_ex_frame = ttk.Frame(exclusions_container)
+    base_ex_frame.pack(side='left', fill='y', expand=False)
+    exclusions_bases_tree = ttk.Treeview(base_ex_frame, columns=("ID",), show="headings", height=5)
+    exclusions_bases_tree.heading("ID", text="Excluded Bases")
+    exclusions_bases_tree.column("ID", width=200)
     exclusions_bases_tree.pack()
-    btn_frame_base=ttk.Frame(base_ex_frame)
-    btn_frame_base.pack(pady=5)
-    ttk.Button(btn_frame_base,text="Add Base",width=12,style="Dark.TButton",command=lambda:add_exclusion(base_tree,"bases")).pack(side='left',padx=6)
-    ttk.Button(btn_frame_base,text="Remove Base",width=12,style="Dark.TButton",command=lambda:remove_selected_exclusion(exclusions_bases_tree,"bases")).pack(side='left',padx=6)
-    ttk.Button(window, text="Save Exclusions", width=20, style="Dark.TButton", command=lambda: save_exclusions_func()).place(x=1010, y=760)
     def populate_exclusions_trees():
         exclusions_guilds_tree.delete(*exclusions_guilds_tree.get_children())
         for gid in exclusions.get("guilds", []):
@@ -1291,10 +1265,8 @@ def all_in_one_deletion():
             tk.messagebox.showwarning("Warning", f"No {key[:-1].capitalize()} selected!")
             return
         val = source_tree.item(sel[0])["values"]
-        if key == "guilds":
-            val = val[1]
-        else:
-            val = val[0]
+        if key == "guilds": val = val[1]
+        else: val = val[0]
         if val not in exclusions[key]:
             exclusions[key].append(val)
             populate_exclusions_trees()
@@ -1304,16 +1276,94 @@ def all_in_one_deletion():
         sel = tree.selection()
         if not sel: return
         for item_id in sel:
-            val = tree.item(item_id)["values"]
-            val = val[0]
+            val = tree.item(item_id)["values"][0]
             if val in exclusions[key]:
                 exclusions[key].remove(val)
         populate_exclusions_trees()
     def save_exclusions_func():
-        with open("deletion_exclusions.json","w") as f:json.dump(exclusions,f,indent=4)
-        tk.messagebox.showinfo("Saved","Exclusions saved!")
+        with open("deletion_exclusions.json", "w") as f: json.dump(exclusions, f, indent=4)
+        tk.messagebox.showinfo("Saved", "Exclusions saved!")
     populate_exclusions_trees()
-    def on_exit():window.destroy()
-    window.protocol("WM_DELETE_WINDOW",on_exit)
+    def on_exit(): window.destroy()
+    window.protocol("WM_DELETE_WINDOW", on_exit)
+    def guild_tree_menu(event):
+        iid = guild_tree.identify_row(event.y)
+        if iid:
+            guild_tree.selection_set(iid)
+            menu = tk.Menu(window, tearoff=0)
+            menu.add_command(label="Add to Exclusions", command=lambda: add_exclusion(guild_tree, "guilds"))
+            menu.add_command(label="Remove from Exclusions", command=lambda: remove_selected_exclusion(exclusions_guilds_tree, "guilds"))
+            menu.add_command(label="Delete Guild", command=delete_selected_guild)
+            menu.tk_popup(event.x_root, event.y_root)
+    def base_tree_menu(event):
+        iid = base_tree.identify_row(event.y)
+        if iid:
+            base_tree.selection_set(iid)
+            menu = tk.Menu(window, tearoff=0)
+            menu.add_command(label="Add to Exclusions", command=lambda: add_exclusion(base_tree, "bases"))
+            menu.add_command(label="Remove from Exclusions", command=lambda: remove_selected_exclusion(exclusions_bases_tree, "bases"))
+            menu.add_command(label="Delete Base", command=delete_selected_base)
+            menu.tk_popup(event.x_root, event.y_root)
+    def player_tree_menu(event):
+        iid = player_tree.identify_row(event.y)
+        if iid:
+            player_tree.selection_set(iid)
+            menu = tk.Menu(window, tearoff=0)
+            menu.add_command(label="Add to Exclusions", command=lambda: add_exclusion(player_tree, "players"))
+            menu.add_command(label="Remove from Exclusions", command=lambda: remove_selected_exclusion(exclusions_players_tree, "players"))
+            menu.add_command(label="Delete Player", command=delete_selected_player)
+            menu.tk_popup(event.x_root, event.y_root)
+    def exclusions_guilds_tree_menu(event):
+        iid = exclusions_guilds_tree.identify_row(event.y)
+        if iid:
+            exclusions_guilds_tree.selection_set(iid)
+            menu = tk.Menu(window, tearoff=0)
+            menu.add_command(label="Remove from Exclusions", command=lambda: remove_selected_exclusion(exclusions_guilds_tree, "guilds"))
+            menu.tk_popup(event.x_root, event.y_root)
+    def exclusions_players_tree_menu(event):
+        iid = exclusions_players_tree.identify_row(event.y)
+        if iid:
+            exclusions_players_tree.selection_set(iid)
+            menu = tk.Menu(window, tearoff=0)
+            menu.add_command(label="Remove from Exclusions", command=lambda: remove_selected_exclusion(exclusions_players_tree, "players"))
+            menu.tk_popup(event.x_root, event.y_root)
+    def exclusions_bases_tree_menu(event):
+        iid = exclusions_bases_tree.identify_row(event.y)
+        if iid:
+            exclusions_bases_tree.selection_set(iid)
+            menu = tk.Menu(window, tearoff=0)
+            menu.add_command(label="Remove from Exclusions", command=lambda: remove_selected_exclusion(exclusions_bases_tree, "bases"))
+            menu.tk_popup(event.x_root, event.y_root)
+    guild_tree.bind("<Button-3>", guild_tree_menu)
+    base_tree.bind("<Button-3>", base_tree_menu)
+    player_tree.bind("<Button-3>", player_tree_menu)
+    exclusions_guilds_tree.bind("<Button-3>", exclusions_guilds_tree_menu)
+    exclusions_players_tree.bind("<Button-3>", exclusions_players_tree_menu)
+    exclusions_bases_tree.bind("<Button-3>", exclusions_bases_tree_menu)
+    menubar = tk.Menu(window)
+    file_menu = tk.Menu(menubar, tearoff=0)
+    file_menu.add_command(label="Load Level.sav", command=load_save)
+    file_menu.add_command(label="Save Changes", command=save_changes)
+    menubar.add_cascade(label="File", menu=file_menu)
+    delete_menu = tk.Menu(menubar, tearoff=0)
+    delete_menu.add_command(label="Delete Selected Guild", command=delete_selected_guild)
+    delete_menu.add_command(label="Delete Empty Guilds", command=delete_empty_guilds)
+    delete_menu.add_separator()
+    delete_menu.add_command(label="Delete Selected Base", command=delete_selected_base)
+    delete_menu.add_command(label="Delete Inactive Bases", command=delete_inactive_bases)
+    delete_menu.add_separator()
+    delete_menu.add_command(label="Delete Selected Player", command=delete_selected_player)
+    delete_menu.add_command(label="Delete Duplicate Players", command=delete_duplicated_players)
+    delete_menu.add_command(label="Delete Inactive Players", command=delete_inactive_players_button)
+    delete_menu.add_separator()
+    delete_menu.add_command(label="Delete Unreferenced Data", command=delete_unreferenced_data)
+    menubar.add_cascade(label="Delete", menu=delete_menu)
+    view_menu = tk.Menu(menubar, tearoff=0)
+    view_menu.add_command(label="Show Base Map", command=show_base_map)
+    menubar.add_cascade(label="View", menu=view_menu)
+    exclusions_menu = tk.Menu(menubar, tearoff=0)
+    exclusions_menu.add_command(label="Save Exclusions", command=save_exclusions_func)
+    menubar.add_cascade(label="Exclusions", menu=exclusions_menu)
+    window.config(menu=menubar)
     return window
 if __name__=="__main__": all_in_one_deletion()
