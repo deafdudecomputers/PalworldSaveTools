@@ -583,6 +583,9 @@ def delete_unreferenced_data():
     def normalize_uid(uid):
         if isinstance(uid, dict): uid = uid.get('value', '')
         return str(uid).replace('-', '').lower()
+    def is_broken_mapobject(obj):
+        bp = obj.get('Model', {}).get('value', {}).get('BuildProcess', {}).get('value', {}).get('RawData', {}).get('value', {})
+        return bp.get('state') == 0
     wsd = loaded_level_json['properties']['worldSaveData']['value']
     group_data_list = wsd.get('GroupSaveDataMap', {}).get('value', [])
     char_map = wsd.get('CharacterSaveParameterMap', {}).get('value', [])
@@ -639,6 +642,15 @@ def delete_unreferenced_data():
     all_removed_uids = set(unreferenced_uids + invalid_uids)
     files_to_delete.update(all_removed_uids)
     removed_pals = delete_player_pals(wsd, all_removed_uids)
+    removed_broken = 0
+    map_objects_wrapper = wsd.get('MapObjectSaveData', {}).get('value', {})
+    map_objects = map_objects_wrapper.get('values', [])
+    for obj in map_objects[:]:
+        if is_broken_mapobject(obj):
+            instance_id = obj.get('Model', {}).get('value', {}).get('RawData', {}).get('value', {}).get('instance_id')
+            map_objects.remove(obj)
+            print(f"Deleted broken MapObject (state=0) — ID: {instance_id}")
+            removed_broken += 1
     delete_orphaned_bases()
     build_player_levels()
     refresh_all()
@@ -647,7 +659,8 @@ def delete_unreferenced_data():
         f"Players removed: {len(all_removed_uids)} "
         f"(Unreferenced: {len(unreferenced_uids)}, Invalid: {len(invalid_uids)})\n"
         f"Pals deleted: {removed_pals}\n"
-        f"Guilds removed: {removed_guilds}"
+        f"Guilds removed: {removed_guilds}\n"
+        f"Broken MapObjects removed: {removed_broken}"
     )
     print(result_msg)
     messagebox.showinfo("Done", result_msg)
