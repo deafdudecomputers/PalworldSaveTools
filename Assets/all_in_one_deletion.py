@@ -881,7 +881,7 @@ def create_search_panel(parent, label_text, search_var, search_callback, tree_co
         tree.column(col, width=width_col, anchor='w')
     return panel, tree, entry
 def show_base_map():
-    import pygame, os
+    import pygame, os, time
     from tkinter import messagebox
     from palworld_coord import sav_to_map
     global srcGuildMapping, loaded_level_json
@@ -900,7 +900,8 @@ def show_base_map():
     base_icon_path = os.path.join(base_dir, "resources", "baseicon.png")
     orig_map_raw = pygame.image.load(wm_path)
     mw, mh = orig_map_raw.get_size()
-    w, h = min(mw, 1200), min(mh, 800)
+    sidebar_width = 420
+    w, h = min(mw, 1200) + sidebar_width, min(mh, 800)
     screen = pygame.display.set_mode((w, h), pygame.RESIZABLE)
     pygame.display.set_caption("Base Map Viewer")
     if os.path.exists(icon_path):
@@ -910,29 +911,31 @@ def show_base_map():
         except: pass
     orig_map = orig_map_raw.convert_alpha()
     base_icon = pygame.image.load(base_icon_path).convert_alpha()
-    base_icon = pygame.transform.smoothscale(base_icon, (32, 32))
-    bases = list(srcGuildMapping.BaseCampMapping.values())
+    base_icon = pygame.transform.smoothscale(base_icon, (24, 24))
     font = pygame.font.SysFont(None, 20)
+    small_font = pygame.font.SysFont(None, 18)
     tooltip_bg_color = (50, 50, 50, 220)
     tooltip_text_color = (255, 255, 255)
-    popup_bg_color = (30, 30, 30)
-    popup_text_color = (255, 255, 255)
     input_bg_color = (40, 40, 40)
     input_text_color = (255, 255, 255)
     marker_rects = []
-    min_zoom = min(w / mw, h / mh)
+    min_zoom = min((w - sidebar_width) / mw, h / mh)
     zoom = max(min_zoom, 0.15)
-    offset_x = (mw - w / zoom) / 2
+    offset_x = (mw - (w - sidebar_width) / zoom) / 2
     offset_y = (mh - h / zoom) / 2
     dragging = False; drag_start = (0, 0); offset_origin = (0, 0)
     clock = pygame.time.Clock(); running = True
     popup_info = None
     user_input = ""
     active_input = False
-    filtered_bases = []
-    base_positions = []
-    need_filter = True
-    need_recalc_bases = True
+    scroll_offset = 0
+    item_height = 26
+    header_height = item_height
+    expanded_guilds = set()
+    selected_item = None
+    search_placeholder = "Type to search guild, leader, base ID or coords..."
+    input_cleared = False
+    glow_start_time = None 
     def to_image_coordinates(x_world, y_world, width, height):
         x_min, x_max = -1000, 1000
         y_min, y_max = -1000, 1000
@@ -972,34 +975,100 @@ def show_base_map():
         if days > 0: return f"{days}d {hours}h"
         if hours > 0: return f"{hours}h {mins}m"
         return f"{mins}m"
-    def parse_search_input(text):
-        text = text.strip()
-        if text.lower().startswith("last seen:"):
-            val = text[10:].strip()
-            if val.endswith('d') and val[:-1].isdigit():
-                return int(val[:-1])
-        return None
-    def guild_matches_search(gdata, search_text, days_filter, tick):
-        if not search_text and days_filter is None:
-            return True
-        guild_name = gdata['value']['RawData']['value'].get('guild_name', "").lower()
-        leader_name = get_leader_name(gdata).lower()
-        if days_filter is not None:
-            players = gdata['value']['RawData']['value'].get('players', [])
-            last_online_list = [p.get('player_info', {}).get('last_online_real_time') for p in players if p.get('player_info', {}).get('last_online_real_time')]
-            if not last_online_list: return False
-            most_recent = max(last_online_list)
-            diff_days = (tick - most_recent) / 1e7 / 86400
-            if diff_days < days_filter:
-                return False
-            search_text = search_text.lower()
-        if search_text and "last seen:" not in search_text:
-            if search_text not in guild_name and search_text not in leader_name:
-                return False
-        return True
+    def clean_text(text):
+        return text.encode('utf-16', 'surrogatepass').decode('utf-16', 'ignore')
+    def truncate_text(text, max_width):
+        text = clean_text(text)
+        while small_font.size(text)[0] > max_width and len(text) > 3:
+            text = text[:-1]
+        if len(text) < len(clean_text(text)):
+            text = text[:-3] + "..."
+        return text
+    def get_guild_bases():
+        guilds = {}
+        for gid, gdata in srcGuildMapping.GuildSaveDataMap.items():
+            base_ids = gdata['value']['RawData']['value'].get('base_ids', [])
+            if not base_ids:
+                continue
+            guild_name = gdata['value']['RawData']['value'].get('guild_name', "Unknown Guild")
+            leader_name = get_leader_name(gdata)
+            last_seen = get_last_seen(gdata, tick)
+            bases = []
+            for base_id in base_ids:
+                base_data = srcGuildMapping.BaseCampMapping.get(base_id)
+                if base_data:
+                    bx, by = get_base_coords(base_data)
+                    bases.append({'base_id': base_id, 'coords': (bx, by), 'data': base_data, 'guild_name': guild_name, 'leader_name': leader_name, 'last_seen': last_seen})
+            if not bases:
+                continue
+            guilds[gid] = {
+                'guild_name': guild_name,
+                'leader_name': leader_name,
+                'last_seen': last_seen,
+                'bases': bases,
+            }
+        return guilds
+    def filter_guilds_and_bases(guilds, search_text):
+        if not search_text:
+            return guilds
+        terms = search_text.lower().split()
+        filtered = {}
+        for gid, g in guilds.items():
+            gn = g['guild_name'].lower()
+            ln = g['leader_name'].lower()
+            ls = g['last_seen'].lower()
+            bases = []
+            for b in g['bases']:
+                bid = str(b['base_id']).lower()
+                coords_str = f"x:{int(b['coords'][0])}, y:{int(b['coords'][1])}" if b['coords'][0] is not None else ""
+                if all(any(term in field for field in [bid, coords_str, gn, ln, ls]) for term in terms):
+                    bases.append(b)
+            guild_match = all(any(term in field for field in [gn, ln, ls]) for term in terms)
+            if bases or guild_match:
+                filtered[gid] = dict(g)
+                filtered[gid]['bases'] = bases
+        return filtered
+    def draw_sidebar_header():
+        sidebar_x = w - sidebar_width + 10
+        y_header = 36 + 30
+        screen.blit(small_font.render("Guild Name", True, (180, 180, 180)), (sidebar_x, y_header))
+        screen.blit(small_font.render("Leader", True, (180, 180, 180)), (sidebar_x + 110, y_header))
+        screen.blit(small_font.render("Last Seen", True, (180, 180, 180)), (sidebar_x + 210, y_header))
+        screen.blit(small_font.render("#Bases", True, (180, 180, 180)), (sidebar_x + 300, y_header))
+    def draw_guild_item(guild, y, selected):
+        sidebar_x = w - sidebar_width + 10
+        color = (255, 200, 100) if selected else (255, 255, 255)
+        max_widths = [100, 90, 80, 40]
+        gn = truncate_text(guild['guild_name'], max_widths[0])
+        ln = truncate_text(guild['leader_name'], max_widths[1])
+        ls = truncate_text(guild['last_seen'], max_widths[2])
+        nb = str(len(guild['bases']))
+        screen.blit(small_font.render(gn, True, color), (sidebar_x, y))
+        screen.blit(small_font.render(ln, True, color), (sidebar_x + 110, y))
+        screen.blit(small_font.render(ls, True, color), (sidebar_x + 210, y))
+        screen.blit(small_font.render(nb, True, color), (sidebar_x + 300, y))
+    def draw_base_item(base, y, selected):
+        sidebar_x = w - sidebar_width + 30
+        color = (255, 200, 100) if selected else (200, 200, 200)
+        max_widths = [110, 130]
+        bid = str(base['base_id'])
+        coords = f"x:{int(base['coords'][0])}, y:{int(base['coords'][1])}" if base['coords'][0] is not None else "N/A"
+        bid = truncate_text(bid, max_widths[0])
+        coords = truncate_text(coords, max_widths[1])
+        screen.blit(small_font.render(bid, True, color), (sidebar_x, y))
+        screen.blit(small_font.render(coords, True, color), (sidebar_x + 120, y))
+    def draw_totals():
+        sidebar_x = w - sidebar_width + 10
+        total_guilds = len(filtered_guilds)
+        total_bases = sum(len(g['bases']) for g in filtered_guilds.values())
+        text = f"Guilds: {total_guilds} | Bases: {total_bases}"
+        surf = small_font.render(text, True, (180, 180, 180))
+        screen.blit(surf, (sidebar_x, 40))
+    guilds_all = get_guild_bases()
+    filtered_guilds = {}
+    scroll_offset = 0
     while running:
         mouse_pos = pygame.mouse.get_pos()
-        hovered_base = None
         marker_rects.clear()
         for ev in pygame.event.get():
             if ev.type == pygame.QUIT:
@@ -1008,156 +1077,214 @@ def show_base_map():
                 if active_input:
                     if ev.key == pygame.K_BACKSPACE:
                         user_input = user_input[:-1]
-                        need_filter = True
                     elif ev.key == pygame.K_RETURN:
                         active_input = False
                     else:
                         if ev.unicode.isprintable():
                             user_input += ev.unicode
-                            need_filter = True
                 else:
                     if ev.key == pygame.K_f:
                         active_input = True
+                        input_cleared = False
             elif ev.type == pygame.MOUSEBUTTONDOWN:
                 if ev.button == 1:
                     dragging = True
                     drag_start = ev.pos
                     offset_origin = (offset_x, offset_y)
-                    input_rect = pygame.Rect(10, h - 36, 200, 26)
+                    sidebar_rect = pygame.Rect(w - sidebar_width, 0, sidebar_width, h)
+                    input_rect = pygame.Rect(w - sidebar_width + 10, 4, sidebar_width - 20, 26)
                     if input_rect.collidepoint(ev.pos):
                         active_input = True
-                    else:
+                        if not input_cleared:
+                            user_input = ""
+                            input_cleared = True
+                    elif sidebar_rect.collidepoint(ev.pos):
+                        rel_y = ev.pos[1] + scroll_offset - header_height - 36 - 30
+                        y_cursor = 0
+                        clicked = False
+                        for gid, guild in filtered_guilds.items():
+                            if y_cursor <= rel_y < y_cursor + item_height:
+                                if gid in expanded_guilds:
+                                    expanded_guilds.remove(gid)
+                                else:
+                                    expanded_guilds.clear()
+                                    expanded_guilds.add(gid)
+                                selected_item = ('guild', gid)
+                                clicked = True
+                                break
+                            y_cursor += item_height
+                            if gid in expanded_guilds:
+                                for base in guild['bases']:
+                                    if y_cursor <= rel_y < y_cursor + item_height:
+                                        selected_item = ('base', base)
+                                        bx, by = base['coords']
+                                        if bx is not None and by is not None:
+                                            px, py = to_image_coordinates(bx, by, mw, mh)
+                                            zoom = max(1.5, zoom)
+                                            offset_x = px - (w - sidebar_width) / (2 * zoom)
+                                            offset_y = py - h / (2 * zoom)
+                                            glow_start_time = time.time()
+                                        clicked = True
+                                        break
+                                    y_cursor += item_height
+                            if clicked:
+                                break
+                        if not clicked:
+                            selected_item = None
                         active_input = False
+                elif ev.button == 4 or ev.button == 5:
+                    pass
             elif ev.type == pygame.MOUSEBUTTONUP and ev.button == 1:
                 dragging = False
-                for base, rect in marker_rects:
-                    if rect.collidepoint(ev.pos):
-                        base_id = base.get('key')
-                        guild_name = "Unknown Guild"
-                        leader_name = "Unknown Leader"
-                        last_seen = "Unknown"
-                        for gid, gdata in srcGuildMapping.GuildSaveDataMap.items():
-                            base_ids = gdata['value']['RawData']['value'].get('base_ids', [])
-                            if base_id in base_ids:
-                                guild_name = gdata['value']['RawData']['value'].get('guild_name', guild_name)
-                                leader_name = get_leader_name(gdata)
-                                last_seen = get_last_seen(gdata, tick)
-                                break
-                        popup_info = (guild_name, leader_name, last_seen)
-                        break
-                else:
-                    popup_info = None
             elif ev.type == pygame.MOUSEMOTION and dragging:
                 dx, dy = ev.pos[0] - drag_start[0], ev.pos[1] - drag_start[1]
                 offset_x = offset_origin[0] - dx / zoom
                 offset_y = offset_origin[1] - dy / zoom
-                need_recalc_bases = True
             elif ev.type == pygame.MOUSEWHEEL:
-                old_zoom = zoom
-                zoom = min(max(zoom * (1.1 if ev.y > 0 else 0.9), min_zoom), 5.0)
                 mx, my = pygame.mouse.get_pos()
-                if zoom != old_zoom:
-                    ox_rel = offset_x + mx / old_zoom
-                    oy_rel = offset_y + my / old_zoom
-                    offset_x = ox_rel - mx / zoom
-                    offset_y = oy_rel - my / zoom
-                    need_recalc_bases = True
+                sidebar_x = w - sidebar_width
+                if mx >= sidebar_x:
+                    total_items = sum(len(g['bases']) + 1 if gid in expanded_guilds else 1 for gid, g in filtered_guilds.items())
+                    max_scroll = max(0, total_items * item_height - (h - header_height - 36 - 30 - 8))
+                    scroll_offset -= ev.y * item_height * 3
+                    scroll_offset = max(0, min(scroll_offset, max_scroll))
+                else:
+                    old_zoom = zoom
+                    zoom = min(max(zoom * (1.1 if ev.y > 0 else 0.9), min_zoom), 5.0)
+                    if zoom != old_zoom:
+                        ox_rel = offset_x + mx / old_zoom
+                        oy_rel = offset_y + my / old_zoom
+                        offset_x = ox_rel - mx / zoom
+                        offset_y = oy_rel - my / zoom
             elif ev.type == pygame.VIDEORESIZE:
                 w, h = ev.w, ev.h
                 screen = pygame.display.set_mode((w, h), pygame.RESIZABLE)
-                need_recalc_bases = True
         w, h = screen.get_size()
-        rect_w, rect_h = int(w / zoom), int(h / zoom)
-        offset_x = max(0, min(offset_x, max(0, mw - rect_w)))
-        offset_y = max(0, min(offset_y, max(0, mh - rect_h)))
+        map_w = w - sidebar_width
+        rect_w = min(int(map_w / zoom), mw)
+        rect_h = min(int(h / zoom), mh)
+        offset_x = max(0, min(offset_x, mw - rect_w))
+        offset_y = max(0, min(offset_y, mh - rect_h))
         rect = pygame.Rect(int(offset_x), int(offset_y), rect_w, rect_h)
         map_rect = pygame.Rect(0, 0, mw, mh)
         rect.clamp_ip(map_rect)
-        safe_rect = rect.clip(map_rect)
-        sub = orig_map.subsurface(safe_rect).copy()
-        scaled_sub = pygame.transform.smoothscale(sub, (w, h))
+        sub = orig_map.subsurface(rect).copy()
+        scaled_sub = pygame.transform.smoothscale(sub, (map_w, h))
+        screen.fill((40, 40, 40))
         screen.blit(scaled_sub, (0, 0))
-        if need_filter:
-            days_filter = parse_search_input(user_input)
-            search_text = user_input.lower() if days_filter is None else ""
-            filtered_bases = []
-            for b in bases:
-                guild_for_base = None
-                base_id = b.get('key')
-                for gid, gdata in srcGuildMapping.GuildSaveDataMap.items():
-                    base_ids = gdata['value']['RawData']['value'].get('base_ids', [])
-                    if base_id in base_ids:
-                        if guild_matches_search(gdata, search_text, days_filter, tick):
-                            guild_for_base = gdata
-                            break
-                if guild_for_base:
-                    filtered_bases.append(b)
-            need_filter = False
-            need_recalc_bases = True
-        if need_recalc_bases:
-            base_positions = []
-            for b in filtered_bases:
-                x, y = get_base_coords(b)
-                if x is None or y is None: continue
-                px, py = to_image_coordinates(x, y, mw, mh)
+        current_time = time.time()
+        for gid, guild in filtered_guilds.items():
+            for base in guild['bases']:
+                bx, by = base['coords']
+                if bx is None or by is None: continue
+                px, py = to_image_coordinates(bx, by, mw, mh)
                 px = (px - offset_x) * zoom
                 py = (py - offset_y) * zoom
-                base_positions.append((b, px, py))
-            need_recalc_bases = False
-        for b, px, py in base_positions:
-            if 0 <= px < w and 0 <= py < h:
-                pygame.draw.circle(screen, (255, 0, 0), (int(px), int(py)), 20, 3)
-                rect_marker = pygame.Rect(int(px) - 16, int(py) - 16, 32, 32)
-                marker_rects.append((b, rect_marker))
-                screen.blit(base_icon, rect_marker.topleft)
-                if rect_marker.collidepoint(mouse_pos):
-                    hovered_base = b
-        if hovered_base:
-            guild_name = "Unknown Guild"
-            leader_name = "Unknown Leader"
-            last_seen = "Unknown"
-            base_id = hovered_base.get('key')
-            for gid, gdata in srcGuildMapping.GuildSaveDataMap.items():
-                base_ids = gdata['value']['RawData']['value'].get('base_ids', [])
-                if base_id in base_ids:
-                    guild_name = gdata['value']['RawData']['value'].get('guild_name', guild_name)
-                    leader_name = get_leader_name(gdata)
-                    last_seen = get_last_seen(gdata, tick)
+                if 0 <= px < map_w and 0 <= py < h:
+                    if selected_item and selected_item[0] == 'base' and selected_item[1] == base and glow_start_time:
+                        elapsed = current_time - glow_start_time
+                        if elapsed < 5:
+                            glow_alpha = int(128 + 127 * (1 + math.sin(elapsed * 10)) / 2)
+                            glow_surf = pygame.Surface((48, 48), pygame.SRCALPHA)
+                            pygame.draw.circle(glow_surf, (255, 215, 0, glow_alpha), (24, 24), 22)
+                            screen.blit(glow_surf, (int(px) - 24, int(py) - 24))
+                        else:
+                            glow_start_time = None
+                    pygame.draw.circle(screen, (255, 0, 0), (int(px), int(py)), 16, 3)
+                    rect_marker = pygame.Rect(int(px) - 12, int(py) - 12, 24, 24)
+                    marker_rects.append((base, rect_marker))
+                    screen.blit(base_icon, rect_marker.topleft)
+        sidebar_rect = pygame.Rect(w - sidebar_width, 0, sidebar_width, h)
+        pygame.draw.rect(screen, (30, 30, 30), sidebar_rect)
+        input_rect = pygame.Rect(w - sidebar_width + 10, 4, sidebar_width - 20, 26)
+        pygame.draw.rect(screen, input_bg_color, input_rect, border_radius=4)
+        if active_input:
+            pygame.draw.rect(screen, (255, 215, 0), input_rect, width=2, border_radius=4)
+        if not user_input and not active_input:
+            placeholder_surf = font.render(search_placeholder, True, (120, 120, 120))
+            screen.blit(placeholder_surf, (input_rect.x + 6, input_rect.y + 4))
+        else:
+            input_surf = font.render(user_input, True, input_text_color)
+            screen.blit(input_surf, (input_rect.x + 6, input_rect.y + 4))
+        draw_sidebar_header()
+        sidebar_x = w - sidebar_width + 10
+        visible_height = h - header_height - 36 - 30 - 8
+        y_cursor = header_height + 36 + 30 + 4 - scroll_offset
+        total_items = 0
+        filtered_guilds = filter_guilds_and_bases(get_guild_bases(), user_input)
+        draw_totals()
+        for gid, guild in filtered_guilds.items():
+            is_selected = selected_item and selected_item[0] == 'guild' and selected_item[1] == gid
+            draw_guild_item(guild, y_cursor, is_selected)
+            total_items += 1
+            y_cursor += item_height
+            if gid in expanded_guilds:
+                for base in guild['bases']:
+                    is_selected = selected_item and selected_item[0] == 'base' and selected_item[1] == base
+                    draw_base_item(base, y_cursor, is_selected)
+                    total_items += 1
+                    y_cursor += item_height
+        mx, my = mouse_pos
+        hovered_item = None
+        for base, rect_marker in marker_rects:
+            if rect_marker.collidepoint(mx, my):
+                hovered_item = ('base', base)
+                break
+        if not hovered_item:
+            y_cursor = header_height + 36 + 30 + 4 - scroll_offset
+            for gid, guild in filtered_guilds.items():
+                rect_guild = pygame.Rect(w - sidebar_width + 10, y_cursor, sidebar_width - 20, item_height)
+                if rect_guild.collidepoint(mouse_pos):
+                    hovered_item = ('guild', gid, guild)
                     break
-            text = f"{guild_name} | Leader: {leader_name} | Last Seen: {last_seen}"
-            tooltip_surf = font.render(text, True, tooltip_text_color)
-            tooltip_bg = pygame.Surface((tooltip_surf.get_width() + 8, tooltip_surf.get_height() + 4), pygame.SRCALPHA)
-            tooltip_bg.fill(tooltip_bg_color)
-            mx, my = mouse_pos
-            screen.blit(tooltip_bg, (mx + 12, my + 12))
-            screen.blit(tooltip_surf, (mx + 16, my + 14))
-        if popup_info:
-            guild_name, leader_name, last_seen = popup_info
-            popup_w, popup_h = 280, 110
-            popup_x, popup_y = (w - popup_w) // 2, (h - popup_h) // 2
-            popup_rect = pygame.Rect(popup_x, popup_y, popup_w, popup_h)
-            pygame.draw.rect(screen, popup_bg_color, popup_rect)
-            pygame.draw.rect(screen, (255, 255, 255), popup_rect, 2)
-            guild_text = pygame.font.SysFont(None, 24, bold=True).render(f"Guild: {guild_name}", True, popup_text_color)
-            leader_text = pygame.font.SysFont(None, 24, bold=True).render(f"Leader: {leader_name}", True, popup_text_color)
-            seen_text = pygame.font.SysFont(None, 22).render(f"Last Seen: {last_seen}", True, popup_text_color)
-            screen.blit(guild_text, (popup_x + 10, popup_y + 10))
-            screen.blit(leader_text, (popup_x + 10, popup_y + 40))
-            screen.blit(seen_text, (popup_x + 10, popup_y + 70))
-        input_rect = pygame.Rect(10, h - 36, 200, 26)
-        pygame.draw.rect(screen, input_bg_color, input_rect)
-        border_color = (255, 255, 255) if active_input else (120, 120, 120)
-        pygame.draw.rect(screen, border_color, input_rect, 2)
-        input_surf = font.render(user_input, True, input_text_color)
-        screen.blit(input_surf, (input_rect.x + 5, input_rect.y + 5))
-        instructions = "Press 'F' to search. Type 'Last Seen: 7d' to filter by last seen days."
-        instr_surf = font.render(instructions, True, (255, 255, 255))
-        instr_bg = pygame.Surface((instr_surf.get_width() + 10, instr_surf.get_height() + 6), pygame.SRCALPHA)
-        instr_bg.fill((0, 0, 0, 150))
-        screen.blit(instr_bg, (10, 10))
-        screen.blit(instr_surf, (15, 13))
+                y_cursor += item_height
+                if gid in expanded_guilds:
+                    for base in guild['bases']:
+                        rect_base = pygame.Rect(w - sidebar_width + 30, y_cursor, sidebar_width - 50, item_height)
+                        if rect_base.collidepoint(mouse_pos):
+                            hovered_item = ('base', base)
+                            break
+                        y_cursor += item_height
+                if hovered_item:
+                    break
+        if hovered_item:
+            if hovered_item[0] == 'base':
+                base = hovered_item[1]
+                guild_name = base.get('guild_name', "Unknown Guild")
+                leader_name = base.get('leader_name', "Unknown Leader")
+                last_seen = base.get('last_seen', "Unknown")
+                base_id = base['base_id']
+                coords = base['coords']
+                tooltip_lines = [
+                    f"Guild Name: {guild_name} | Leader: {leader_name} | Last Seen: {last_seen}",
+                    f"Base ID: {base_id} | Coords: x:{int(coords[0])}, y:{int(coords[1])}" if coords[0] is not None else "Coords: N/A"
+                ]
+            else:
+                gid, guild = hovered_item[1], hovered_item[2]
+                tooltip_lines = [
+                    f"Guild Name: {guild['guild_name']} | Leader: {guild['leader_name']} | Last Seen: {guild['last_seen']}",
+                    f"# Bases: {len(guild['bases'])}"
+                ]
+            max_width = 0
+            for line in tooltip_lines:
+                w_line = font.size(line)[0]
+                if w_line > max_width:
+                    max_width = w_line
+            tooltip_height = len(tooltip_lines) * (font.get_linesize() + 2) + 6
+            tooltip_width = max_width + 10
+            x_tip, y_tip = mx + 15, my + 15
+            if x_tip + tooltip_width > w - sidebar_width:
+                x_tip = mx - tooltip_width - 15
+            if y_tip + tooltip_height > h:
+                y_tip = my - tooltip_height - 15
+            s = pygame.Surface((tooltip_width, tooltip_height), pygame.SRCALPHA)
+            s.fill(tooltip_bg_color)
+            for i, line in enumerate(tooltip_lines):
+                txt_surf = font.render(line, True, tooltip_text_color)
+                s.blit(txt_surf, (5, 3 + i * (font.get_linesize() + 2)))
+            screen.blit(s, (x_tip, y_tip))
         pygame.display.flip()
-        clock.tick(30)
+        clock.tick(60)
     pygame.quit()
 EXCLUSIONS_FILE = "deletion_exclusions.json"
 import os, json, tkinter as tk

@@ -1,9 +1,9 @@
-import sys
+import sys, os, glob
 from import_libs import *
+import tkinter as tk
+from tkinter import filedialog
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "palworld_save_tools", "commands"))
 from convert import main as convert_main
-def search_file(pattern, directory):
-    return glob.glob(f"{directory}/PalworldSave/**/{pattern}", recursive=True)
 def convert_sav_to_json(input_file, output_file):
     old_argv = sys.argv
     try:
@@ -18,31 +18,34 @@ def convert_json_to_sav(input_file, output_file):
         convert_main()
     finally:
         sys.argv = old_argv
+def file_picker(ext):
+    root=tk.Tk()
+    root.withdraw()
+    while True:
+        if ext=="sav":
+            path=filedialog.askopenfilename(title="Select Level.json",filetypes=[("Level.json","Level.json")])
+            if path and os.path.basename(path)=="Level.json":return path
+        elif ext=="json":
+            path=filedialog.askopenfilename(title="Select Level.sav",filetypes=[("Level.sav","Level.sav")])
+            if path and os.path.basename(path)=="Level.sav":return path
+        print("Invalid file. Please select the correct Level."+ext)
+        if not path:return None
 def convert_level_location_finder(ext):
-    if ext not in ["sav", "json"]:
-        print("Usage: convert_level_location_finder <sav|json>")
-        return False    
-    base_dir = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.getcwd()
-    level_files = search_file("Level.json", base_dir) if ext == "sav" else search_file("Level.sav", base_dir)
-    if not level_files:
-        print("File not found.")
-        return False    
-    for level_file in level_files:
-        if ext == "sav":
-            output_path = level_file.replace(".json", ".sav")
-            convert_json_to_sav(level_file, output_path)
-        else:
-            output_path = level_file.replace(".sav", ".json")
-            convert_sav_to_json(level_file, output_path)
-        print(f"Converted {level_file} to {output_path}")    
+    level_file=file_picker(ext)
+    if not level_file:return False
+    if ext=="sav":
+        output_path=level_file.replace(".json",".sav")
+        convert_json_to_sav(level_file,output_path)
+    else:
+        output_path=level_file.replace(".sav",".json")
+        convert_sav_to_json(level_file,output_path)
+    print(f"Converted {level_file} to {output_path}")
     return True
 def main():
-    args = sys.argv[1:] if hasattr(sys, 'frozen') else sys.argv[1:]
-    if len(args) != 1 or args[0] not in ["sav", "json"]:
+    if len(sys.argv)!=2 or sys.argv[1] not in ["sav","json"]:
         print("Usage: script.py <sav|json>")
         exit(1)
-    ext = args[0]
-    success = convert_level_location_finder(ext)
-    if not success:
+    if not convert_level_location_finder(sys.argv[1]):
         exit(1)
-if __name__ == "__main__": main()
+if __name__=="__main__":
+    main()

@@ -153,23 +153,28 @@ def run_tool(choice):
         raise
 def scan_save():
     try:
+        import tkinter as tk
+        from tkinter import filedialog
         if is_frozen():
             base_path = getattr(sys, '_MEIPASS', os.path.dirname(sys.executable))
         else:
             base_path = os.path.dirname(os.path.abspath(__file__))
         scan_save_func = lazy_importer.get_function("scan_save", "scan_save")
-        level_sav_path = os.path.join(base_path, "PalworldSave", "Level.sav")
-        if os.path.exists(level_sav_path):
-            print(f"Found Level.sav at: {level_sav_path}")
-            print("Now starting the tool...")
-            success = scan_save_func(str(level_sav_path))
-            if not success:
-                print(f"{RED_FONT}Error scanning save file!{RESET_FONT}")
-        else:
-            print(f"{RED_FONT}Error: PalworldSave/Level.sav not found!{RESET_FONT}")
-            print(f"Current working directory: {os.getcwd()}")
-            print(f"Looking for file at: {level_sav_path}")
-            print("Make sure to place your Level.sav file in the PalworldSave folder.")
+        root = tk.Tk()
+        root.withdraw()
+        while True:
+            level_sav_path = filedialog.askopenfilename(title="Select Level.sav file", filetypes=[("Level.sav", "Level.sav")])
+            if not level_sav_path:
+                print(f"{RED_FONT}No file selected!{RESET_FONT}")
+                return
+            if os.path.basename(level_sav_path) == "Level.sav":
+                break
+            print(f"{RED_FONT}Invalid file selected. Please choose Level.sav only!{RESET_FONT}")
+        print(f"Found Level.sav at: {level_sav_path}")
+        print("Now starting the tool...")
+        success = scan_save_func(str(level_sav_path))
+        if not success:
+            print(f"{RED_FONT}Error scanning save file!{RESET_FONT}")
     except ImportError as e:
         print(f"Error importing scan_save: {e}")
 def generate_map():
