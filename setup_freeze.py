@@ -136,7 +136,7 @@ if sys.platform == "win32":
     base = "Console"
 setup(
     name="PalworldSaveTools",
-    version="1.0.88",
+    version="1.0.89",
     description="All-in-one tool for fixing/transferring/editing Palworld saves",
     options={"build_exe": build_exe_options},
     executables=[

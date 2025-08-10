@@ -133,12 +133,10 @@ def run_tool(choice):
         ],
         [
             lambda: import_and_call("all_in_one_deletion", "all_in_one_deletion"),
-            lambda: import_and_call("paldefender_bases", "paldefender_bases"),
         ],
         [
             lambda: import_and_call("slot_injector", "slot_injector"),
             lambda: import_and_call("modify_save", "modify_save"),
-            scan_save,
             generate_map,
             lambda: import_and_call("character_transfer", "character_transfer"),
             lambda: import_and_call("fix_host_save", "fix_host_save"),
@@ -151,32 +149,6 @@ def run_tool(choice):
     except Exception as e:
         print(f"Invalid choice or error running tool: {e}")
         raise
-def scan_save():
-    try:
-        import tkinter as tk
-        from tkinter import filedialog
-        if is_frozen():
-            base_path = getattr(sys, '_MEIPASS', os.path.dirname(sys.executable))
-        else:
-            base_path = os.path.dirname(os.path.abspath(__file__))
-        scan_save_func = lazy_importer.get_function("scan_save", "scan_save")
-        root = tk.Tk()
-        root.withdraw()
-        while True:
-            level_sav_path = filedialog.askopenfilename(title="Select Level.sav file", filetypes=[("Level.sav", "Level.sav")])
-            if not level_sav_path:
-                print(f"{RED_FONT}No file selected!{RESET_FONT}")
-                return
-            if os.path.basename(level_sav_path) == "Level.sav":
-                break
-            print(f"{RED_FONT}Invalid file selected. Please choose Level.sav only!{RESET_FONT}")
-        print(f"Found Level.sav at: {level_sav_path}")
-        print("Now starting the tool...")
-        success = scan_save_func(str(level_sav_path))
-        if not success:
-            print(f"{RED_FONT}Error scanning save file!{RESET_FONT}")
-    except ImportError as e:
-        print(f"Error importing scan_save: {e}")
 def generate_map():
     try:
         generate_map_func = lazy_importer.get_function("generate_map", "generate_map")
@@ -195,15 +167,13 @@ converting_tools = [
 management_tools = [
     "Slot Injector",
     "Modify Save",
-    "Scan Save",
     "Generate Map",
     "Character Transfer",
     "Fix Host Save",
     "Restore Map"
 ]
 cleaning_tools = [
-    "All in One Deletion Tool",
-    "Generate PalDefender killnearestbase commands"
+    "All in One Deletion Tool"
 ]
 class MenuGUI(tk.Tk):
     def __init__(self):
@@ -225,7 +195,7 @@ class MenuGUI(tk.Tk):
         tools_version, _ = get_versions()
         self.title(f"PalworldSaveTools v{tools_version}")
         self.configure(bg="#2f2f2f")
-        self.geometry("800x680")
+        self.geometry("800x650")
         self.resizable(False, True)
         self.setup_ui()
     def setup_ui(self):

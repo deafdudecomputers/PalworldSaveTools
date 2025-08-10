@@ -1,13 +1,26 @@
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
-import os, re
+import os, re, json
 from datetime import datetime, timedelta
 from import_libs import *
 from palworld_coord import sav_to_map
 from common import ICON_PATH
+EXCLUSIONS_FILE = "deletion_exclusions.json"
+exclusions = {"guilds": [], "bases": [], "players": []}
+def normalize_uid(uid):
+    return uid.replace("-", "").lower()
+def load_exclusions():
+    global exclusions
+    if not os.path.exists(EXCLUSIONS_FILE):
+        with open(EXCLUSIONS_FILE, "w") as f:
+            json.dump(exclusions, f, indent=4)
+    else:
+        with open(EXCLUSIONS_FILE, "r") as f:
+            exclusions.update(json.load(f))
 class PalDefenderApp(tk.Toplevel):
     def __init__(self, master=None):
         super().__init__(master)
+        load_exclusions()
         self.title("PalDefender Bases")
         self.geometry("800x600")
         self.config(bg="#2f2f2f")
@@ -20,7 +33,10 @@ class PalDefenderApp(tk.Toplevel):
         style.configure("TLabel", background="#2f2f2f", foreground="white", font=font_style)
         style.configure("TEntry", fieldbackground="#444444", foreground="white", font=font_style)
         style.configure("Dark.TButton", background="#555555", foreground="white", font=font_style, padding=6)
-        style.map("Dark.TButton", background=[("active", "#666666"), ("!disabled", "#555555")], foreground=[("disabled", "#888888"), ("!disabled", "white")])
+        style.map("Dark.TButton",
+            background=[("active", "#666666"), ("!disabled", "#555555")],
+            foreground=[("disabled", "#888888"), ("!disabled", "white")]
+        )
         style.configure("TRadiobutton", background="#2f2f2f", foreground="white", font=font_style)
         style.map("TRadiobutton",
             background=[("active", "#3a3a3a"), ("!active", "#2f2f2f")],
@@ -80,48 +96,71 @@ class PalDefenderApp(tk.Toplevel):
         except ValueError:
             messagebox.showerror("Input Error", "Please enter valid numeric values.")
     def parse_log(self, inactivity_days=None, max_level=None):
+        global exclusions
         log_file = "Scan Save Logger/scan_save.log"
         if not os.path.exists(log_file):
             self.append_output(f"Log file '{log_file}' not found.")
             return False
         with open(log_file, "r", encoding="utf-8", errors="ignore") as f:
             content = f.read()
-        guilds = content.split("\n\n")
+        guilds = [g.strip() for g in re.split(r"={60,}", content) if g.strip()]
         inactive_guilds = {}
         kill_commands = []
-        guild_count = base_count = 0
+        guild_count = base_count = excluded_guilds = excluded_bases = 0
         for guild in guilds:
-            players_data = re.findall(r"Player: (.+?) \| UID: ([a-f0-9-]+) \| Level: (\d+) \| Caught: (\d+) \| Owned: (\d+) \| Encounters: (\d+) \| Uniques: (\d+) \| Last Online: (.+? \(\d+d?:?\d*h?:?\d*m?:?\d*s? ago\))", guild)
-            bases = re.findall(r"Base \d+: Base ID: ([a-f0-9-]+) \| Old: .+? \| New: .+? \| RawData: (.+)", guild)
-            if not players_data or not bases: continue
+            players_data = re.findall(
+                r"Player: (.+?) \| UID: ([a-f0-9-]+) \| Level: (\d+) \| Caught: (\d+) \| Owned: (\d+) \| Encounters: (\d+) \| Uniques: (\d+) \| Last Online: (.+? ago)", guild)
+            bases = re.findall(
+                r"Base \d+: Base ID: ([a-f0-9-]+) \| .+? \| RawData: (.+)", guild)
+            if not players_data or not bases:
+                continue
             guild_name = re.search(r"Guild: (.+?) \|", guild)
             guild_leader = re.search(r"Guild Leader: (.+?) \|", guild)
             guild_id = re.search(r"Guild ID: ([a-f0-9-]+)", guild)
             guild_name = guild_name.group(1) if guild_name else "Unnamed Guild"
             guild_leader = guild_leader.group(1) if guild_leader else "Unknown"
             guild_id = guild_id.group(1) if guild_id else "Unknown"
-            if inactivity_days:
-                valid_guild = True
-                for player in players_data:
-                    last_online = player[7]
-                    if "d" not in last_online:
-                        valid_guild = False
-                        break
-                    days_inactive = int(re.search(r"(\d+)d", last_online).group(1))
-                    if days_inactive < inactivity_days:
-                        valid_guild = False
-                        break
-                if not valid_guild: continue
-            if max_level:
-                if any(int(player[2]) > max_level for player in players_data): continue
+            if guild_id in exclusions.get("guilds", []):
+                excluded_guilds += 1
+                continue
+            filtered_bases = []
+            for base_id, raw_data in bases:
+                if base_id in exclusions.get("bases", []):
+                    excluded_bases += 1
+                    continue
+                filtered_bases.append((base_id, raw_data))
+            if not filtered_bases:
+                continue
+            if inactivity_days is not None:
+                if any(
+                    "d" not in player[7] or int(re.search(r"(\d+)d", player[7]).group(1)) < inactivity_days
+                    for player in players_data):
+                    continue
+            if max_level is not None:
+                if any(int(player[2]) > max_level for player in players_data):
+                    continue
             if guild_id not in inactive_guilds:
-                inactive_guilds[guild_id] = {"guild_name": guild_name, "guild_leader": guild_leader, "players": [], "bases": []}
+                inactive_guilds[guild_id] = {
+                    "guild_name": guild_name,
+                    "guild_leader": guild_leader,
+                    "players": [],
+                    "bases": []
+                }
             for player in players_data:
-                inactive_guilds[guild_id]["players"].append({"name": player[0], "uid": player[1], "level": player[2], "caught": player[3], "owned": player[4], "encounters": player[5], "uniques": player[6], "last_online": player[7]})
-            inactive_guilds[guild_id]["bases"].extend(bases)
+                inactive_guilds[guild_id]["players"].append({
+                    "name": player[0],
+                    "uid": player[1],
+                    "level": player[2],
+                    "caught": player[3],
+                    "owned": player[4],
+                    "encounters": player[5],
+                    "uniques": player[6],
+                    "last_online": player[7]
+                })
+            inactive_guilds[guild_id]["bases"].extend(filtered_bases)
             guild_count += 1
-            base_count += len(bases)
-            for _, raw_data in bases:
+            base_count += len(filtered_bases)
+            for _, raw_data in filtered_bases:
                 coords = re.findall(r"[-+]?\d*\.\d+|[-+]?\d+", raw_data)
                 if len(coords) >= 3:
                     x, y, z = map(float, coords[:3])
@@ -144,8 +183,12 @@ class PalDefenderApp(tk.Toplevel):
             self.append_output(f"Wrote {len(kill_commands)} kill commands to PalDefender/paldefender_bases.log.")
         else:
             self.append_output("No kill commands generated.")
-        if inactivity_days: self.append_output(f"Inactivity filter applied: >= {inactivity_days} day(s).")
-        if max_level: self.append_output(f"Level filter applied: <= {max_level}.")
+        if inactivity_days is not None:
+            self.append_output(f"Inactivity filter applied: >= {inactivity_days} day(s).")
+        if max_level is not None:
+            self.append_output(f"Level filter applied: <= {max_level}.")
+        self.append_output(f"Excluded guilds: {excluded_guilds}")
+        self.append_output(f"Excluded bases: {excluded_bases}")
         if guild_count > 0:
             os.makedirs("PalDefender", exist_ok=True)
             with open("PalDefender/paldefender_bases_info.log", "w", encoding="utf-8") as info_log:
@@ -167,7 +210,7 @@ class PalDefenderApp(tk.Toplevel):
                     info_log.write("-"*40+"\n")
                 info_log.write(f"Found {guild_count} guild(s) with {base_count} base(s).\n")
                 info_log.write("-"*40)
-        return guild_count>0
+        return guild_count > 0
     def on_exit(self):
         self.destroy()
 def paldefender_bases(master=None):

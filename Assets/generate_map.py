@@ -1,4 +1,7 @@
-import os, sys
+import os, sys, re, time, csv
+import pandas as pd
+from PIL import Image, ImageDraw, ImageFont
+import matplotlib.pyplot as plt
 sys.path.append(os.path.dirname(__file__))
 from import_libs import *
 from common import open_file_with_default_app
@@ -20,8 +23,6 @@ def parse_logfile(log_path):
     guild_data = []
     current_guild = {}
     base_keys = set()
-    total_bases = 0
-    level_55_count = 0
     for line in lines:
         if line.startswith('Guild:'):
             if current_guild:
@@ -30,19 +31,13 @@ def parse_logfile(log_path):
             guild_info = line.strip().split('|')
             current_guild['Guild'] = guild_info[0].split(': ')[1].strip()
             current_guild['Guild Leader'] = guild_info[1].split(': ')[1].strip()
-        if line.startswith('Base ') and line.split(':')[0].strip() in ['Base 1', 'Base 2', 'Base 3', 'Base 4', 'Base 5', 'Base 6', 'Base 7', 'Base 8', 'Base 9', 'Base 10']:
-            base_info = line.strip().split('|')
-            base_key = base_info[0].split(':')[0].strip()
-            new_coords = next(
-                (part.split('New:')[1].strip() for part in base_info if part.strip().startswith("New:")),
-                None
-            )
-            if new_coords:
-                current_guild[base_key] = new_coords
+        if line.startswith('Base ') and any(line.startswith(f"Base {i}:") for i in range(1, 11)):
+            base_key = line.split(':')[0].strip()
+            parts = line.strip().split('|')
+            if len(parts) >= 2:
+                coords_str = parts[1].strip()
+                current_guild[base_key] = coords_str
                 base_keys.add(base_key)
-                total_bases += 1
-        if "Level: 55" in line:
-            level_55_count += 1
     if current_guild:
         guild_data.append(current_guild)
     return guild_data, sorted(base_keys)
@@ -74,13 +69,12 @@ def extract_info_from_log():
         'Total Overall Pals': 'N/A',
         'Total Owned Pals': 'N/A',
         'Total Worker/Dropped Pals': 'N/A',
-        'Total Initial Guilds': 'N/A',
-        'Total Inactive Guilds': 'N/A',
         'Total Active Guilds': 'N/A',
         'Total Bases': 'N/A'
     }
-    for key in stats.keys():
-        match = re.search(rf"{key}: (\d+)", log_content)
+    for key in list(stats.keys()):
+        pattern = rf"{re.escape(key)}:\s*(\d+)"
+        match = re.search(pattern, log_content)
         if match:
             stats[key] = match.group(1)
     for key, value in stats.items():
@@ -101,15 +95,15 @@ def create_world_map():
     for _, row in df.iterrows():
         for col in base_cols:
             if pd.notna(row[col]):
-                x, y = map(int, row[col].split(' | ')[0].split(', '))
+                coords_str = row[col]
+                coords_part = coords_str.split('|')[0].strip()
+                x_str, y_str = coords_part.split(', ')
+                x, y = int(x_str), int(y_str)
                 x_img, y_img = to_image_coordinates(x, y)
                 circle_radius = 35
                 circle_x = x_img
                 circle_y = y_img
-                draw.ellipse(
-                    (circle_x - circle_radius, circle_y - circle_radius, circle_x + circle_radius, circle_y + circle_radius),
-                    outline='red', width=4
-                )
+                draw.ellipse((circle_x - circle_radius, circle_y - circle_radius, circle_x + circle_radius, circle_y + circle_radius), outline='red', width=4)
                 marker_x = x_img - marker_size[0] // 2
                 marker_y = y_img - marker_size[1] // 2
                 image.paste(marker_resized, (marker_x, marker_y), marker_resized)
@@ -123,7 +117,7 @@ def create_world_map():
                 draw.text((text_x, text_y), text, fill='red', font=pil_font, anchor='mm')
     stats = extract_info_from_log()
     stats_text = '\n'.join([f"{key}: {value}" for key, value in stats.items()])
-    text_bbox = draw.textbbox((0, 0), stats_text, font=pil_font)
+    text_bbox = draw.multiline_textbbox((0, 0), stats_text, font=pil_font)
     text_width, text_height = text_bbox[2] - text_bbox[0], text_bbox[3] - text_bbox[1]
     image_width, image_height = image.size
     text_position = (image_width - text_width - 50, image_height - text_height - 50)
@@ -134,14 +128,14 @@ def create_world_map():
     print(f"Now creating the world map...")
     high_dpi_image = image.resize((8000, 8000), Image.Resampling.LANCZOS)
     high_dpi_image.save('updated_worldmap.png', format='PNG', dpi=(100, 100), optimize=True)
-    os.remove('bases.csv')
+    if os.path.exists('bases.csv'): os.remove('bases.csv')
 def generate_map():
     start_time = time.time()
     script_dir = os.path.dirname(os.path.abspath(__file__))
     main_dir = os.path.dirname(script_dir)
     log_file_path = os.path.join(main_dir, 'Scan Save Logger', 'scan_save.log')    
     if not os.path.exists(log_file_path):
-        print("Please run the Scan Save Tool first before using this.")
+        print("Please run the All in One Deletion Tool first before using this.")
         return False    
     try:
         guild_data, base_keys = parse_logfile(log_file_path)

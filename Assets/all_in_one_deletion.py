@@ -31,7 +31,7 @@ def refresh_stats(section):
         before = refresh_stats.stats_before
         result = {k: before[k] - stats.get(k, 0) for k in before}
         update_stats_section(stat_labels, "Deletion Result", result)
-def as_uuid(val): return str(val).replace('-', '').lower() if val else ''
+def as_uuid(val): return str(val).lower() if val else ''
 def are_equal_uuids(a,b): return as_uuid(a)==as_uuid(b)
 def backup_whole_directory(source_folder, backup_folder):
     import datetime as dt
@@ -118,7 +118,9 @@ def clean_character_save_parameter_map(data_source, valid_uids):
             keep.append(entry)
     entries[:] = keep
 def load_save():
-    global current_save_path, loaded_level_json, backup_save_path, srcGuildMapping
+    import os, sys, logging, datetime, json, shutil
+    global current_save_path, loaded_level_json, backup_save_path, srcGuildMapping, player_levels
+    base_path = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     p = filedialog.askopenfilename(title="Select Level.sav", filetypes=[("SAV","*.sav")])
     if not p: return
     if not p.endswith("Level.sav"):
@@ -141,7 +143,171 @@ def load_save():
         print(f"Total {k}: {v}")
     all_in_one_deletion.loaded_json = loaded_level_json
     data_source = loaded_level_json["properties"]["worldSaveData"]["value"]
-    srcGuildMapping = MappingCacheObject.get(data_source, use_mp=not getattr(args, "reduce_memory", False))
+    try:
+        srcGuildMapping = MappingCacheObject.get(data_source, use_mp=not getattr(args, "reduce_memory", False))
+        if srcGuildMapping._worldSaveData.get('GroupSaveDataMap') is None:
+            srcGuildMapping.GroupSaveDataMap = {}
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to load guild mapping: {e}")
+        srcGuildMapping = None
+    log_folder = os.path.join(base_path, "Scan Save Logger")
+    if os.path.isdir(log_folder):
+        shutil.rmtree(log_folder)
+    os.makedirs(log_folder, exist_ok=True)
+    player_pals_count = {}
+    count_pals_found(data_source, player_pals_count, log_folder)
+    processed_uids = set()
+    def count_owned_pals(level_json):
+        owned_count = {}
+        char_map = level_json.get('properties', {}).get('worldSaveData', {}).get('value', {}).get('CharacterSaveParameterMap', {}).get('value', [])
+        for item in char_map:
+            try:
+                raw_data = item.get('value', {}).get('RawData', {}).get('value', {}).get('object', {}).get('SaveParameter', {}).get('value', {})
+                owner_uid = raw_data.get('OwnerPlayerUId', {}).get('value')
+                if owner_uid:
+                    owned_count[owner_uid] = owned_count.get(owner_uid, 0) + 1
+            except Exception:
+                continue
+        return owned_count
+    def process_player_save_file(player_uid, nickname, players_folder, target_log_folder):
+        def safe_text(text): return str(text).encode("utf-8", "replace").decode("utf-8")
+        nickname_safe = safe_text(nickname)
+        if not player_uid or player_uid in processed_uids:
+            return 0, 0, 0, []
+        clean_uid = str(player_uid).replace("-", "")
+        sav_files = [f for f in os.listdir(players_folder) if f.lower() == f"{clean_uid}.sav".lower()]
+        detail_log = os.path.join(target_log_folder, f"{nickname_safe}({player_uid}).log")
+        if not sav_files:
+            with open(detail_log, "w", encoding="utf-8") as f:
+                f.write(f"Player: {nickname_safe} | UID: {player_uid}\nNo pals found or player .sav missing.\n")
+            processed_uids.add(player_uid)
+            return 0, 0, 0, []
+        sav_file_path = os.path.join(players_folder, sav_files[0])
+        try:
+            with open(sav_file_path, "rb") as file:
+                data = file.read()
+                raw_gvas, save_type = decompress_sav_to_gvas(data)
+            gvas_file = GvasFile.read(raw_gvas, PALWORLD_TYPE_HINTS, SKP_PALWORLD_CUSTOM_PROPERTIES, allow_nan=True)
+            json_data = json.loads(json.dumps(gvas_file.dump(), cls=CustomEncoder))
+            pal_capture_count_list = json_data.get('properties', {}).get('SaveData', {}).get('value', {}).get('RecordData', {}).get('value', {}).get('PalCaptureCount', {}).get('value', [])
+            unique_captured = len(pal_capture_count_list) if pal_capture_count_list else 0
+            total_captured = sum(entry.get('value', 0) for entry in pal_capture_count_list) if pal_capture_count_list else 0
+            pal_deck_unlock_flag_list = json_data.get('properties', {}).get('SaveData', {}).get('value', {}).get('RecordData', {}).get('value', {}).get('PaldeckUnlockFlag', {}).get('value', [])
+            pal_deck_unlocked = len(pal_deck_unlock_flag_list) if pal_deck_unlock_flag_list else 0
+            pal_deck_unlocked = unique_captured if unique_captured > pal_deck_unlocked else pal_deck_unlocked
+            processed_uids.add(player_uid)
+            return unique_captured, total_captured, pal_deck_unlocked, []
+        except Exception:
+            with open(detail_log, "w", encoding="utf-8") as f:
+                f.write(f"Player: {nickname_safe} | UID: {player_uid}\nError reading player .sav or malformed data.\n")
+            processed_uids.add(player_uid)
+            return 0, 0, 0, []
+    def get_worker_dropped_from_log(log_path):
+        try:
+            with open(log_path, "r", encoding="utf-8") as f:
+                first_line = f.readline()
+                number = int(first_line.split()[0])
+                return number
+        except Exception:
+            return 0
+    owned_counts = count_owned_pals(loaded_level_json)
+    scan_log_path = os.path.join(log_folder, "scan_save.log")
+    logger = logging.getLogger('LoadSaveLogger')
+    logger.setLevel(logging.DEBUG)
+    fh = logging.FileHandler(scan_log_path, encoding='utf-8')
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(message)s')
+    fh.setFormatter(formatter)
+    ch.setFormatter(formatter)
+    logger.addHandler(fh)
+    logger.addHandler(ch)
+    def format_duration(seconds):
+        seconds = int(seconds)
+        if seconds < 60: return f"{seconds}s ago"
+        m, s = divmod(seconds, 60)
+        if m < 60: return f"{m}m {s}s ago"
+        h, m = divmod(m, 60)
+        if h < 24: return f"{h}h {m}m ago"
+        d, h = divmod(h, 24)
+        return f"{d}d {h}h ago"
+    try:
+        tick = loaded_level_json['properties']['worldSaveData']['value']['GameTimeSaveData']['value']['RealDateTimeTicks']['value']
+        total_players = total_caught = total_owned = total_bases = total_worker_dropped = active_guilds = 0
+        for gid, gdata in (srcGuildMapping.GroupSaveDataMap.items() if srcGuildMapping else []):
+            players = gdata['value']['RawData']['value'].get('players', [])
+            if not players:
+                continue
+            active_guilds += 1
+            total_bases += len(gdata['value']['RawData']['value'].get('base_ids', []))
+            total_worker_dropped += gdata['value']['RawData']['value'].get('worker_count', 0) + gdata['value']['RawData']['value'].get('dropped_count', 0)
+            guild_name = gdata['value']['RawData']['value'].get('guild_name', "Unnamed Guild")
+            guild_leader = "Unknown"
+            try:
+                if players:
+                    guild_leader = players[0].get('player_info', {}).get('player_name', "Unknown")
+            except:
+                pass
+            logger.info("="*60)
+            logger.info("")
+            logger.info(f"Guild: {guild_name} | Guild Leader: {guild_leader} | Guild ID: {gid}")
+            logger.info(f"Base Locations: {len(gdata['value']['RawData']['value'].get('base_ids', []))}")
+            for i, base_id in enumerate(gdata['value']['RawData']['value'].get('base_ids', []), 1):
+                basecamp = None
+                new_coords = None
+                rawdata_xyz = None
+                try:
+                    basecamp = srcGuildMapping.BaseCampMapping.get(toUUID(base_id))
+                    if basecamp:
+                        offset = basecamp['value']['RawData']['value']['transform']['translation']
+                        new_coords = palworld_coord.sav_to_map(offset['x'], offset['y'], new=True)
+                        rawdata_xyz = (offset['x'], offset['y'], offset['z'])
+                except Exception:
+                    pass
+                new_coords_str = f"{int(new_coords[0])}, {int(new_coords[1])}" if new_coords else "unknown"
+                rawdata_str = f"{rawdata_xyz[0]}, {rawdata_xyz[1]}, {rawdata_xyz[2]}" if rawdata_xyz else "unknown"
+                logger.info(f"Base {i}: Base ID: {base_id} | {new_coords_str} | RawData: {rawdata_str}")
+            logger.info(f"Guild Players: {len(players)}")
+            for p in players:
+                pname = p.get('player_info', {}).get('player_name', 'Unknown')
+                uid = p.get('player_uid')
+                unique_captured = total_captured = pal_deck_unlocked = 0
+                pals_details = []
+                if uid:
+                    unique_captured, total_captured, pal_deck_unlocked, pals_details = process_player_save_file(uid, pname, playerdir, log_folder)
+                level = player_levels.get(str(uid).replace('-', ''), '?') if uid else '?'
+                caught = total_captured
+                owned = owned_counts.get(uid, 0)
+                encounters = pal_deck_unlocked
+                uniques = unique_captured
+                last = p.get('player_info', {}).get('last_online_real_time')
+                lastseen = "Unknown" if last is None else format_duration((tick - int(last)) / 1e7)
+                logger.info(f"Player: {pname} | UID: {uid} | Level: {level} | Caught: {caught} | Owned: {owned} | Encounters: {encounters} | Uniques: {uniques} | Last Online: {lastseen}")
+                for pd in pals_details:
+                    nick = f" ({pd['NickName']})" if pd['NickName'] and pd['NickName'] != "Unknown" else ""
+                    logger.info(f"  Pal: {pd['Name']}{nick} | Lvl: {pd['Level']} | HP: {pd['HP']} | Atk: {pd['Attack']} | Def: {pd['Defense']} | HP IV: {pd['HP_IV']}% | Shot IV: {pd['Shot_IV']}% | Def IV: {pd['Defense_IV']}% | Rank HP: {pd['Rank_HP']}% | Rank Atk: {pd['Rank_Attack']}% | Rank Def: {pd['Rank_Defense']}%")
+                total_players += 1
+                total_caught += caught
+                total_owned += owned
+            logger.info("")
+        non_owner_log = os.path.join(log_folder, "non_owner_pals.log")
+        total_worker_dropped = get_worker_dropped_from_log(non_owner_log)
+        logger.info("="*60)
+        logger.info("")
+        logger.info(f"Total Players: {total_players}")
+        logger.info(f"Total Caught Pals: {total_caught}")
+        logger.info(f"Total Overall Pals: {total_owned + total_worker_dropped}")
+        logger.info(f"Total Owned Pals: {total_owned}")
+        logger.info(f"Total Worker/Dropped Pals: {total_worker_dropped}")
+        logger.info(f"Total Active Guilds: {active_guilds}")
+        logger.info(f"Total Bases: {total_bases}")
+        logger.info("")
+        logger.info("="*60)
+    except Exception as e:
+        logger.error(f"Logging error: {e}")
+    for h in logger.handlers[:]:
+        logger.removeHandler(h)
+        h.close()
 def save_changes():
     global files_to_delete
     folder = current_save_path
@@ -1286,6 +1452,205 @@ def show_base_map():
         pygame.display.flip()
         clock.tick(60)
     pygame.quit()
+class KillNearestBaseDialog(tk.Toplevel):
+    def __init__(self, master=None):
+        super().__init__(master)
+        load_exclusions()
+        self.title("Generate killnearestbase Commands")
+        self.geometry("800x600")
+        try: self.iconbitmap(ICON_PATH)
+        except: pass
+        self.config(bg="#2f2f2f")
+        font_style = ("Arial", 10)
+        style = ttk.Style(self)
+        style.theme_use('clam')
+        style.configure("TFrame", background="#2f2f2f")
+        style.configure("TLabel", background="#2f2f2f", foreground="white", font=font_style)
+        style.configure("TEntry", fieldbackground="#444444", foreground="white", font=font_style)
+        style.configure("Dark.TButton", background="#555555", foreground="white", font=font_style, padding=6)
+        style.map("Dark.TButton",
+            background=[("active", "#666666"), ("!disabled", "#555555")],
+            foreground=[("disabled", "#888888"), ("!disabled", "white")]
+        )
+        style.configure("TRadiobutton", background="#2f2f2f", foreground="white", font=font_style)
+        style.map("TRadiobutton",
+            background=[("active", "#3a3a3a"), ("!active", "#2f2f2f")],
+            foreground=[("active", "white"), ("!active", "white")]
+        )
+        self.setup_ui()
+        self.protocol("WM_DELETE_WINDOW", self.on_exit)
+    def setup_ui(self):
+        frame = ttk.Frame(self, style="TFrame")
+        frame.pack(padx=20, pady=20, fill="both", expand=True)
+        ttk.Label(frame, text="Filter Type:", style="TLabel").grid(row=0, column=0, sticky="w")
+        self.filter_var = tk.StringVar(value="1")
+        for i, txt in enumerate(["Inactivity (days)", "Max Level", "Both"]):
+            ttk.Radiobutton(frame, text=txt, variable=self.filter_var, value=str(i+1), style="TRadiobutton").grid(row=0, column=i+1, sticky="w", padx=5)
+        instructions = ("Choose filter type:\n"
+                        "Inactivity: Select bases with players inactive for given days.\n"
+                        "Max Level: Select bases with max player level below given.\n"
+                        "Both: Combine both filters.")
+        ttk.Label(frame, text=instructions, style="TLabel", justify="left").grid(row=0, column=4, sticky="w", padx=10)
+        ttk.Label(frame, text="Inactivity Days:", style="TLabel").grid(row=1, column=0, sticky="w", pady=10)
+        self.inactivity_entry = ttk.Entry(frame, style="TEntry", width=15)
+        self.inactivity_entry.grid(row=1, column=1, sticky="w")
+        ttk.Label(frame, text="Max Level:", style="TLabel").grid(row=1, column=2, sticky="w", pady=10)
+        self.maxlevel_entry = ttk.Entry(frame, style="TEntry", width=15)
+        self.maxlevel_entry.grid(row=1, column=3, sticky="w")
+        run_btn = ttk.Button(frame, text="Run", command=self.on_generate, style="Dark.TButton")
+        run_btn.grid(row=2, column=0, columnspan=5, pady=15, sticky="ew")
+        self.output_text = tk.Text(frame, bg="#222222", fg="white", font=("Consolas", 10), wrap="word")
+        self.output_text.grid(row=3, column=0, columnspan=5, sticky="nsew")
+        frame.rowconfigure(3, weight=1)
+        frame.columnconfigure(4, weight=1)
+    def append_output(self, text):
+        self.output_text.insert(tk.END, text + "\n")
+        self.output_text.see(tk.END)
+    def clear_output(self):
+        self.output_text.delete(1.0, tk.END)
+    def on_generate(self):
+        self.clear_output()
+        try:
+            ftype = self.filter_var.get()
+            inactivity_days = int(self.inactivity_entry.get()) if self.inactivity_entry.get() else None
+            max_level = int(self.maxlevel_entry.get()) if self.maxlevel_entry.get() else None
+            if ftype == "1" and inactivity_days is None:
+                messagebox.showerror("Input Error", "Please enter Inactivity Days.")
+                return
+            if ftype == "2" and max_level is None:
+                messagebox.showerror("Input Error", "Please enter Max Level.")
+                return
+            if ftype == "3" and (inactivity_days is None or max_level is None):
+                messagebox.showerror("Input Error", "Please enter both Inactivity Days and Max Level.")
+                return
+            result = self.parse_log(
+                inactivity_days=inactivity_days if ftype in ("1","3") else None,
+                max_level=max_level if ftype in ("2","3") else None)
+            if not result:
+                self.append_output("No guilds matched the filter criteria.")
+        except ValueError:
+            messagebox.showerror("Input Error", "Please enter valid numeric values.")
+    def parse_log(self, inactivity_days=None, max_level=None):
+        global exclusions
+        log_file = "Scan Save Logger/scan_save.log"
+        if not os.path.exists(log_file):
+            self.append_output(f"Log file '{log_file}' not found.")
+            return False
+        with open(log_file, "r", encoding="utf-8", errors="ignore") as f:
+            content = f.read()
+        guilds = [g.strip() for g in re.split(r"={60,}", content) if g.strip()]
+        inactive_guilds = {}
+        kill_commands = []
+        guild_count = base_count = excluded_guilds = excluded_bases = 0
+        for guild in guilds:
+            players_data = re.findall(
+                r"Player: (.+?) \| UID: ([a-f0-9-]+) \| Level: (\d+) \| Caught: (\d+) \| Owned: (\d+) \| Encounters: (\d+) \| Uniques: (\d+) \| Last Online: (.+? ago)", guild)
+            bases = re.findall(
+                r"Base \d+: Base ID: ([a-f0-9-]+) \| .+? \| RawData: (.+)", guild)
+            if not players_data or not bases:
+                continue
+            guild_name = re.search(r"Guild: (.+?) \|", guild)
+            guild_leader = re.search(r"Guild Leader: (.+?) \|", guild)
+            guild_id = re.search(r"Guild ID: ([a-f0-9-]+)", guild)
+            guild_name = guild_name.group(1) if guild_name else "Unnamed Guild"
+            guild_leader = guild_leader.group(1) if guild_leader else "Unknown"
+            guild_id = guild_id.group(1) if guild_id else "Unknown"
+            if guild_id in exclusions.get("guilds", []):
+                excluded_guilds += 1
+                continue
+            filtered_bases = []
+            for base_id, raw_data in bases:
+                if base_id in exclusions.get("bases", []):
+                    excluded_bases += 1
+                    continue
+                filtered_bases.append((base_id, raw_data))
+            if not filtered_bases:
+                continue
+            if inactivity_days is not None:
+                if any(
+                    "d" not in player[7] or int(re.search(r"(\d+)d", player[7]).group(1)) < inactivity_days
+                    for player in players_data):
+                    continue
+            if max_level is not None:
+                if any(int(player[2]) > max_level for player in players_data):
+                    continue
+            if guild_id not in inactive_guilds:
+                inactive_guilds[guild_id] = {
+                    "guild_name": guild_name,
+                    "guild_leader": guild_leader,
+                    "players": [],
+                    "bases": []
+                }
+            for player in players_data:
+                inactive_guilds[guild_id]["players"].append({
+                    "name": player[0],
+                    "uid": player[1],
+                    "level": player[2],
+                    "caught": player[3],
+                    "owned": player[4],
+                    "encounters": player[5],
+                    "uniques": player[6],
+                    "last_online": player[7]
+                })
+            inactive_guilds[guild_id]["bases"].extend(filtered_bases)
+            guild_count += 1
+            base_count += len(filtered_bases)
+            for _, raw_data in filtered_bases:
+                coords = re.findall(r"[-+]?\d*\.\d+|[-+]?\d+", raw_data)
+                if len(coords) >= 3:
+                    x, y, z = map(float, coords[:3])
+                    base_coords = sav_to_map(x, y)
+                    kill_commands.append(f"killnearestbase {base_coords.x:.2f} {base_coords.y:.2f} {z:.2f}")
+        for guild_id, info in inactive_guilds.items():
+            self.append_output(f"Guild: {info['guild_name']} | Leader: {info['guild_leader']} | ID: {guild_id}")
+            self.append_output(f"Players: {len(info['players'])}")
+            for p in info['players']:
+                self.append_output(f"  Player: {p['name']} | UID: {p['uid']} | Level: {p['level']} | Caught: {p['caught']} | Owned: {p['owned']} | Encounters: {p['encounters']} | Uniques: {p['uniques']} | Last Online: {p['last_online']}")
+            self.append_output(f"Bases: {len(info['bases'])}")
+            for base_id, raw_data in info['bases']:
+                self.append_output(f"  Base ID: {base_id} | RawData: {raw_data}")
+            self.append_output("-" * 40)
+        self.append_output(f"\nFound {guild_count} guild(s) with {base_count} base(s).")
+        if kill_commands:
+            os.makedirs("PalDefender", exist_ok=True)
+            with open("PalDefender/paldefender_bases.log", "w", encoding='utf-8') as f:
+                f.write("\n".join(kill_commands))
+            self.append_output(f"Wrote {len(kill_commands)} kill commands to PalDefender/paldefender_bases.log.")
+        else:
+            self.append_output("No kill commands generated.")
+        if inactivity_days is not None:
+            self.append_output(f"Inactivity filter applied: >= {inactivity_days} day(s).")
+        if max_level is not None:
+            self.append_output(f"Level filter applied: <= {max_level}.")
+        self.append_output(f"Excluded guilds: {excluded_guilds}")
+        self.append_output(f"Excluded bases: {excluded_bases}")
+        if guild_count > 0:
+            os.makedirs("PalDefender", exist_ok=True)
+            with open("PalDefender/paldefender_bases_info.log", "w", encoding="utf-8") as info_log:
+                info_log.write("-"*40+"\n")
+                for gid, ginfo in inactive_guilds.items():
+                    info_log.write(f"Guild: {ginfo['guild_name']} | Leader: {ginfo['guild_leader']} | ID: {gid}\n")
+                    info_log.write(f"Players: {len(ginfo['players'])}\n")
+                    for p in ginfo['players']:
+                        info_log.write(f"  Player: {p['name']} | UID: {p['uid']} | Level: {p['level']} | Caught: {p['caught']} | Owned: {p['owned']} | Encounters: {p['encounters']} | Uniques: {p['uniques']} | Last Online: {p['last_online']}\n")
+                    info_log.write(f"Bases: {len(ginfo['bases'])}\n")
+                    for base_id, raw_data in ginfo['bases']:
+                        coords = re.findall(r"[-+]?\d*\.\d+|[-+]?\d+", raw_data)
+                        if len(coords) >= 3:
+                            x, y, z = map(float, coords[:3])
+                            map_coords = sav_to_map(x, y)
+                            info_log.write(f"  Base ID: {base_id} | Map Coords: X: {map_coords.x:.2f}, Y: {map_coords.y:.2f}, Z: {z:.2f}\n")
+                        else:
+                            info_log.write(f"  Base ID: {base_id} | Invalid RawData: {raw_data}\n")
+                    info_log.write("-"*40+"\n")
+                info_log.write(f"Found {guild_count} guild(s) with {base_count} base(s).\n")
+                info_log.write("-"*40)
+        return guild_count > 0
+    def on_exit(self):
+        self.destroy()
+def open_kill_nearest_base_ui(master=None):
+    dlg = KillNearestBaseDialog(master)
+    dlg.grab_set()
 EXCLUSIONS_FILE = "deletion_exclusions.json"
 import os, json, tkinter as tk
 from tkinter import ttk, filedialog as fd
@@ -1497,6 +1862,7 @@ def all_in_one_deletion():
     delete_menu.add_command(label="Delete Inactive Players", command=delete_inactive_players_button)
     delete_menu.add_separator()
     delete_menu.add_command(label="Delete Unreferenced Data", command=delete_unreferenced_data)
+    delete_menu.add_command(label="Generate PalDefender killnearestbase commands", command=open_kill_nearest_base_ui)
     menubar.add_cascade(label="Delete", menu=delete_menu)
     view_menu = tk.Menu(menubar, tearoff=0)
     view_menu.add_command(label="Show Base Map", command=show_base_map)
