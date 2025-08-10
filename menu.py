@@ -133,8 +133,6 @@ def run_tool(choice):
         ],
         [
             lambda: import_and_call("all_in_one_deletion", "all_in_one_deletion"),
-        ],
-        [
             lambda: import_and_call("slot_injector", "slot_injector"),
             lambda: import_and_call("modify_save", "modify_save"),
             generate_map,
@@ -165,15 +163,13 @@ converting_tools = [
     "Convert Coordinates"
 ]
 management_tools = [
+    "All in One Deletion Tool",
     "Slot Injector",
     "Modify Save",
     "Generate Map",
     "Character Transfer",
     "Fix Host Save",
     "Restore Map"
-]
-cleaning_tools = [
-    "All in One Deletion Tool"
 ]
 class MenuGUI(tk.Tk):
     def __init__(self):
@@ -195,7 +191,7 @@ class MenuGUI(tk.Tk):
         tools_version, _ = get_versions()
         self.title(f"PalworldSaveTools v{tools_version}")
         self.configure(bg="#2f2f2f")
-        self.geometry("800x650")
+        self.geometry("800x570")
         self.resizable(False, True)
         self.setup_ui()
     def setup_ui(self):
@@ -243,7 +239,6 @@ class MenuGUI(tk.Tk):
         right_frame.columnconfigure(0, weight=1)
         left_categories = [
             ("Converting Tools", converting_tools, "#2196F3"),
-            ("Cleaning Tools", cleaning_tools, "#FFC107")
         ]
         right_categories = [
             ("Management Tools", management_tools, "#4CAF50")
@@ -274,8 +269,7 @@ class MenuGUI(tk.Tk):
         try:
             category_index, tool_index = choice
             if category_index == 0: tool_name = converting_tools[tool_index]
-            elif category_index == 1: tool_name = cleaning_tools[tool_index]
-            elif category_index == 2: tool_name = management_tools[tool_index]
+            elif category_index == 1: tool_name = management_tools[tool_index]
         except Exception:
             tool_name = str(choice)
         print(f'Now opening "{tool_name}"...')
