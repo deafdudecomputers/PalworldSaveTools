@@ -175,8 +175,9 @@ def load_save():
         if not player_uid or player_uid in processed_uids:
             return 0, 0, 0, []
         clean_uid = str(player_uid).replace("-", "")
-        sav_files = [f for f in os.listdir(players_folder) if f.lower() == f"{clean_uid}.sav".lower()]
-        detail_log = os.path.join(target_log_folder, f"{nickname_safe}({player_uid}).log")
+        filename_safe = sanitize_filename(nickname_safe)
+        sav_files = [f for f in os.listdir(players_folder) if f.lower() == f"{clean_uid}.sav".lower()] 
+        detail_log = os.path.join(target_log_folder, f"{filename_safe}({player_uid}).log")
         if not sav_files:
             with open(detail_log, "w", encoding="utf-8") as f:
                 f.write(f"Player: {nickname_safe} | UID: {player_uid}\nNo pals found or player .sav missing.\n")
@@ -1456,7 +1457,7 @@ class KillNearestBaseDialog(tk.Toplevel):
     def __init__(self, master=None):
         super().__init__(master)
         load_exclusions()
-        self.title("Generate killnearestbase Commands")
+        self.title("Generate PalDefender killnearestbase Commands")
         self.geometry("800x600")
         try: self.iconbitmap(ICON_PATH)
         except: pass
