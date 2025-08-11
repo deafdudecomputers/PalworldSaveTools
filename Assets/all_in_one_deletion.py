@@ -2192,7 +2192,6 @@ def all_in_one_deletion():
     file_menu = tk.Menu(menubar, tearoff=0)
     file_menu.add_command(label="Load Level.sav", command=load_save)
     file_menu.add_command(label="Save Changes", command=save_changes)
-    #file_menu.add_command(label="Undo All Actions", command=undo_all_actions)
     menubar.add_cascade(label="File", menu=file_menu)
     delete_menu = tk.Menu(menubar, tearoff=0)
     delete_menu.add_command(label="Delete Selected Guild", command=delete_selected_guild)
