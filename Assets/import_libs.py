@@ -5,7 +5,7 @@ import logging,multiprocessing,platform,pprint,re,subprocess,tarfile,threading,p
 import time,traceback,uuid,io,pathlib,tkinter as tk,tkinter.font,csv,urllib.request,tempfile,random,pandas as pd
 import matplotlib.pyplot as plt,matplotlib.patches as patches,matplotlib.font_manager as font_manager,matplotlib.patheffects as path_effects
 from multiprocessing import shared_memory
-from tkinter import ttk,filedialog,messagebox,PhotoImage
+from tkinter import ttk, filedialog, messagebox, PhotoImage, simpledialog
 from PIL import Image,ImageDraw,ImageOps,ImageFont,ImageTk
 sys.path.insert(0,os.path.abspath(os.path.join(os.path.dirname(__file__),"palworld_save_tools","commands")))
 from palworld_save_tools.archive import *
