@@ -200,7 +200,7 @@ class MappingCacheObject:
                  "PlayerIdMapping", "CharacterSaveParameterMap", "MapObjectSaveData", "MapObjectSpawnerInStageSaveData",
                  "ItemContainerSaveData", "DynamicItemSaveData", "CharacterContainerSaveData", "GroupSaveDataMap",
                  "WorkSaveData", "BaseCampMapping", "GuildSaveDataMap", "GuildInstanceMapping",
-                 "FoliageGridSaveDataMap")
+                 "FoliageGridSaveDataMap", "_group_loaded", "_basecamp_loaded")
     _MappingCacheInstances = {}
     @staticmethod
     def get(worldSaveData, use_mp=True) -> "MappingCacheObject":
@@ -211,16 +211,25 @@ class MappingCacheObject:
     def __init__(self, worldSaveData):
         self._worldSaveData = worldSaveData
         self.use_mp = True
+        self._group_loaded = False
+        self._basecamp_loaded = False
     def __getattr__(self, item):
         if item == 'GroupSaveDataMap':
-            self.LoadGroupSaveDataMap()
+            if not self._group_loaded:
+                self.LoadGroupSaveDataMap()
+                self._group_loaded = True
             return self.GroupSaveDataMap
         elif item == 'GuildSaveDataMap':
-            self.LoadGroupSaveDataMap()
+            if not self._group_loaded:
+                self.LoadGroupSaveDataMap()
+                self._group_loaded = True
             return self.GuildSaveDataMap
         elif item == 'BaseCampMapping':
-            self.LoadBaseCampMapping()
+            if not self._basecamp_loaded:
+                self.LoadBaseCampMapping()
+                self._basecamp_loaded = True
             return self.BaseCampMapping
+        raise AttributeError(item)
     def LoadGroupSaveDataMap(self):
         self.GroupSaveDataMap = {group['key']: group for group in self._worldSaveData['GroupSaveDataMap']['value']}
         self.GuildSaveDataMap = {group['key']: group for group in
@@ -233,9 +242,7 @@ class MappingCacheObject:
             if isinstance(self._worldSaveData[key]['value'], MPMapProperty):
                 self._worldSaveData[key]['value'].close()
                 self._worldSaveData[key]['value'].release()
-            elif isinstance(self._worldSaveData[key]['value'], dict) and 'values' in self._worldSaveData[key][
-                'value'] and isinstance(
-                self._worldSaveData[key]['value']['values'], MPArrayProperty):
+            elif isinstance(self._worldSaveData[key]['value'], dict) and 'values' in self._worldSaveData[key]['value'] and isinstance(self._worldSaveData[key]['value']['values'], MPArrayProperty):
                 self._worldSaveData[key]['value']['values'].close()
                 self._worldSaveData[key]['value']['values'].release()
 SKP_PALWORLD_CUSTOM_PROPERTIES = copy.deepcopy(PALWORLD_CUSTOM_PROPERTIES)
@@ -254,5 +261,5 @@ SKP_PALWORLD_CUSTOM_PROPERTIES[".worldSaveData.ItemContainerSaveData"] = (skip_d
 SKP_PALWORLD_CUSTOM_PROPERTIES[".worldSaveData.ItemContainerSaveData.Value.BelongInfo"] = (skip_decode, skip_encode)
 SKP_PALWORLD_CUSTOM_PROPERTIES[".worldSaveData.ItemContainerSaveData.Value.Slots"] = (skip_decode, skip_encode)
 SKP_PALWORLD_CUSTOM_PROPERTIES[".worldSaveData.ItemContainerSaveData.Value.RawData"] = (skip_decode, skip_encode)
-#SKP_PALWORLD_CUSTOM_PROPERTIES[".worldSaveData.GroupSaveDataMap"] = (group_decode, group_encode)
+#SKP_PALWORLD_CUSTOM_PROPERTIES[".worldSaveData.GroupSaveDataMap"] = (skip_decode, skip_encode)
 #SKP_PALWORLD_CUSTOM_PROPERTIES[".worldSaveData.GroupSaveDataMap.Value.RawData"] = (skip_decode, skip_encode)

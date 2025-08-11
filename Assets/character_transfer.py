@@ -1,6 +1,4 @@
 from import_libs import *
-from datetime import datetime, timedelta
-from common import ICON_PATH
 level_sav_path, host_sav_path, t_level_sav_path, t_host_sav_path = None, None, None, None
 level_json, host_json, targ_lvl, targ_json = None, None, None, None
 target_section_ranges, target_save_type, target_raw_gvas, targ_json_gvas = None, None, None, None

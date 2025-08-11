@@ -1,10 +1,4 @@
-import os, shutil, sys
-import tkinter as tk
-from tkinter import ttk, messagebox, filedialog
-from scan_save import *
-from datetime import datetime
-from common import ICON_PATH
-import tkinter.simpledialog as simpledialog
+from import_libs import *
 player_list_cache = []
 def backup_whole_directory(source_folder, backup_folder):
     import datetime as dt

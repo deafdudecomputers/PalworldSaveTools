@@ -1,13 +1,7 @@
-import os, sys, shutil, tkinter as tk
-from tkinter import ttk, messagebox, filedialog
-from uuid import UUID
-from datetime import datetime
-from scan_save import decompress_sav_to_gvas, GvasFile, PALWORLD_TYPE_HINTS, SKP_PALWORLD_CUSTOM_PROPERTIES, compress_gvas_to_sav
-from tkinter import simpledialog
-from common import ICON_PATH
-from scan_save import *
+from import_libs import *
 current_save_path = None
 loaded_level_json = None
+original_loaded_level_json = None
 window = None
 stat_labels = None
 guild_tree = None
@@ -22,15 +16,40 @@ guild_result = None
 base_result = None
 player_result = None
 files_to_delete = set()
+def undo_all_actions():
+    global loaded_level_json, original_loaded_level_json
+    folder = current_save_path
+    if not folder:
+        messagebox.showerror("Error", "No save loaded!")
+        return
+    if original_loaded_level_json is None:
+        messagebox.showerror("Error", "No original save loaded!")
+        return
+    loaded_level_json = pickle.loads(pickle.dumps(original_loaded_level_json))
+    files_to_delete.clear()
+    refresh_all()
+    refresh_stats("After Reset")
+    guild_tree.selection_remove(guild_tree.selection())
+    player_tree.selection_remove(player_tree.selection())
+    base_tree.selection_remove(base_tree.selection())
+    guild_result.config(text="Selected Guild: N/A")
+    player_result.config(text="Selected Player: N/A")
+    base_result.config(text="Selected Base: N/A")
+    messagebox.showinfo("Reset", "Save reset to original loaded state!")
 def refresh_stats(section):
     stats = get_current_stats()
     if section == "Before Deletion":
         refresh_stats.stats_before = stats
-    update_stats_section(stat_labels, section, stats)
-    if section == "After Deletion" and hasattr(refresh_stats, "stats_before"):
-        before = refresh_stats.stats_before
-        result = {k: before[k] - stats.get(k, 0) for k in before}
-        update_stats_section(stat_labels, "Deletion Result", result)
+    if section == "After Reset":
+        zero_stats = {k: 0 for k in stats}
+        update_stats_section(stat_labels, "After Deletion", zero_stats)
+        update_stats_section(stat_labels, "Deletion Result", zero_stats)
+    else:
+        update_stats_section(stat_labels, section, stats)
+        if section == "After Deletion" and hasattr(refresh_stats, "stats_before"):
+            before = refresh_stats.stats_before
+            result = {k: before[k] - stats.get(k, 0) for k in before}
+            update_stats_section(stat_labels, "Deletion Result", result)
 def as_uuid(val): return str(val).lower() if val else ''
 def are_equal_uuids(a,b): return as_uuid(a)==as_uuid(b)
 def backup_whole_directory(source_folder, backup_folder):
@@ -118,8 +137,7 @@ def clean_character_save_parameter_map(data_source, valid_uids):
             keep.append(entry)
     entries[:] = keep
 def load_save():
-    import os, sys, logging, datetime, json, shutil
-    global current_save_path, loaded_level_json, backup_save_path, srcGuildMapping, player_levels
+    global current_save_path, loaded_level_json, backup_save_path, srcGuildMapping, player_levels, original_loaded_level_json
     base_path = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     p = filedialog.askopenfilename(title="Select Level.sav", filetypes=[("SAV","*.sav")])
     if not p: return
@@ -131,9 +149,13 @@ def load_save():
     if not os.path.isdir(playerdir):
         messagebox.showerror("Error", "Players folder missing")
         return
+    print("Now loading the save...")
     current_save_path = d
     backup_save_path = current_save_path
+    t0 = time.perf_counter()
     loaded_level_json = sav_to_json(p)
+    t1 = time.perf_counter()
+    print(f"Loaded save and converted to JSON in {t1 - t0:.2f}s")
     build_player_levels()
     refresh_all()
     refresh_stats("Before Deletion")
@@ -144,15 +166,20 @@ def load_save():
     all_in_one_deletion.loaded_json = loaded_level_json
     data_source = loaded_level_json["properties"]["worldSaveData"]["value"]
     try:
-        srcGuildMapping = MappingCacheObject.get(data_source, use_mp=not getattr(args, "reduce_memory", False))
+        reduce_memory = False
+        if 'args' in globals() and hasattr(args, "reduce_memory"):
+            reduce_memory = args.reduce_memory
+        srcGuildMapping = MappingCacheObject.get(data_source, use_mp=not reduce_memory)
         if srcGuildMapping._worldSaveData.get('GroupSaveDataMap') is None:
             srcGuildMapping.GroupSaveDataMap = {}
     except Exception as e:
         messagebox.showerror("Error", f"Failed to load guild mapping: {e}")
         srcGuildMapping = None
     log_folder = os.path.join(base_path, "Scan Save Logger")
-    if os.path.isdir(log_folder):
+    if os.path.exists(log_folder): 
+        print("Deleting Scan Save Logger...")
         shutil.rmtree(log_folder)
+    print("Making Scan Save Logger...")
     os.makedirs(log_folder, exist_ok=True)
     player_pals_count = {}
     count_pals_found(data_source, player_pals_count, log_folder)
@@ -309,6 +336,199 @@ def load_save():
     for h in logger.handlers[:]:
         logger.removeHandler(h)
         h.close()
+    t2 = time.perf_counter()
+    print(f"Fully loaded in: {t2 - t0:.2f}s")
+def setup_logging():
+    batch_title = f"Pylar's Save Tool"
+    set_console_title(batch_title)
+    if getattr(sys, 'frozen', False):
+        base_path = os.path.dirname(sys.executable)
+    else:
+        base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    log_folder = os.path.join(base_path, "Scan Save Logger")
+    for logger_name in ['scanLogger', 'playerLogger']:
+        logger = logging.getLogger(logger_name)
+        for handler in logger.handlers[:]:
+            try:
+                handler.flush()
+                handler.close()
+            except Exception:
+                pass
+            logger.removeHandler(handler)
+    if os.path.exists(log_folder): 
+        print("Deleting Scan Save Logger...")
+        shutil.rmtree(log_folder)
+    print("Making Scan Save Logger...")
+    os.makedirs(log_folder, exist_ok=True)
+    log_file = os.path.join(log_folder, "scan_save.log")
+    player_log_file = os.path.join(log_folder, "players.log")
+    scan_logger = logging.getLogger("scanLogger")
+    scan_logger.setLevel(logging.INFO)
+    scan_logger.propagate = False
+    file_handler = logging.FileHandler(log_file, encoding='utf-8', errors='replace')
+    file_handler.setFormatter(logging.Formatter('%(message)s'))
+    stream_handler = logging.StreamHandler(sys.stdout)
+    stream_handler.setFormatter(logging.Formatter('%(message)s'))
+    scan_logger.handlers.clear()
+    scan_logger.addHandler(file_handler)
+    scan_logger.addHandler(stream_handler)
+    player_logger = logging.getLogger('playerLogger')
+    player_logger.setLevel(logging.INFO)
+    player_logger.propagate = False
+    player_file_handler = logging.FileHandler(player_log_file, mode='w', encoding='utf-8', errors='replace')
+    player_file_handler.setFormatter(logging.Formatter('%(message)s'))
+    player_logger.handlers.clear()
+    player_logger.addHandler(player_file_handler)
+    return scan_logger, player_logger, log_folder
+def close_all_log_handlers():
+    for logger_name in ['scanLogger', 'playerLogger']:
+        logger = logging.getLogger(logger_name)
+        for handler in logger.handlers[:]:
+            try:
+                handler.flush()
+                handler.close()
+                logger.removeHandler(handler)
+            except Exception:
+                pass
+def extract_value(data, key, default_value=''):
+    value = data.get(key, default_value)
+    if isinstance(value, dict):
+        value = value.get('value', default_value)
+        if isinstance(value, dict):
+            value = value.get('value', default_value)
+    return value
+def safe_str(s):
+    return s.encode('utf-8', 'replace').decode('utf-8')
+def sanitize_filename(name):
+    return ''.join(c if c.isalnum() or c in (' ', '_', '-', '(', ')') else '_' for c in name)
+def count_pals_found(data, player_pals_count, log_folder):
+    owner_pals_info = defaultdict(list)
+    non_owner_pals_info = []
+    non_owner_pals_info_with_base = []
+    owner_nicknames = {}
+    base_id_groups = defaultdict(list)
+    base_count = defaultdict(int)
+    for key, value in data.items():
+        if key == "CharacterSaveParameterMap":
+            raw_data_value_list = value.get("value", [])
+            for raw_data_value_item in raw_data_value_list:
+                raw_data_value_key = raw_data_value_item.get("key", {})
+                raw_data_value_value = raw_data_value_item.get("value", {}).get("RawData", {})
+                try:
+                    if ("custom_type" in raw_data_value_value and
+                        raw_data_value_value["custom_type"] == ".worldSaveData.CharacterSaveParameterMap.Value.RawData" and
+                        "IsPlayer" in raw_data_value_value["value"]["object"]["SaveParameter"]["value"]):
+                        player_uid = raw_data_value_key.get("PlayerUId", {}).get("value") if isinstance(raw_data_value_key, dict) else None
+                        nickname = raw_data_value_value["value"]["object"]["SaveParameter"]["value"].get("NickName", {}).get("value", "Unknown")
+                        if player_uid:
+                            owner_nicknames[player_uid] = nickname
+                except KeyError as e:
+                    print(f"KeyError: {e}")
+    character_save_param_map = data.get("CharacterSaveParameterMap", {}).get("value", [])
+    for item in character_save_param_map:
+        raw_data = item.get("value", {}).get("RawData", {}).get("value", {}).get("object", {}).get("SaveParameter", {}).get("value", {})
+        if not isinstance(raw_data, dict):
+            continue
+        player_uid = raw_data.get("OwnerPlayerUId", {}).get("value")
+        character_id = raw_data.get("CharacterID", {}).get("value")
+        level = extract_value(raw_data, "Level", 1)
+        rank = extract_value(raw_data, "Rank", 1)
+        base = raw_data.get("SlotId", {}).get("value", {}).get("ContainerId", {}).get("value", {}).get("ID", {}).get("value")
+        gender_value = raw_data.get("Gender", {}).get("value", {}).get("value", "")
+        gender_info = {
+            "EPalGenderType::Male": "Male",
+            "EPalGenderType::Female": "Female"
+        }.get(gender_value, "Unknown")
+        passive_skills = [
+            PAL_PASSIVES.get(skill_id, {}).get("Name", skill_id)
+            for skill_id in raw_data.get("PassiveSkillList", {}).get("value", {}).get("values", [])
+        ]
+        passive_skills_str = ", Skills: " + ", ".join(passive_skills) if passive_skills else ""
+        rank_hp = int(extract_value(raw_data, "Rank_HP", 0)) * 3
+        rank_attack = int(extract_value(raw_data, "Rank_Attack", 0)) * 3
+        rank_defense = int(extract_value(raw_data, "Rank_Defence", 0)) * 3
+        rank_craft_speed = int(extract_value(raw_data, "Rank_CraftSpeed", 0)) * 3
+        talents_str = (
+            f"HP IV: {extract_value(raw_data, 'Talent_HP', '0')}({rank_hp}%), "
+            f"ATK IV: {extract_value(raw_data, 'Talent_Shot', '0')}({rank_attack}%), "
+            f"DEF IV: {extract_value(raw_data, 'Talent_Defense', '0')}({rank_defense}%), "
+            f"Work Speed: ({rank_craft_speed}%)"
+        )
+        pal_name = PAL_NAMES.get(character_id, character_id)
+        if pal_name and pal_name.lower().startswith("boss_"):
+            base_name = PAL_NAMES.get(pal_name[5:], pal_name[5:])
+            pal_name = f"Alpha {base_name.capitalize()}"
+        pal_nickname = raw_data.get("NickName", {}).get("value", "Unknown")
+        nickname_str = f", {pal_nickname}" if pal_nickname != "Unknown" else ""
+        pal_info = (
+            f"{pal_name}{nickname_str}, Level: {level}, Rank: {rank}, Gender: {gender_info}, "
+            f"{talents_str}{passive_skills_str}, ID: {base}"
+        )
+        base_count[base] += 1
+        if not player_uid:
+            pal_name_only = pal_info.split(",")[0].strip()
+            if pal_name_only != "None":
+                non_owner_pals_info.append(pal_info)
+                non_owner_pals_info_with_base.append(f"{pal_info} (ID: {base})")
+                base_id_groups[base].append(pal_info)
+                continue
+        owner_pals_info[player_uid].append(pal_info)
+        player_pals_count[player_uid] = player_pals_count.get(player_uid, 0) + 1
+    if non_owner_pals_info:
+        filtered_non_owner_pals = non_owner_pals_info_with_base
+        total_non_owner_pals = len(filtered_non_owner_pals)
+        non_owner_log_file = os.path.join(log_folder, "non_owner_pals.log")
+        try:
+            with open(non_owner_log_file, 'w', encoding='utf-8', errors='replace') as non_owner_file:
+                non_owner_file.write(f"{total_non_owner_pals} Non-Owner Pals\n")
+                non_owner_file.write("-" * (len(str(total_non_owner_pals)) + len(" Non-Owner Pals")) + "\n")
+                for base_id, pals in base_id_groups.items():
+                    count = len(pals)
+                    non_owner_file.write(f"ID: {base_id} (Count: {count})\n")
+                    non_owner_file.write("-" * (len(f"ID: {base_id} (Count: {count})")) + "\n")
+                    non_owner_file.write("\n".join(pals) + "\n\n")
+        except Exception as e:
+            print(f"Failed to write non-owner log: {non_owner_log_file}\n{e}")
+    for player_uid, pals_list in owner_pals_info.items():
+        pals_by_base_id = defaultdict(list)
+        for pal in pals_list:
+            if "ID:" in pal:
+                base_id = pal.split("ID:")[1].strip()
+                pals_by_base_id[base_id if base_id else "Unknown"].append(pal)
+        player_name = owner_nicknames.get(player_uid, 'Unknown')
+        if player_name == 'Unknown':
+            print(f"No nickname found for {player_uid}")
+        sanitized_player_name = sanitize_filename(player_name.encode('utf-8', 'replace').decode('utf-8'))
+        log_file = os.path.join(log_folder, f"({sanitized_player_name})({player_uid}).log")
+        logger_name = ''.join(c if c.isalnum() or c in ('_', '-') else '_' for c in f"logger_{player_uid}")
+        owner_logger = logging.getLogger(logger_name)
+        owner_logger.setLevel(logging.INFO)
+        owner_logger.propagate = False
+        if not owner_logger.hasHandlers():
+            try:
+                owner_file_handler = logging.FileHandler(log_file, mode='w', encoding='utf-8', errors='replace')
+                owner_file_handler.setFormatter(logging.Formatter('%(message)s'))
+                owner_logger.addHandler(owner_file_handler)
+            except Exception as e:
+                print(f"Failed to create logger for {log_file}\n{e}")
+                continue
+        pals_count = sum(len(pals) for pals in pals_by_base_id.values())
+        owner_logger.info(f"{player_name}'s {pals_count} Pals")
+        owner_logger.info("-" * (len(player_name) + len(f"'s {pals_count} Pals")))
+        for base_id, pals in pals_by_base_id.items():
+            owner_logger.info(f"ID: {base_id}")
+            owner_logger.info("----------------")
+            sanitized_pals = [safe_str(pal) for pal in sorted(pals)]
+            owner_logger.info("\n".join(sanitized_pals))
+            owner_logger.info("----------------")
+    for player_uid in owner_pals_info.keys():
+        logger_name = ''.join(c if c.isalnum() or c in ('_', '-') else '_' for c in f"logger_{player_uid}")
+        owner_logger = logging.getLogger(logger_name)
+        handlers = owner_logger.handlers[:]
+        for handler in handlers:
+            handler.flush()
+            handler.close()
+            owner_logger.removeHandler(handler)
 def save_changes():
     global files_to_delete
     folder = current_save_path
@@ -394,7 +614,6 @@ def extract_level(data):
     while isinstance(data, dict) and 'value' in data:
         data = data['value']
     return data
-from collections import defaultdict
 player_levels = {}
 def build_player_levels():
     global player_levels
@@ -419,15 +638,15 @@ def build_player_levels():
     player_levels = dict(uid_level_map)
 def on_guild_select(evt):
     sel = guild_tree.selection()
+    base_tree.delete(*base_tree.get_children())
+    guild_members_tree.delete(*guild_members_tree.get_children())
     if not sel:
-        guild_members_tree.delete(*guild_members_tree.get_children())
-        base_tree.delete(*base_tree.get_children())
         guild_result.config(text="Selected Guild: N/A")
+        for b in loaded_level_json['properties']['worldSaveData']['value']['BaseCampSaveData']['value']:
+            base_tree.insert("", "end", values=(str(b['key']),))
         return
     name, gid = guild_tree.item(sel[0])['values']
     guild_result.config(text=f"Selected Guild: {name}")
-    base_tree.delete(*base_tree.get_children())
-    guild_members_tree.delete(*guild_members_tree.get_children())
     for b in loaded_level_json['properties']['worldSaveData']['value']['BaseCampSaveData']['value']:
         if are_equal_uuids(b['value']['RawData']['value'].get('group_id_belong_to'), gid):
             base_tree.insert("", "end", values=(str(b['key']),))
@@ -437,9 +656,9 @@ def on_guild_select(evt):
             players = raw.get('players', [])
             for p in players:
                 p_name = p.get('player_info', {}).get('player_name', 'Unknown')
-                p_uid_raw = p.get('player_uid', '')
-                p_uid = str(p_uid_raw).replace('-', '')
-                p_level = player_levels.get(p_uid, '?')
+                p_uid = str(p.get('player_uid', ''))
+                p_uid_key = p_uid.replace('-', '')
+                p_level = player_levels.get(p_uid_key, '?')
                 guild_members_tree.insert("", "end", values=(p_name, p_level, p_uid))
             break
 def on_base_select(evt):
@@ -483,25 +702,31 @@ def delete_selected_guild():
     if not sel:
         messagebox.showerror("Error", "Select guild")
         return
-    gid = guild_tree.item(sel[0])['values'][1]
+    raw_gid = guild_tree.item(sel[0])['values'][1]
+    gid = raw_gid.replace('-', '')
     if any(gid == ex.replace('-', '') for ex in exclusions.get("guilds", [])):
-        print(f"Guild {gid} is excluded from deletion - skipping...")
+        print(f"Guild {raw_gid} is excluded from deletion - skipping...")
         return
     wsd = loaded_level_json['properties']['worldSaveData']['value']
     for b in wsd.get('BaseCampSaveData', {}).get('value', []):
-        base_gid = as_uuid(b['value']['RawData']['value'].get('group_id_belong_to'))
-        base_id = as_uuid(b['key'])
-        if are_equal_uuids(base_gid, gid) and any(base_id == ex.replace('-', '') for ex in exclusions.get("bases", [])):
-            print(f"Guild {gid} has excluded base {base_id} - skipping guild deletion!")
+        base_gid_raw = as_uuid(b['value']['RawData']['value'].get('group_id_belong_to'))
+        base_gid = base_gid_raw.replace('-', '')
+        base_id_raw = as_uuid(b['key'])
+        base_id = base_id_raw.replace('-', '')
+        if base_gid == gid and any(base_id == ex.replace('-', '') for ex in exclusions.get("bases", [])):
+            print(f"Guild {raw_gid} has excluded base {base_id_raw} - skipping guild deletion!")
             return
     deleted_uids = set()
     group_data_list = wsd.get('GroupSaveDataMap', {}).get('value', [])
     for g in group_data_list:
-        if are_equal_uuids(g['key'], gid):
+        g_key_raw = str(g['key'])
+        g_key = g_key_raw.replace('-', '')
+        if g_key == gid:
             for p in g['value']['RawData']['value'].get('players', []):
-                pid = str(p.get('player_uid', '')).replace('-', '')
+                pid_raw = str(p.get('player_uid', ''))
+                pid = pid_raw.replace('-', '')
                 if any(pid == ex.replace('-', '') for ex in exclusions.get("players", [])):
-                    print(f"Player {pid} in excluded guild is excluded from deletion - skipping...")
+                    print(f"Player {pid_raw} in excluded guild is excluded from deletion - skipping...")
                     continue
                 deleted_uids.add(pid)
             group_data_list.remove(g)
@@ -516,12 +741,13 @@ def delete_selected_guild():
                           .get('object', {}).get('SaveParameter', {}).get('value', {})
                           .get('OwnerPlayerUId', {}).get('value', '')).replace('-', '') not in deleted_uids]
     for b in wsd.get('BaseCampSaveData', {}).get('value', [])[:]:
-        if are_equal_uuids(b['value']['RawData']['value'].get('group_id_belong_to'), gid):
+        base_gid_raw = as_uuid(b['value']['RawData']['value'].get('group_id_belong_to'))
+        if base_gid_raw.replace('-', '') == gid:
             delete_base_camp(b, gid, loaded_level_json)
     delete_orphaned_bases()
     refresh_all()
     refresh_stats("After Deletion")
-    messagebox.showinfo("Marked", f"Guild and {len(deleted_uids)} players marked for deletion (files will be removed on Save Changes)")
+    messagebox.showinfo("Marked", f"Guild {raw_gid} and {len(deleted_uids)} players marked for deletion (files will be removed on Save Changes)")
 def delete_selected_base():
     folder = current_save_path
     if not folder:
@@ -558,7 +784,8 @@ def delete_selected_player():
     if not sel:
         messagebox.showerror("Error", "Select player")
         return
-    uid = player_tree.item(sel[0])['values'][0].replace('-', '')
+    raw_uid = player_tree.item(sel[0])['values'][0]
+    uid = raw_uid.replace('-', '')
     wsd = loaded_level_json['properties']['worldSaveData']['value']
     group_data = wsd['GroupSaveDataMap']['value']
     deleted = False
@@ -568,10 +795,67 @@ def delete_selected_player():
         players = raw.get('players', [])
         new_players = []
         for p in players:
-            pid = str(p.get('player_uid', '')).replace('-', '')
+            pid_raw = str(p.get('player_uid', ''))
+            pid = pid_raw.replace('-', '')
             if pid == uid:
                 if any(pid == ex.replace('-', '') for ex in exclusions.get("players", [])):
-                    print(f"Player {pid} is excluded from deletion - skipping...")
+                    print(f"Player {pid_raw} is excluded from deletion - skipping...")
+                    new_players.append(p)
+                    continue
+                files_to_delete.add(pid)
+                deleted = True
+            else:
+                new_players.append(p)
+        if len(new_players) != len(players):
+            raw['players'] = new_players
+            keep_uids = {str(p.get('player_uid', '')).replace('-', '') for p in new_players}
+            admin_uid_raw = str(raw.get('admin_player_uid', ''))
+            admin_uid = admin_uid_raw.replace('-', '')
+            if not new_players:
+                gid = group['key']
+                for b in wsd.get('BaseCampSaveData', {}).get('value', [])[:]:
+                    if are_equal_uuids(b['value']['RawData']['value'].get('group_id_belong_to'), gid):
+                        delete_base_camp(b, gid, loaded_level_json)
+                group_data.remove(group)
+            elif admin_uid not in keep_uids:
+                raw['admin_player_uid'] = new_players[0]['player_uid']
+    if deleted:
+        char_map = wsd.get('CharacterSaveParameterMap', {}).get('value', [])
+        char_map[:] = [entry for entry in char_map
+                       if str(entry.get('key', {}).get('PlayerUId', {}).get('value', '')).replace('-', '') != uid
+                       and str(entry.get('value', {}).get('RawData', {}).get('value', {})
+                               .get('object', {}).get('SaveParameter', {}).get('value', {})
+                               .get('OwnerPlayerUId', {}).get('value', '')).replace('-', '') != uid]
+        refresh_all()
+        refresh_stats("After Deletion")
+        messagebox.showinfo("Marked", f"Player {raw_uid} marked for deletion (file will be removed on Save Changes)!")
+    else:
+        messagebox.showinfo("Info", "Player not found or already deleted.")
+def delete_selected_guild_member():
+    global files_to_delete
+    folder = current_save_path
+    if not folder:
+        messagebox.showerror("Error", "No save loaded!")
+        return
+    sel = guild_members_tree.selection()
+    if not sel:
+        messagebox.showerror("Error", "Select player")
+        return
+    uid = guild_members_tree.item(sel[0])['values'][2].replace('-', '')
+    wsd = loaded_level_json['properties']['worldSaveData']['value']
+    group_data = wsd['GroupSaveDataMap']['value']
+    deleted = False
+    for group in group_data[:]:
+        if group['value']['GroupType']['value']['value'] != 'EPalGroupType::Guild': continue
+        raw = group['value']['RawData']['value']
+        players = raw.get('players', [])
+        new_players = []
+        for p in players:
+            pid_raw = p.get('player_uid', '')
+            pid = str(pid_raw).replace('-', '')
+            if pid == uid:
+                if any(pid == ex.replace('-', '') for ex in exclusions.get("players", [])):
+                    print(f"Player {pid_raw} is excluded from deletion - skipping...")
                     new_players.append(p)
                     continue
                 files_to_delete.add(pid)
@@ -1048,9 +1332,6 @@ def create_search_panel(parent, label_text, search_var, search_callback, tree_co
         tree.column(col, width=width_col, anchor='w')
     return panel, tree, entry
 def show_base_map():
-    import pygame, os, time
-    from tkinter import messagebox
-    from palworld_coord import sav_to_map
     global srcGuildMapping, loaded_level_json
     folder = current_save_path
     if not folder:
@@ -1650,11 +1931,13 @@ class KillNearestBaseDialog(tk.Toplevel):
     def on_exit(self):
         self.destroy()
 def open_kill_nearest_base_ui(master=None):
+    folder = current_save_path
+    if not folder:
+        messagebox.showerror("Error", "No save loaded!")
+        return
     dlg = KillNearestBaseDialog(master)
     dlg.grab_set()
 EXCLUSIONS_FILE = "deletion_exclusions.json"
-import os, json, tkinter as tk
-from tkinter import ttk, filedialog as fd
 exclusions = {}
 def load_exclusions():
     global exclusions
@@ -1684,6 +1967,33 @@ def create_stats_panel(parent, style):
             stat_labels[key] = lbl
     stat_frame.lift()
     return stat_frame, stat_labels
+def generate_map():
+    start_time = time.time()
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    main_dir = os.path.dirname(script_dir)
+    log_file_path = os.path.join(main_dir, 'Scan Save Logger', 'scan_save.log')    
+    if not os.path.exists(log_file_path):
+        messagebox.showerror("Error", f"Log file not found at:\n{log_file_path}\nRun the All in One Deletion Tool first.")
+        return False    
+    try:
+        guild_data, base_keys = parse_logfile(log_file_path)
+        write_csv(guild_data, base_keys, 'bases.csv')
+        create_world_map()        
+        map_path = os.path.join(main_dir, "updated_worldmap.png")
+        if os.path.exists(map_path):
+            print("Opening updated_worldmap.png...")
+            open_file_with_default_app(map_path)
+        else:
+            messagebox.showerror("Error", "updated_worldmap.png not found after creation.")
+            print("updated_worldmap.png not found.")        
+        end_time = time.time()
+        duration = end_time - start_time
+        print(f"Done in {duration:.2f} seconds")
+        return True        
+    except Exception as e:
+        messagebox.showerror("Error", f"Error generating map:\n{e}")
+        print(f"Error generating map: {e}")
+        return False
 def all_in_one_deletion():
     global window, stat_labels, guild_tree, base_tree, player_tree, guild_members_tree
     global guild_search_var, base_search_var, player_search_var, guild_members_search_var
@@ -1707,23 +2017,23 @@ def all_in_one_deletion():
     except: pass
     guild_search_var = tk.StringVar()
     gframe, guild_tree, guild_search_entry = create_search_panel(window, "Search Guilds:", guild_search_var, on_guild_search,
-    ("Name", "ID"), ("Guild Name", "Guild ID"), (130, 130), 310, 410, tree_height=18)
+        ("Name", "ID"), ("Guild Name", "Guild ID"), (130, 130), 310, 410, tree_height=18)
     gframe.place(x=10, y=40)
     guild_tree.bind("<<TreeviewSelect>>", on_guild_select)
     base_search_var = tk.StringVar()
     bframe, base_tree, base_search_entry = create_search_panel(window, "Search Bases:", base_search_var, on_base_search,
-    ("ID",), ("Base ID",), (280,), 310, 200, tree_height=8)
+        ("ID",), ("Base ID",), (280,), 310, 200, tree_height=8)
     bframe.place(x=330, y=40)
     base_tree.bind("<<TreeviewSelect>>", on_base_select)
     guild_members_search_var = tk.StringVar()
     gm_frame, guild_members_tree, guild_members_search_entry = create_search_panel(window, "Guild Members:", guild_members_search_var,
-    on_guild_members_search, ("Name", "Level", "UID"), ("Member", "Level", "UID"), (100, 50, 140), 310, 200, tree_height=8)
+        on_guild_members_search, ("Name", "Level", "UID"), ("Member", "Level", "UID"), (100, 50, 140), 310, 200, tree_height=8)
     gm_frame.place(x=330, y=250)
     guild_members_tree.bind("<<TreeviewSelect>>", on_guild_member_select)
     player_search_var = tk.StringVar()
     pframe, player_tree, player_search_entry = create_search_panel(window, "Search Players:", player_search_var, on_player_search,
-    ("UID", "Name", "GID", "Last", "Level"), ("Player UID", "Player Name", "Guild ID", "Last Seen", "Level"),
-    (100, 120, 120, 90, 50), 540, 410, tree_height=18)
+        ("UID", "Name", "GID", "Last", "Level"), ("Player UID", "Player Name", "Guild ID", "Last Seen", "Level"),
+        (100, 120, 120, 90, 50), 540, 410, tree_height=18)
     pframe.place(x=650, y=40)
     player_tree.bind("<<TreeviewSelect>>", on_player_select)
     guild_result = tk.Label(window, text="Selected Guild: N/A", bg="#2f2f2f", fg="white", font=font)
@@ -1733,27 +2043,27 @@ def all_in_one_deletion():
     player_result = tk.Label(window, text="Selected Player: N/A", bg="#2f2f2f", fg="white", font=font)
     player_result.place(x=650, y=10)
     stat_frame, stat_labels = create_stats_panel(window, s)
-    stat_frame.place(x=700, y=470, width=420, height=158)
+    stat_frame.place(x=655, y=470, width=530, height=158)
     stat_frame.lift()
     exclusions_container = ttk.Frame(window)
-    exclusions_container.place(x=25, y=470, width=600, height=180)
+    exclusions_container.place(x=15, y=470, width=619, height=180)
     guild_ex_frame = ttk.Frame(exclusions_container)
     guild_ex_frame.pack(side='left', fill='y', expand=False)
     exclusions_guilds_tree = ttk.Treeview(guild_ex_frame, columns=("ID",), show="headings", height=5)
     exclusions_guilds_tree.heading("ID", text="Excluded Guild ID")
-    exclusions_guilds_tree.column("ID", width=200)
+    exclusions_guilds_tree.column("ID", width=207)
     exclusions_guilds_tree.pack()
     player_ex_frame = ttk.Frame(exclusions_container)
     player_ex_frame.pack(side='left', fill='y', expand=False)
     exclusions_players_tree = ttk.Treeview(player_ex_frame, columns=("ID",), show="headings", height=5)
     exclusions_players_tree.heading("ID", text="Excluded Player UID")
-    exclusions_players_tree.column("ID", width=200)
+    exclusions_players_tree.column("ID", width=206)
     exclusions_players_tree.pack()
     base_ex_frame = ttk.Frame(exclusions_container)
     base_ex_frame.pack(side='left', fill='y', expand=False)
     exclusions_bases_tree = ttk.Treeview(base_ex_frame, columns=("ID",), show="headings", height=5)
     exclusions_bases_tree.heading("ID", text="Excluded Bases")
-    exclusions_bases_tree.column("ID", width=200)
+    exclusions_bases_tree.column("ID", width=206)
     exclusions_bases_tree.pack()
     def populate_exclusions_trees():
         exclusions_guilds_tree.delete(*exclusions_guilds_tree.get_children())
@@ -1771,8 +2081,14 @@ def all_in_one_deletion():
             tk.messagebox.showwarning("Warning", f"No {key[:-1].capitalize()} selected!")
             return
         val = source_tree.item(sel[0])["values"]
-        if key == "guilds": val = val[1]
-        else: val = val[0]
+        if source_tree == guild_tree:
+            val = val[1]
+        elif source_tree == player_tree:
+            val = val[0]
+        elif source_tree == guild_members_tree:
+            val = val[2]
+        else:
+            val = val[0]
         if val not in exclusions[key]:
             exclusions[key].append(val)
             populate_exclusions_trees()
@@ -1783,6 +2099,22 @@ def all_in_one_deletion():
         if not sel: return
         for item_id in sel:
             val = tree.item(item_id)["values"][0]
+            if val in exclusions[key]:
+                exclusions[key].remove(val)
+        populate_exclusions_trees()
+    def remove_selected_from_regular(tree, key):
+        sel = tree.selection()
+        if not sel: return
+        for item_id in sel:
+            val = tree.item(item_id)["values"]
+            if tree == guild_tree:
+                val = val[1]
+            elif tree == player_tree:
+                val = val[0]
+            elif tree == guild_members_tree:
+                val = val[2]
+            else:
+                val = val[0]
             if val in exclusions[key]:
                 exclusions[key].remove(val)
         populate_exclusions_trees()
@@ -1798,7 +2130,7 @@ def all_in_one_deletion():
             guild_tree.selection_set(iid)
             menu = tk.Menu(window, tearoff=0)
             menu.add_command(label="Add to Exclusions", command=lambda: add_exclusion(guild_tree, "guilds"))
-            menu.add_command(label="Remove from Exclusions", command=lambda: remove_selected_exclusion(exclusions_guilds_tree, "guilds"))
+            menu.add_command(label="Remove from Exclusions", command=lambda: remove_selected_from_regular(guild_tree, "guilds"))
             menu.add_command(label="Delete Guild", command=delete_selected_guild)
             menu.tk_popup(event.x_root, event.y_root)
     def base_tree_menu(event):
@@ -1807,7 +2139,7 @@ def all_in_one_deletion():
             base_tree.selection_set(iid)
             menu = tk.Menu(window, tearoff=0)
             menu.add_command(label="Add to Exclusions", command=lambda: add_exclusion(base_tree, "bases"))
-            menu.add_command(label="Remove from Exclusions", command=lambda: remove_selected_exclusion(exclusions_bases_tree, "bases"))
+            menu.add_command(label="Remove from Exclusions", command=lambda: remove_selected_from_regular(base_tree, "bases"))
             menu.add_command(label="Delete Base", command=delete_selected_base)
             menu.tk_popup(event.x_root, event.y_root)
     def player_tree_menu(event):
@@ -1816,8 +2148,17 @@ def all_in_one_deletion():
             player_tree.selection_set(iid)
             menu = tk.Menu(window, tearoff=0)
             menu.add_command(label="Add to Exclusions", command=lambda: add_exclusion(player_tree, "players"))
-            menu.add_command(label="Remove from Exclusions", command=lambda: remove_selected_exclusion(exclusions_players_tree, "players"))
+            menu.add_command(label="Remove from Exclusions", command=lambda: remove_selected_from_regular(player_tree, "players"))
             menu.add_command(label="Delete Player", command=delete_selected_player)
+            menu.tk_popup(event.x_root, event.y_root)
+    def guild_members_tree_menu(event):
+        iid = guild_members_tree.identify_row(event.y)
+        if iid:
+            guild_members_tree.selection_set(iid)
+            menu = tk.Menu(window, tearoff=0)
+            menu.add_command(label="Add to Exclusions", command=lambda: add_exclusion(guild_members_tree, "players"))
+            menu.add_command(label="Remove from Exclusions", command=lambda: remove_selected_from_regular(guild_members_tree, "players"))
+            menu.add_command(label="Delete Player", command=lambda: delete_selected_guild_member())
             menu.tk_popup(event.x_root, event.y_root)
     def exclusions_guilds_tree_menu(event):
         iid = exclusions_guilds_tree.identify_row(event.y)
@@ -1843,6 +2184,7 @@ def all_in_one_deletion():
     guild_tree.bind("<Button-3>", guild_tree_menu)
     base_tree.bind("<Button-3>", base_tree_menu)
     player_tree.bind("<Button-3>", player_tree_menu)
+    guild_members_tree.bind("<Button-3>", guild_members_tree_menu)
     exclusions_guilds_tree.bind("<Button-3>", exclusions_guilds_tree_menu)
     exclusions_players_tree.bind("<Button-3>", exclusions_players_tree_menu)
     exclusions_bases_tree.bind("<Button-3>", exclusions_bases_tree_menu)
@@ -1850,6 +2192,7 @@ def all_in_one_deletion():
     file_menu = tk.Menu(menubar, tearoff=0)
     file_menu.add_command(label="Load Level.sav", command=load_save)
     file_menu.add_command(label="Save Changes", command=save_changes)
+    #file_menu.add_command(label="Undo All Actions", command=undo_all_actions)
     menubar.add_cascade(label="File", menu=file_menu)
     delete_menu = tk.Menu(menubar, tearoff=0)
     delete_menu.add_command(label="Delete Selected Guild", command=delete_selected_guild)
@@ -1867,10 +2210,22 @@ def all_in_one_deletion():
     menubar.add_cascade(label="Delete", menu=delete_menu)
     view_menu = tk.Menu(menubar, tearoff=0)
     view_menu.add_command(label="Show Base Map", command=show_base_map)
+    view_menu.add_command(label="Generate Map", command=generate_map)
     menubar.add_cascade(label="View", menu=view_menu)
     exclusions_menu = tk.Menu(menubar, tearoff=0)
     exclusions_menu.add_command(label="Save Exclusions", command=save_exclusions_func)
     menubar.add_cascade(label="Exclusions", menu=exclusions_menu)
     window.config(menu=menubar)
+    def on_f5_press(event):
+        folder = current_save_path
+        if not folder: return
+        refresh_all()
+        guild_tree.selection_remove(guild_tree.selection())
+        player_tree.selection_remove(player_tree.selection())
+        base_tree.selection_remove(base_tree.selection())
+        guild_result.config(text="Selected Guild: N/A")
+        base_result.config(text="Selected Base: N/A")
+        player_result.config(text="Selected Player: N/A")
+    window.bind("<F5>", on_f5_press)
     return window
 if __name__=="__main__": all_in_one_deletion()

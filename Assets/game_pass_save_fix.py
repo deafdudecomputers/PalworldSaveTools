@@ -1,6 +1,4 @@
 from import_libs import *
-from common import ICON_PATH
-import traceback
 saves = []
 save_extractor_done = threading.Event()
 save_converter_done = threading.Event()

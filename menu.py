@@ -27,7 +27,10 @@ class LazyImporter:
         self._modules = {}
         self._common_funcs = None    
     def _try_import(self, module_name):
-        if module_name in self._modules:
+        import importlib
+        if module_name in sys.modules:
+            importlib.reload(sys.modules[module_name])
+            self._modules[module_name] = sys.modules[module_name]
             return self._modules[module_name]
         try:
             module = importlib.import_module(module_name)
@@ -37,6 +40,10 @@ class LazyImporter:
             pass
         try:
             full_module_name = f"Assets.{module_name}"
+            if full_module_name in sys.modules:
+                importlib.reload(sys.modules[full_module_name])
+                self._modules[module_name] = sys.modules[full_module_name]
+                return self._modules[module_name]
             module = importlib.import_module(full_module_name)
             self._modules[module_name] = module
             return module
@@ -116,11 +123,10 @@ def center_text(text):
     return "\n".join(line.center(columns) for line in text.splitlines())
 def run_tool(choice):
     def import_and_call(module_name, function_name, *args):
-        try:
-            func = lazy_importer.get_function(module_name, function_name)
-            return func(*args) if args else func()
-        except ImportError as e:
-            raise ImportError(f"Module not found and could not be imported: {module_name}") from e    
+        if module_name in sys.modules:
+            importlib.reload(sys.modules[module_name])
+        func = lazy_importer.get_function(module_name, function_name)
+        return func(*args) if args else func()
     tool_lists = [
         [
             lambda: import_and_call("convert_level_location_finder", "convert_level_location_finder", "json"),
@@ -129,13 +135,11 @@ def run_tool(choice):
             lambda: import_and_call("convert_players_location_finder", "convert_players_location_finder", "sav"),
             lambda: import_and_call("game_pass_save_fix", "game_pass_save_fix"),
             lambda: import_and_call("convertids", "convert_steam_id"),
-            lambda: import_and_call("coords", "convert_coordinates"),
         ],
         [
             lambda: import_and_call("all_in_one_deletion", "all_in_one_deletion"),
             lambda: import_and_call("slot_injector", "slot_injector"),
             lambda: import_and_call("modify_save", "modify_save"),
-            generate_map,
             lambda: import_and_call("character_transfer", "character_transfer"),
             lambda: import_and_call("fix_host_save", "fix_host_save"),
             lambda: import_and_call("restore_map", "restore_map"),
@@ -147,26 +151,18 @@ def run_tool(choice):
     except Exception as e:
         print(f"Invalid choice or error running tool: {e}")
         raise
-def generate_map():
-    try:
-        generate_map_func = lazy_importer.get_function("generate_map", "generate_map")
-        generate_map_func()
-    except ImportError as e:
-        print(f"Error importing generate_map: {e}")
 converting_tools = [
     "Convert Level.sav file to Level.json",
     "Convert Level.json file back to Level.sav",
     "Convert Player files to json format",
     "Convert Player files back to sav format",
     "Convert GamePass ←→ Steam",
-    "Convert SteamID",
-    "Convert Coordinates"
+    "Convert SteamID"
 ]
 management_tools = [
     "All in One Deletion Tool",
     "Slot Injector",
     "Modify Save",
-    "Generate Map",
     "Character Transfer",
     "Fix Host Save",
     "Restore Map"
@@ -191,7 +187,7 @@ class MenuGUI(tk.Tk):
         tools_version, _ = get_versions()
         self.title(f"PalworldSaveTools v{tools_version}")
         self.configure(bg="#2f2f2f")
-        self.geometry("800x570")
+        self.geometry("800x530")
         self.resizable(False, True)
         self.setup_ui()
     def setup_ui(self):
@@ -231,6 +227,8 @@ class MenuGUI(tk.Tk):
         tools_frame.pack(fill="both", expand=True)
         tools_frame.columnconfigure(0, weight=1)
         tools_frame.columnconfigure(1, weight=1)
+        tools_frame.columnconfigure(0, weight=1, uniform="cols")
+        tools_frame.columnconfigure(1, weight=1, uniform="cols")
         left_frame = ttk.Frame(tools_frame, style="TFrame")
         left_frame.grid(row=0, column=0, sticky="nsew", padx=(0,5))
         left_frame.columnconfigure(0, weight=1)

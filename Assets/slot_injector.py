@@ -1,6 +1,4 @@
-from scan_save import *
-from datetime import datetime
-from common import ICON_PATH
+from import_libs import *
 def backup_whole_directory(source_folder, backup_folder):
     if not os.path.isabs(backup_folder):
         if getattr(sys, 'frozen', False):

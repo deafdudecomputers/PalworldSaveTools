@@ -27,37 +27,34 @@
 
 ---
 
-## Steps to Restore Your Map(Fog and icons):
+## 🗺️ Steps to Unlock Your Map.
 
-### This only applies if you do NOT want to use the "Restore Map" option.
+> **Note:** This only applies if you **do NOT** want to use the "Restore Map" option.
+> ⚠️ This will overwrite your current map progress with the fully unlocked map from PST.
 
-### 1. Find the Old Server/World ID:
-- **Join your old server/world**.
-- Open File Explorer and run the search for: 
-	```
-	%localappdata%\Pal\Saved\SaveGames\
-	```
-- Look for a folder with a **random ID** (this should be your **Steam ID**).
-- Open that folder and **sort the subfolders by the "Last Modified" date**.
-- Look for the folder that matches your **old server/world ID** (e.g., `FCC47F5F4DD6AC48D3C0E2B30059973D`). The folder with the most recent modification date is typically the one for your **old server/world**.
-- Once you've found the correct folder, **copy** the `LocalData.sav` file from it.
+### 1️⃣ Copy the Unlocked Map File
+Copy the `LocalData.sav` file from `Assets\resources\LocalData.sav`.
 
-### 2. Find the New Server/World ID:
+### 2️⃣ Find Your New Server/World ID
 - **Join your new server/world**.
-- Open File Explorer and run the search for: 
-	```
-	%localappdata%\Pal\Saved\SaveGames\
-	```
-- Look for a folder with a **random ID** (this should be your **Steam ID**).
+- Open File Explorer and paste:
+
+```
+%localappdata%\Pal\Saved\SaveGames\
+```
+
+- Look for a folder with a **random ID** — this is your **Steam ID**.
 - Open that folder and **sort the subfolders by the "Last Modified" date**.
-- Look for the folder that matches your **new server/world ID**.
-- Once you've found the correct folder, **paste** the `LocalData.sav` file from the old server/world ID into this folder.
-- If the `LocalData.sav` file already exists in the new folder, **confirm the overwrite** when prompted to replace the existing file.
+- Find the folder that matches your **new server/world ID**.
 
-### 3. Restore Your Map
-- Now, go into your **new server/world**, and your map should be restored with the old server/world data.
+### 3️⃣ Replace the Map File
+- Paste the copied `LocalData.sav` into this **new server/world folder**.
+- If prompted, **confirm the overwrite** to replace the existing file.
 
-Done! Your map is back in your **new server/world**!
+### 🎉 Done!
+Launch your **new server/world** — your fog and icons will now match the unlocked map from the PST `Assets\resources` file.
+
+---
 
 ## 🔁 To Move from Host/Co-op to Server or Vice Versa
 
@@ -115,12 +112,12 @@ This happens by joining the host’s world and creating a new character if none 
 - Player B (new host) should have a regular save (e.g. `987xxx.sav`).
 
 ### 2. Swap Old Host’s Host Save to Regular Save
-- Use PalworldSaveTools to swap:
+- Use PalworldSaveTools **Fix Host Save** to swap:
   - Old host’s `0001.sav` → `123xxx.sav`  
   (This moves old host’s progress from host slot to their regular player slot.)
 
 ### 3. Swap New Host’s Regular Save to Host Save
-- Use PalworldSaveTools to swap:
+- Use PalworldSaveTools **Fix Host Save** to swap:
   - New host’s `987xxx.sav` → `0001.sav`  
   (This moves new host’s progress into the host slot.)
 
