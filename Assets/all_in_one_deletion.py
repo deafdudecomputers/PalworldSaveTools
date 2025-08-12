@@ -16,26 +16,6 @@ guild_result = None
 base_result = None
 player_result = None
 files_to_delete = set()
-def undo_all_actions():
-    global loaded_level_json, original_loaded_level_json
-    folder = current_save_path
-    if not folder:
-        messagebox.showerror("Error", "No save loaded!")
-        return
-    if original_loaded_level_json is None:
-        messagebox.showerror("Error", "No original save loaded!")
-        return
-    loaded_level_json = pickle.loads(pickle.dumps(original_loaded_level_json))
-    files_to_delete.clear()
-    refresh_all()
-    refresh_stats("After Reset")
-    guild_tree.selection_remove(guild_tree.selection())
-    player_tree.selection_remove(player_tree.selection())
-    base_tree.selection_remove(base_tree.selection())
-    guild_result.config(text="Selected Guild: N/A")
-    player_result.config(text="Selected Player: N/A")
-    base_result.config(text="Selected Base: N/A")
-    messagebox.showinfo("Reset", "Save reset to original loaded state!")
 def refresh_stats(section):
     stats = get_current_stats()
     if section == "Before Deletion":
@@ -1037,15 +1017,24 @@ def delete_unreferenced_data():
     def is_broken_mapobject(obj):
         bp = obj.get('Model', {}).get('value', {}).get('BuildProcess', {}).get('value', {}).get('RawData', {}).get('value', {})
         return bp.get('state') == 0
+    def is_dropped_item(obj):
+        return obj.get('ConcreteModel', {}).get('value', {}).get('RawData', {}).get('value', {}).get('concrete_model_type') == "PalMapObjectDropItemModel"
+    def count_mapobject_ids(wsd):
+        total = 0
+        map_objects = wsd.get('MapObjectSaveData', {}).get('value', {}).get('values', [])
+        for obj in map_objects:
+            if "MapObjectId" in obj:
+                total += 1
+        return total
     wsd = loaded_level_json['properties']['worldSaveData']['value']
     group_data_list = wsd.get('GroupSaveDataMap', {}).get('value', [])
     char_map = wsd.get('CharacterSaveParameterMap', {}).get('value', [])
     char_uids = set()
     for entry in char_map:
-        uid = normalize_uid(entry.get('key', {}).get('PlayerUId'))
-        owner_uid = normalize_uid(entry.get('value', {}).get('RawData', {}).get('value', {})
-                                  .get('object', {}).get('SaveParameter', {}).get('value', {})
-                                  .get('OwnerPlayerUId'))
+        uid_raw = entry.get('key', {}).get('PlayerUId')
+        uid = normalize_uid(uid_raw)
+        owner_uid_raw = entry.get('value', {}).get('RawData', {}).get('value', {}).get('object', {}).get('SaveParameter', {}).get('value', {}).get('OwnerPlayerUId')
+        owner_uid = normalize_uid(owner_uid_raw)
         if uid: char_uids.add(uid)
         if owner_uid: char_uids.add(owner_uid)
     unreferenced_uids, invalid_uids, removed_guilds = [], [], 0
@@ -1056,10 +1045,11 @@ def delete_unreferenced_data():
         valid_players = []
         all_invalid = True
         for p in players:
-            pid = normalize_uid(p.get('player_uid'))
+            pid_raw = p.get('player_uid')
+            pid = normalize_uid(pid_raw)
             if pid not in char_uids:
                 name = p.get('player_info', {}).get('player_name', 'Unknown')
-                print(f"Removing unreferenced player {name} ({pid})")
+                print(f"Removing unreferenced player {name} ({pid_raw})")
                 unreferenced_uids.append(pid)
                 continue
             level = player_levels.get(pid, None)
@@ -1068,32 +1058,32 @@ def delete_unreferenced_data():
                 valid_players.append(p)
             else:
                 name = p.get('player_info', {}).get('player_name', 'Unknown')
-                print(f"Removing invalid player {name} ({pid})")
+                print(f"Removing invalid player {name} ({pid_raw})")
                 invalid_uids.append(pid)
         if not valid_players or all_invalid:
-            gid = group['key']
+            gid_raw = group['key']
+            gid = normalize_uid(gid_raw)
             for b in wsd.get('BaseCampSaveData', {}).get('value', [])[:]:
-                if are_equal_uuids(b['value']['RawData']['value'].get('group_id_belong_to'), gid):
-                    delete_base_camp(b, gid, loaded_level_json)
+                base_gid_raw = b['value']['RawData']['value'].get('group_id_belong_to')
+                base_gid = normalize_uid(base_gid_raw)
+                if base_gid == gid:
+                    delete_base_camp(b, gid_raw, loaded_level_json)
             group_data_list.remove(group)
             removed_guilds += 1
-            print(f"Removed guild {gid} (Empty or invalid players).")
+            print(f"Removed guild {gid_raw} (Empty or invalid players).")
             continue
         raw['players'] = valid_players
-        admin_uid = normalize_uid(raw.get('admin_player_uid'))
+        admin_uid_raw = raw.get('admin_player_uid')
+        admin_uid = normalize_uid(admin_uid_raw)
         keep_uids = {normalize_uid(p.get('player_uid')) for p in valid_players}
         if admin_uid not in keep_uids:
             raw['admin_player_uid'] = valid_players[0]['player_uid']
             print(f"Admin reassigned in group {group['key']} to {raw['admin_player_uid']}")
-    char_map[:] = [entry for entry in char_map
-                   if normalize_uid(entry.get('key', {}).get('PlayerUId')) not in unreferenced_uids + invalid_uids
-                   and normalize_uid(entry.get('value', {}).get('RawData', {}).get('value', {})
-                                     .get('object', {}).get('SaveParameter', {}).get('value', {})
-                                     .get('OwnerPlayerUId')) not in unreferenced_uids + invalid_uids]
+    char_map[:] = [entry for entry in char_map if normalize_uid(entry.get('key', {}).get('PlayerUId')) not in unreferenced_uids + invalid_uids and normalize_uid(entry.get('value', {}).get('RawData', {}).get('value', {}).get('object', {}).get('SaveParameter', {}).get('value', {}).get('OwnerPlayerUId')) not in unreferenced_uids + invalid_uids]
     all_removed_uids = set(unreferenced_uids + invalid_uids)
     files_to_delete.update(all_removed_uids)
     removed_pals = delete_player_pals(wsd, all_removed_uids)
-    removed_broken = 0
+    removed_broken, removed_drops = 0, 0
     map_objects_wrapper = wsd.get('MapObjectSaveData', {}).get('value', {})
     map_objects = map_objects_wrapper.get('values', [])
     for obj in map_objects[:]:
@@ -1102,16 +1092,24 @@ def delete_unreferenced_data():
             map_objects.remove(obj)
             print(f"Deleted broken MapObject (state=0) — ID: {instance_id}")
             removed_broken += 1
+        elif is_dropped_item(obj):
+            instance_id = obj.get('ConcreteModel', {}).get('value', {}).get('RawData', {}).get('value', {}).get('instance_id')
+            map_objects.remove(obj)
+            print(f"Deleted dropped item MapObject — ID: {instance_id}")
+            removed_drops += 1
     delete_orphaned_bases()
     build_player_levels()
     refresh_all()
     refresh_stats("After Cleaning Players Without References")
+    mapobject_count = count_mapobject_ids(wsd)
     result_msg = (
         f"Players removed: {len(all_removed_uids)} "
         f"(Unreferenced: {len(unreferenced_uids)}, Invalid: {len(invalid_uids)})\n"
         f"Pals deleted: {removed_pals}\n"
         f"Guilds removed: {removed_guilds}\n"
-        f"Broken MapObjects removed: {removed_broken}"
+        f"Broken MapObjects removed: {removed_broken}\n"
+        f"Dropped items removed: {removed_drops}\n"
+        f"MapObjects total count: {mapobject_count}"
     )
     print(result_msg)
     messagebox.showinfo("Done", result_msg)
