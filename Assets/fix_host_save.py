@@ -115,8 +115,8 @@ def fix_save(save_path, new_guid, old_guid, guild_fix=True):
     print(f"Success! Fix has been applied! Have fun!")
     messagebox.showinfo("Success", "Fix has been applied! Have fun!")
 def copy_dps_file(src_folder, src_uid, tgt_folder, tgt_uid):
-    src_file = os.path.join(src_folder, f"{str(src_uid).replace('-', '')}_dps.sav")
-    tgt_file = os.path.join(tgt_folder, f"{str(tgt_uid).replace('-', '')}_dps.sav")
+    src_file = os.path.join(src_folder, f"{str(src_uid).replace('-', '').upper()}_dps.sav")
+    tgt_file = os.path.join(tgt_folder, f"{str(tgt_uid).replace('-', '').upper()}_dps.sav")
     if not os.path.exists(src_file):
         print(f"Source DPS file missing: {src_file}")
         return None

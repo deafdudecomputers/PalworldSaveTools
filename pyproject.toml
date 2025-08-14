@@ -3,7 +3,7 @@ requires = ["setuptools>=75.6.0", "wheel"]
 build-backend = "setuptools.build_meta"
 [project]
 name = "PalworldSaveTools"
-version = "1.0.92"
+version = "1.0.93"
 description = "All-in-one tool for fixing/transferring/editing Palworld saves"
 readme = "readme.md"
 license = "MIT"

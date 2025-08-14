@@ -142,23 +142,7 @@ This process lets both players keep their characters and pals intact while swapp
 
 # Known Bugs / Issues
 
-## 1. Character Transfer Issues
-
-**Summary:** Character transfers are intended for cross-world/server moves. They transfer your character, inventory, and Pals—but not your guild or ownership flags. Here's how to handle the known quirks:
-
-- **Hostile Pals After Transfer**  
-  Some Pals may behave aggressively due to ownership issues.  
-  **Workaround:** Add the Pal to your party, drop it, and then pick it up again to reassign ownership.
-
-- **Guild Not Transferred**  
-  Guilds are not included in Character Transfers by design.  
-  **Solutions:**  
-  - Use `Fix Host Save` when transferring within the same world/save to preserve the guild.  
-  - Alternatively, promote another player to guild leader, leave the guild, transfer, then get re-invited.
-
----
-
-## 2. Steam to GamePass Converter Not Working
+## 1. Steam to GamePass Converter Not Working
 
 **Issue:** Changes made via the converter aren't applied or retained.  
 **Steps to Fix:**  
@@ -170,7 +154,7 @@ This process lets both players keep their characters and pals intact while swapp
 
 ---
 
-## 3. `struct.error` When Parsing the Save
+## 2. `struct.error` When Parsing the Save
 
 **Cause:** The save file format is outdated and incompatible with current tools.  
 **Solution:**  
