@@ -40,6 +40,7 @@ def parse_logfile(log_path):
                 base_keys.add(base_key)
     if current_guild:
         guild_data.append(current_guild)
+    result = guild_data, sorted(base_keys)
     return guild_data, sorted(base_keys)
 def write_csv(guild_data, base_keys, output_file):
     print(f"Now writing the info into csv...")
@@ -81,53 +82,66 @@ def extract_info_from_log():
         print(f"{key}: {value}")
     return stats
 def create_world_map():
+    import pygame
+    pygame.init()
     base_dir = os.path.dirname(os.path.abspath(__file__))
     worldmap_path = os.path.join(base_dir, 'resources', 'worldmap.png')
     marker_path = os.path.join(base_dir, 'resources', 'baseicon.png')
     image = Image.open(worldmap_path).convert('RGBA')
     marker = Image.open(marker_path).convert('RGBA')
-    pil_font = ImageFont.load_default()
     df = pd.read_csv('bases.csv')
     marker_size = (64, 64)
-    marker_resized = marker.resize(marker_size, Image.Resampling.LANCZOS)
-    draw = ImageDraw.Draw(image)
     base_cols = [col for col in df.columns if col.startswith('Base ')]
+    scale = 4
+    font = pygame.font.SysFont(None, 20 * scale)
+    def render_text(text, color=(255,0,0)):
+        surf = font.render(text, True, color)
+        data = pygame.image.tostring(surf, "RGBA")
+        return Image.frombytes("RGBA", surf.get_size(), data)
+    overlay = Image.new('RGBA', (image.width * scale, image.height * scale), (0,0,0,0))
+    overlay_draw = ImageDraw.Draw(overlay)
+    marker_resized = marker.resize((marker_size[0]*scale, marker_size[1]*scale), Image.Resampling.LANCZOS)
+    def to_image_coordinates_scaled(x, y):
+        x_img, y_img = to_image_coordinates(x, y)
+        return x_img * scale, y_img * scale
     for _, row in df.iterrows():
         for col in base_cols:
             if pd.notna(row[col]):
                 coords_str = row[col]
                 coords_part = coords_str.split('|')[0].strip()
-                x_str, y_str = coords_part.split(', ')
+                try:
+                    x_str, y_str = coords_part.split(', ')
+                except ValueError:
+                    continue
                 x, y = int(x_str), int(y_str)
-                x_img, y_img = to_image_coordinates(x, y)
-                circle_radius = 35
-                circle_x = x_img
-                circle_y = y_img
-                draw.ellipse((circle_x - circle_radius, circle_y - circle_radius, circle_x + circle_radius, circle_y + circle_radius), outline='red', width=4)
-                marker_x = x_img - marker_size[0] // 2
-                marker_y = y_img - marker_size[1] // 2
-                image.paste(marker_resized, (marker_x, marker_y), marker_resized)
-                text_x = x_img
-                text_y = marker_y + marker_size[1] + 10
+                x_img, y_img = to_image_coordinates_scaled(x, y)
+                circle_radius = 35 * scale
+                overlay_draw.ellipse((x_img - circle_radius, y_img - circle_radius, x_img + circle_radius, y_img + circle_radius), outline='red', width=4*scale)
+                marker_x = x_img - marker_resized.width // 2
+                marker_y = y_img - marker_resized.height // 2
+                overlay.paste(marker_resized, (marker_x, marker_y), marker_resized)
                 guild = row.get('Guild', 'Unknown')
                 leader = row.get('Guild Leader', 'Unknown')
                 text = f"{guild} ({leader})"
-                for dx, dy in [(-1, -1), (-1, 1), (1, -1), (1, 1)]:
-                    draw.text((text_x + dx, text_y + dy), text, fill='black', font=pil_font, anchor='mm')
-                draw.text((text_x, text_y), text, fill='red', font=pil_font, anchor='mm')
+                text_img = render_text(text, color=(255,0,0))
+                shadow_img = render_text(text, color=(0,0,0))
+                for dx, dy in [(-1,-1), (-1,1), (1,-1), (1,1)]:
+                    overlay.paste(shadow_img, (x_img - shadow_img.width//2 + dx*scale, marker_y + marker_resized.height + 10*scale + dy*scale), shadow_img)
+                overlay.paste(text_img, (x_img - text_img.width//2, marker_y + marker_resized.height + 10*scale), text_img)
     stats = extract_info_from_log()
     stats_text = '\n'.join([f"{key}: {value}" for key, value in stats.items()])
-    text_bbox = draw.multiline_textbbox((0, 0), stats_text, font=pil_font)
-    text_width, text_height = text_bbox[2] - text_bbox[0], text_bbox[3] - text_bbox[1]
-    image_width, image_height = image.size
-    text_position = (image_width - text_width - 50, image_height - text_height - 50)
-    for dx, dy in [(-1, -1), (-1, 1), (1, -1), (1, 1)]:
-        draw.multiline_text((text_position[0] + dx, text_position[1] + dy), stats_text, fill='black', font=pil_font, align='right')
-    draw.multiline_text(text_position, stats_text, fill='red', font=pil_font, align='right')
+    y_offset = overlay.height - 50*scale
+    for line in stats_text.split('\n'):
+        line_img = render_text(line, color=(255,0,0))
+        shadow_img = render_text(line, color=(0,0,0))
+        y_offset -= line_img.height
+        overlay.paste(shadow_img, (overlay.width - line_img.width - 50*scale - 1, y_offset - 1), shadow_img)
+        overlay.paste(line_img, (overlay.width - line_img.width - 50*scale, y_offset), line_img)
+    overlay_small = overlay.resize(image.size, Image.Resampling.LANCZOS)
+    image.alpha_composite(overlay_small)
     print(f"Now populating the info for world map...")
     print(f"Now creating the world map...")
-    high_dpi_image = image.resize((8000, 8000), Image.Resampling.LANCZOS)
-    high_dpi_image.save('updated_worldmap.png', format='PNG', dpi=(100, 100), optimize=True)
+    image.save('updated_worldmap.png', format='PNG', dpi=(100,100), optimize=True)
     if os.path.exists('bases.csv'): os.remove('bases.csv')
 def generate_map():
     start_time = time.time()
