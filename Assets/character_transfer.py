@@ -41,6 +41,8 @@ def safe_uuid_str(u):
     if isinstance(u, bytes) and len(u) == 16:
         return str(UUID(bytes=u))
     return str(u)
+def as_uuid(val): return str(val).lower() if val else ''
+def are_equal_uuids(a,b): return as_uuid(a)==as_uuid(b)
 class MyReader(FArchiveReader):
     def __init__(self, data, type_hints=None, custom_properties=None, debug=False, allow_nan=True):
         super().__init__(data, type_hints=type_hints or {}, custom_properties=custom_properties or {}, debug=debug, allow_nan=allow_nan)
@@ -164,9 +166,13 @@ def load_json_files():
     host_json_gvas = load_player_file(level_sav_path, selected_source_player)
     if not host_json_gvas: return False
     host_json = host_json_gvas.properties
-    targ_json_gvas = load_player_file(t_level_sav_path, selected_target_player)
-    if not targ_json_gvas: return False
-    targ_json = targ_json_gvas.properties
+    if not selected_target_player or selected_target_player == selected_source_player:
+        targ_json_gvas = fast_deepcopy(host_json_gvas)
+        targ_json = fast_deepcopy(host_json)
+    else:
+        targ_json_gvas = load_player_file(t_level_sav_path, selected_target_player)
+        if not targ_json_gvas: return False
+        targ_json = targ_json_gvas.properties
     return True
 def gather_inventory_ids(json_data):
     inv_info = json_data["SaveData"]["value"]["InventoryInfo"]["value"]
@@ -252,14 +258,14 @@ def gather_host_containers(inv_ids):
     global host_main, host_key, host_weps, host_armor, host_foodbag, host_pals, host_otomo
     host_main = host_key = host_weps = host_armor = host_foodbag = None
     host_pals = host_otomo = None
-    for c in level_json["ItemContainerSaveData"]["value"]:
+    for c in level_json.get("ItemContainerSaveData", {}).get("value", []):
         cid = c["key"]["ID"]["value"]
         if cid == inv_ids["main"]: host_main = c
         elif cid == inv_ids["key"]: host_key = c
         elif cid == inv_ids["weps"]: host_weps = c
         elif cid == inv_ids["armor"]: host_armor = c
         elif cid == inv_ids["foodbag"]: host_foodbag = c
-    for c in level_json["CharacterContainerSaveData"]["value"]:
+    for c in level_json.get("CharacterContainerSaveData", {}).get("value", []):
         cid = c["key"]["ID"]["value"]
         if cid == inv_ids["pals"]: host_pals = c
         elif cid == inv_ids["otomo"]: host_otomo = c
@@ -283,6 +289,28 @@ def replace_containers(inv_ids_targ):
             c["value"] = fast_deepcopy(host_armor["value"])
         elif cid == inv_ids_targ["foodbag"] and host_foodbag:
             c["value"] = fast_deepcopy(host_foodbag["value"])
+def double_transfer_character_and_containers(host_guid, targ_uid):
+    exported_map = get_exported_map(host_guid)
+    if not exported_map:
+        print(f"[ERROR] Could not find exported_map for {host_guid}")
+        return False
+    updated = 0
+    targ_instance_id = targ_json["SaveData"]["value"]["IndividualId"]["value"]["InstanceId"]["value"]
+    for character in targ_lvl["CharacterSaveParameterMap"]["value"]:
+        key = character.get("key", {})
+        player_uid = key.get("PlayerUId", {}).get("value")
+        inst_id = key.get("InstanceId", {}).get("value")
+        if player_uid == targ_uid and inst_id == targ_instance_id:
+            character['value'] = fast_deepcopy(exported_map['value'])
+            updated += 1
+    if updated == 0:
+        targ_lvl["CharacterSaveParameterMap"]["value"].append(fast_deepcopy(exported_map))
+        updated = 1
+    targ_lvl.setdefault("CharacterContainerSaveData", {"value": []})
+    targ_lvl["CharacterContainerSaveData"]["value"] = [fast_deepcopy(c) for c in level_json["CharacterContainerSaveData"]["value"]]
+    targ_lvl.setdefault("ItemContainerSaveData", {"value": []})
+    targ_lvl["ItemContainerSaveData"]["value"] = [fast_deepcopy(c) for c in level_json["ItemContainerSaveData"]["value"]]
+    return True
 def get_exported_map(host_guid):
     host_instance_id = host_json["SaveData"]["value"]["IndividualId"]["value"]["InstanceId"]["value"]
     for character_save_param in level_json["CharacterSaveParameterMap"]["value"]:
@@ -308,70 +336,57 @@ def update_target_character_with_exported_map(targ_uid, exported_map):
         except Exception as e:
             print(f"Exception updating character index {i}: {e}")
     if updated == 0:
-        print(f"No matching target characters found with OwnerUID {targ_uid} and InstanceId {targ_instance_id}")
+        targ_lvl["CharacterSaveParameterMap"]["value"].append(fast_deepcopy(exported_map))
+        updated = 1
     return updated
 def update_guild_data(targ_lvl, targ_json, host_guid, char_instanceid, keep_old_guild_id, source_guild_dict):
-    group_id = None
     targ_uid = targ_json["SaveData"]["value"]["IndividualId"]["value"]["PlayerUId"]["value"]
     if "GroupSaveDataMap" not in targ_lvl or targ_lvl["GroupSaveDataMap"].get("value") is None:
         targ_lvl["GroupSaveDataMap"] = {"value": []}
-    def targ_uid_in_guilds():
-        for g in targ_lvl["GroupSaveDataMap"]["value"]:
-            raw = g.get("value", {}).get("RawData", {}).get("value", {})
+    player_exists_in_target = any(
+        targ_uid == p.get("player_uid")
+        for g in targ_lvl.get("GroupSaveDataMap", {}).get("value", [])
+        for p in g.get("value", {}).get("RawData", {}).get("value", {}).get("players", [])
+    )
+    if not player_exists_in_target:
+        keep_old_guild_id = True
+    group_map = {}
+    target_guild = None
+    for g in targ_lvl["GroupSaveDataMap"]["value"]:
+        raw = g.get("value", {}).get("RawData", {}).get("value", {})
+        group_map[g["key"]] = g
+        if "players" in raw and any(p.get("player_uid") == targ_uid for p in raw["players"]):
+            target_guild = g
+    group_id = target_guild["key"] if target_guild else None
+    restored = False
+    for gkey, gdata in group_map.items():
+        if gkey in source_guild_dict:
+            raw = gdata.get("value", {}).get("RawData", {}).get("value", {})
             if "players" in raw:
                 for p in raw["players"]:
-                    if p.get('player_uid') == targ_uid:
-                        return True
-        return False
-    if not keep_old_guild_id:
-        for group_data in targ_lvl["GroupSaveDataMap"]["value"]:
-            raw = group_data["value"]["RawData"]["value"]
-            if group_data["value"]["GroupType"]["value"]["value"] == "EPalGroupType::Guild" and "players" in raw:
-                if targ_uid in [p["player_uid"] for p in raw["players"]]:
-                    group_id = raw.get("group_id")
-                    break
-        if group_id is None:
-            messagebox.showerror(message='Guild ID not found. Aborting')
-            return None
-    else:
-        restored = False
-        for g in targ_lvl["GroupSaveDataMap"]["value"]:
-            raw = g["value"]["RawData"]["value"]
-            if "players" in raw and targ_uid in [p["player_uid"] for p in raw["players"]]:
-                raw["players"] = [p for p in raw["players"] if p["player_uid"] != targ_uid]
-                raw["individual_character_handle_ids"] = [h for h in raw["individual_character_handle_ids"] if h["guid"] != targ_uid]
-                if raw.get("admin_player_uid") == targ_uid and raw.get("players"):
-                    raw["admin_player_uid"] = raw["players"][0]["player_uid"]
-        for group_data in targ_lvl["GroupSaveDataMap"]["value"]:
-            raw = group_data["value"]["RawData"]["value"]
-            if group_data["key"] in source_guild_dict and "players" in raw:
-                for p in raw["players"]:
-                    if p["player_uid"] == host_guid and not targ_uid_in_guilds():
-                        p["player_uid"] = targ_uid
-                        restored = True
+                    if p["player_uid"] == host_guid:
+                        dest_guild = target_guild if target_guild else gdata
+                        dest_raw = dest_guild["value"]["RawData"]["value"]
+                        if not any(pl.get("player_uid") == targ_uid for pl in dest_raw.get("players", [])):
+                            new_player = fast_deepcopy(p)
+                            new_player["player_uid"] = targ_uid
+                            dest_raw.setdefault("players", []).append(new_player)
+                            for h in new_player.get("individual_character_handle_ids", []):
+                                h["guid"] = targ_uid
+                                h["instance_id"] = char_instanceid
+                            if dest_raw.get("admin_player_uid") == host_guid:
+                                dest_raw["admin_player_uid"] = targ_uid
+                            restored = True
+                            group_id = dest_guild["key"]
                         break
-                if restored:
-                    for h in raw.get("individual_character_handle_ids", []):
-                        if h["guid"] == host_guid:
-                            h["guid"] = targ_uid
-                            h["instance_id"] = char_instanceid
-                            break
-                    if raw.get("admin_player_uid") == host_guid:
-                        raw["admin_player_uid"] = targ_uid
-                    group_id = group_data["key"]
-                    break
-        if not restored:
-            old_guild = None
-            for g in source_guild_dict.values():
-                raw = g["value"]["RawData"]["value"]
-                if "players" in raw:
-                    for p in raw["players"]:
-                        if p["player_uid"] == host_guid:
-                            old_guild = fast_deepcopy(g)
-                            break
-                if old_guild:
-                    break
-            if old_guild:
+            if restored:
+                break
+    if keep_old_guild_id:
+        old_guild = None
+        for g in source_guild_dict.values():
+            raw = g.get("value", {}).get("RawData", {}).get("value", {})
+            if "players" in raw and any(p["player_uid"] == host_guid for p in raw["players"]):
+                old_guild = fast_deepcopy(g)
                 raw = old_guild["value"]["RawData"]["value"]
                 for p in raw.get("players", []):
                     if p["player_uid"] == host_guid:
@@ -382,10 +397,57 @@ def update_guild_data(targ_lvl, targ_json, host_guid, char_instanceid, keep_old_
                         h["guid"] = targ_uid
                         h["instance_id"] = char_instanceid
                         break
-                if raw.get("admin_player_uid") == host_guid:
-                    raw["admin_player_uid"] = targ_uid
+                if raw.get("admin_player_uid") == host_guid or raw.get("admin_player_uid") not in [p["player_uid"] for p in raw.get("players", [])]:
+                    raw["admin_player_uid"] = raw["players"][0]["player_uid"] if raw.get("players") else None
+                raw["base_ids"] = []
+                raw["map_object_instance_ids_base_camp_points"] = []
                 targ_lvl["GroupSaveDataMap"]["value"].append(old_guild)
                 group_id = old_guild["key"]
+                restored = True
+                break
+        if restored and old_guild:
+            old_key = old_guild["key"]
+            new_guilds = []
+            for g in targ_lvl["GroupSaveDataMap"]["value"]:
+                if g["key"] == old_key:
+                    new_guilds.append(g)
+                    continue
+                raw = g.get("value", {}).get("RawData", {}).get("value", {})
+                if "players" in raw:
+                    raw["players"] = [p for p in raw["players"] if p.get("player_uid") != targ_uid]
+                    if raw.get("admin_player_uid") == targ_uid and raw.get("players"):
+                        raw["admin_player_uid"] = raw["players"][0]["player_uid"]
+                if raw.get("players"):
+                    new_guilds.append(g)
+            targ_lvl["GroupSaveDataMap"]["value"] = new_guilds
+    final_guild = old_guild if keep_old_guild_id and old_guild else (target_guild if target_guild else old_guild)
+    if final_guild:
+        dest_raw = final_guild["value"]["RawData"]["value"]
+        if not any(p.get("player_uid") == targ_uid for p in dest_raw.get("players", [])):
+            for g in source_guild_dict.values():
+                raw = g.get("value", {}).get("RawData", {}).get("value", {})
+                for p in raw.get("players", []):
+                    if p["player_uid"] == host_guid:
+                        new_player = fast_deepcopy(p)
+                        new_player["player_uid"] = targ_uid
+                        for h in new_player.get("individual_character_handle_ids", []):
+                            h["guid"] = targ_uid
+                            h["instance_id"] = char_instanceid
+                        dest_raw.setdefault("players", []).append(new_player)
+                        if dest_raw.get("admin_player_uid") == host_guid:
+                            dest_raw["admin_player_uid"] = targ_uid
+                        break
+                else:
+                    continue
+                break
+    for g in targ_lvl["GroupSaveDataMap"]["value"]:
+        if g == final_guild:
+            continue
+        raw = g.get("value", {}).get("RawData", {}).get("value", {})
+        if "players" in raw:
+            raw["players"] = [p for p in raw["players"] if p.get("player_uid") != targ_uid]
+            if raw.get("admin_player_uid") == targ_uid and raw.get("players"):
+                raw["admin_player_uid"] = raw["players"][0]["player_uid"]
     return group_id
 def reassign_owner_uid(param_maps, new_owner_uid):
     for character in param_maps:
@@ -456,10 +518,12 @@ def update_targ_tech_and_data():
     elif 'RecordData' in targ_save:
         del targ_save['RecordData']
 def main():
-    global host_guid, targ_uid, exported_map
-    if not all([level_sav_path, t_level_sav_path, selected_source_player, selected_target_player]):
-        messagebox.showerror("Error!", "Please have both level files and players selected before starting transfer.")
+    global host_guid, targ_uid, exported_map, selected_source_player, selected_target_player
+    if not all([level_sav_path, t_level_sav_path, selected_source_player]):
+        messagebox.showerror("Error!", "Please have level files and source player selected before starting transfer.")
         return False
+    if not selected_target_player:
+        selected_target_player = selected_source_player
     try:
         host_guid = UUID.from_str(selected_source_player)
         targ_uid = UUID.from_str(selected_target_player)
@@ -469,6 +533,16 @@ def main():
     if not load_json_files():
         messagebox.showerror("Load Error", "Failed to load JSON files.")
         return
+    src_players_folder = os.path.join(os.path.dirname(level_sav_path), "Players")
+    tgt_players_folder = os.path.join(os.path.dirname(t_level_sav_path), "Players")
+    os.makedirs(tgt_players_folder, exist_ok=True)
+    if selected_source_player == selected_target_player:
+        src_file = os.path.join(src_players_folder, f"{str(host_guid).replace('-', '').upper()}.sav")
+        tgt_file = os.path.join(tgt_players_folder, f"{str(targ_uid).replace('-', '').upper()}.sav")
+        if not os.path.exists(src_file):
+            messagebox.showerror("Error!", f"Player file {src_file} not present.")
+            return
+        shutil.copy2(src_file, tgt_file)
     host_inv_ids = gather_inventory_ids(host_json)
     targ_inv_ids = gather_inventory_ids(targ_json)
     gather_host_containers(host_inv_ids)
@@ -485,6 +559,7 @@ def main():
     replace_character_save_params(param_maps, targ_uid)
     update_targ_tech_and_data()
     replace_containers(targ_inv_ids)
+    double_transfer_character_and_containers(host_guid, targ_uid)
     gather_and_update_dynamic_containers()
     modified_target_players.add(selected_target_player)
     modified_targets_data[selected_target_player] = (fast_deepcopy(targ_json), targ_json_gvas)
@@ -493,10 +568,16 @@ def main():
         tgt_file = os.path.join(tgt_folder, f"{str(tgt_uid).replace('-', '').upper()}_dps.sav")
         if not os.path.exists(src_file): return None
         shutil.copy2(src_file, tgt_file)
-    src_players_folder = os.path.join(os.path.dirname(level_sav_path), "Players")
-    tgt_players_folder = os.path.join(os.path.dirname(t_level_sav_path), "Players")
     copy_dps_file(src_players_folder, host_guid, tgt_players_folder, targ_uid)
     messagebox.showinfo(title="Transfer Successful!", message='Transfer successful in memory!\nHit "Save Changes" to save.')
+    selected_source_player = None
+    selected_target_player = None
+    host_guid = None
+    targ_uid = None
+    exported_map = None
+    current_selection_label.config(text="Source: None, Target: None")
+    source_player_list.selection_remove(source_player_list.selection())
+    target_player_list.selection_remove(target_player_list.selection())
 def save_and_backup():
     print("Now saving the data...")
     WORLDSAVESIZEPREFIX = b'\x0e\x00\x00\x00worldSaveData\x00\x0f\x00\x00\x00StructProperty\x00'
@@ -529,10 +610,15 @@ def load_file(path):
     if path.endswith(".sav"):
         loaded_file, save_type = sav_to_gvas(path)
     return loaded_file, save_type
-def load_player_file(level_sav_path, player_uid):
-    player_file_path = os.path.join(os.path.dirname(level_sav_path), 'Players', player_uid + '.sav')
+def load_player_file(level_sav_path, player_uid, use_source_folder=False):
+    base_folder = os.path.dirname(level_sav_path)
+    if use_source_folder:
+        base_folder = os.path.join(base_folder, 'Players')
+    else:
+        base_folder = os.path.join(base_folder, 'Players')
+    player_file_path = os.path.join(base_folder, f"{player_uid}.sav")
     if not os.path.exists(player_file_path):
-        player_file_path = os.path.join(os.path.dirname(level_sav_path), '../Players', player_uid + '.sav')
+        player_file_path = os.path.join(os.path.dirname(level_sav_path), '../Players', f"{player_uid}.sav")
         if not os.path.exists(player_file_path):
             messagebox.showerror("Error!", f"Player file {player_file_path} not present")
             return None
@@ -672,7 +758,7 @@ def filter_treeview(tree, query, is_source):
         else:
             tree.detach(row)
 def finalize_save(window):
-    if not validate_inputs(): return
+    #if not validate_inputs(): return
     try:
         save_and_backup()
         messagebox.showinfo("Save Complete", "Changes saved successfully.")
@@ -752,14 +838,15 @@ def character_transfer():
     current_selection_label.grid(row=4, column=0, columnspan=2, padx=10, pady=10, sticky="ew")
     window.grid_columnconfigure(0, weight=1)
     window.grid_columnconfigure(1, weight=1)
-    keep_old_guild_id = True
+    keep_old_guild_id = False
     def toggle_keep_old_guild():
         global keep_old_guild_id
         keep_old_guild_id = not keep_old_guild_id
         txt = "☑ " if keep_old_guild_id else "☐ "
         btn_toggle.config(text=txt + "Keep old Guild ID after Transfer")
         print("Keep old guild id after transfer:", "on" if keep_old_guild_id else "off")
-    btn_toggle = tk.Button(window, text="☑ Keep old Guild ID after Transfer", command=toggle_keep_old_guild,
+    txt = "☑ " if keep_old_guild_id else "☐ "
+    btn_toggle = tk.Button(window, text=txt + "Keep old Guild ID after Transfer", command=toggle_keep_old_guild,
                            relief="flat", fg="white", bg="#2f2f2f", activebackground="black", activeforeground="white")
     btn_toggle.grid(row=5, column=0, sticky='w', padx=10, pady=(0, 10))
     ttk.Button(window, text='Transfer', command=lambda: main(), style="Dark.TButton").grid(row=5, column=1, padx=10, pady=(10, 0), sticky="ew")

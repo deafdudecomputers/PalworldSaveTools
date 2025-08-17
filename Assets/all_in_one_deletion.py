@@ -558,7 +558,8 @@ def refresh_all():
             name = g['value']['RawData']['value'].get('guild_name', "Unknown")
             gid = as_uuid(g['key'])
             guild_tree.insert("", "end", values=(name, gid))
-    for b in loaded_level_json['properties']['worldSaveData']['value']['BaseCampSaveData']['value']:
+    base_camps = loaded_level_json['properties']['worldSaveData']['value'].get('BaseCampSaveData', {}).get('value', [])
+    for b in base_camps:
         base_tree.insert("", "end", values=(str(b['key']),))
     for uid, name, gid, seen, level in get_players():
         player_tree.insert("", "end", iid=uid, values=(uid, name, gid, seen, level))
@@ -578,7 +579,8 @@ def on_base_search(q=None):
         q = base_search_var.get()
     q = q.lower()
     base_tree.delete(*base_tree.get_children())
-    for b in loaded_level_json['properties']['worldSaveData']['value']['BaseCampSaveData']['value']:
+    base_data = loaded_level_json['properties']['worldSaveData']['value'].get('BaseCampSaveData', {}).get('value', [])
+    for b in base_data:
         bid = str(b['key'])
         if q in bid.lower():
             base_tree.insert("", "end", values=(bid,))
@@ -620,14 +622,15 @@ def on_guild_select(evt):
     sel = guild_tree.selection()
     base_tree.delete(*base_tree.get_children())
     guild_members_tree.delete(*guild_members_tree.get_children())
+    base_data = loaded_level_json['properties']['worldSaveData']['value'].get('BaseCampSaveData', {}).get('value', [])
     if not sel:
         guild_result.config(text="Selected Guild: N/A")
-        for b in loaded_level_json['properties']['worldSaveData']['value']['BaseCampSaveData']['value']:
+        for b in base_data:
             base_tree.insert("", "end", values=(str(b['key']),))
         return
     name, gid = guild_tree.item(sel[0])['values']
     guild_result.config(text=f"Selected Guild: {name}")
-    for b in loaded_level_json['properties']['worldSaveData']['value']['BaseCampSaveData']['value']:
+    for b in base_data:
         if are_equal_uuids(b['value']['RawData']['value'].get('group_id_belong_to'), gid):
             base_tree.insert("", "end", values=(str(b['key']),))
     for g in loaded_level_json['properties']['worldSaveData']['value']['GroupSaveDataMap']['value']:
@@ -1292,8 +1295,8 @@ def on_guild_member_select(event=None):
     pass    
 def get_current_stats():
     wsd = loaded_level_json['properties']['worldSaveData']['value']
-    group_data = wsd['GroupSaveDataMap']['value']
-    base_data = wsd['BaseCampSaveData']['value']
+    group_data = wsd.get('GroupSaveDataMap', {}).get('value', [])
+    base_data = wsd.get('BaseCampSaveData', {}).get('value', [])
     char_data = wsd.get('CharacterSaveParameterMap', {}).get('value', [])
     total_players = sum(len(g['value']['RawData']['value'].get('players', [])) for g in group_data if g['value']['GroupType']['value']['value'] == 'EPalGroupType::Guild')
     total_guilds = sum(1 for g in group_data if g['value']['GroupType']['value']['value'] == 'EPalGroupType::Guild')
