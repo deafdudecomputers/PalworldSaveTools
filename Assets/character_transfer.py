@@ -154,13 +154,7 @@ class SkipGvasFile(GvasFile):
         self.header.write(writer)
         writer.properties(self.properties)
         writer.write(self.trailer)
-        return writer.bytes()        
-def validate_inputs():
-    if not all([level_sav_path, t_level_sav_path, selected_source_player, selected_target_player]):
-        messagebox.showerror("Error!", "Please have both level files and players selected before starting transfer.")
-        return False
-    response = messagebox.askyesno(title='WARNING', message='WARNING: Running this script WILL change your target save files and could potentially corrupt your data. It is HIGHLY recommended that you make a backup of your save folder before continuing. Press Yes if you would like to continue.')
-    return response
+        return writer.bytes()
 def load_json_files():
     global host_json_gvas, targ_json_gvas, host_json, targ_json
     host_json_gvas = load_player_file(level_sav_path, selected_source_player)
@@ -186,40 +180,17 @@ def gather_inventory_ids(json_data):
         "otomo": json_data["SaveData"]["value"]["OtomoCharacterContainerId"]["value"]["ID"]["value"],
     }
 def gather_and_update_dynamic_containers():
-    global level_additional_dynamic_containers, targ_lvl, dynamic_guids
-    dynamic_container_level_json = level_json['DynamicItemSaveData']['value']['values']
-    level_additional_dynamic_containers = [
-        (dc, dc['RawData']['value']['id'].get('local_id_in_created_world') if dc.get('RawData', {}).get('value', {}).get('id') else None)
-        for dc in dynamic_container_level_json
-    ]
-    dynamic_guid_map = {}
-    for i, (_, local_id) in enumerate(level_additional_dynamic_containers):
-        if local_id and local_id != b'\x00' * 16:
-            dynamic_guid_map[local_id] = i
-    dynamic_guids = set(dynamic_guid_map.keys())
-    target_dynamic_containers = targ_lvl['DynamicItemSaveData']['value']['values']
-    none_target_count = 0
-    replaced_count = 0
-    repeated_indices = set()
-    for i, target_dynamic_container in enumerate(target_dynamic_containers):
-        rawdata = target_dynamic_container.get('RawData', {})
-        value = rawdata.get('value', {})
-        id_dict = value.get('id', {}) if isinstance(value, dict) else {}
-        target_guid = id_dict.get('local_id_in_created_world')
-        if not target_guid:
-            none_target_count += 1
-            continue
-        if target_guid not in dynamic_guids:
-            continue
-        j = dynamic_guid_map[target_guid]
-        target_dynamic_containers[i] = fast_deepcopy(level_additional_dynamic_containers[j][0])
-        repeated_indices.add(j)
-        replaced_count += 1
-    added_count = 0
-    for i, (container, local_id) in enumerate(level_additional_dynamic_containers):
-        if local_id and i not in repeated_indices:
-            target_dynamic_containers.append(fast_deepcopy(container))
-            added_count += 1
+    global targ_lvl, dynamic_guids
+    src_containers = level_json['DynamicItemSaveData']['value']['values']
+    tgt_containers = targ_lvl['DynamicItemSaveData']['value']['values']
+    dynamic_guids = set()
+    tgt_dict = {dc['RawData']['value']['id']['local_id_in_created_world']: dc for dc in tgt_containers if dc['RawData']['value']['id']['local_id_in_created_world']}
+    for dc in src_containers:
+        lid = dc['RawData']['value']['id']['local_id_in_created_world']
+        if lid == b'\x00'*16: continue
+        dynamic_guids.add(lid)
+        tgt_dict[lid] = dc
+    targ_lvl['DynamicItemSaveData']['value']['values'] = list(tgt_dict.values())
 def collect_param_maps(owner_uid):
     param_maps = []
     palcount = 0
@@ -233,7 +204,6 @@ def collect_param_maps(owner_uid):
     return param_maps, palcount
 def replace_character_save_params(param_maps, targ_uid):
     new_map = []
-    removed = []
     for character in targ_lvl["CharacterSaveParameterMap"]["value"]:
         try:
             sp = character['value']['RawData']['value']['object']['SaveParameter']['value']
@@ -244,72 +214,55 @@ def replace_character_save_params(param_maps, targ_uid):
         new_map.append(character)
     new_map += param_maps
     targ_lvl["CharacterSaveParameterMap"]["value"] = new_map
-    groups_list = targ_lvl.get("GroupSaveDataMap", {}).get("value", [])
-    for group_entry in groups_list:
-        try:
-            raw_data = group_entry.get("value", {}).get("RawData", {}).get("value", {})
-            handles = raw_data.get("individual_character_handle_ids", [])
-            handles = [h for h in handles if not (str(h.get("guid")) == "00000000-0000-0000-0000-000000000000")]
-            raw_data["individual_character_handle_ids"] = handles
-            group_entry["value"]["RawData"]["value"] = raw_data
-        except Exception:
-            pass
 def gather_host_containers(inv_ids):
     global host_main, host_key, host_weps, host_armor, host_foodbag, host_pals, host_otomo
     host_main = host_key = host_weps = host_armor = host_foodbag = None
     host_pals = host_otomo = None
+    inv_lookup = {v: k for k, v in inv_ids.items()}
     for c in level_json.get("ItemContainerSaveData", {}).get("value", []):
         cid = c["key"]["ID"]["value"]
-        if cid == inv_ids["main"]: host_main = c
-        elif cid == inv_ids["key"]: host_key = c
-        elif cid == inv_ids["weps"]: host_weps = c
-        elif cid == inv_ids["armor"]: host_armor = c
-        elif cid == inv_ids["foodbag"]: host_foodbag = c
+        key = inv_lookup.get(cid)
+        if key:
+            globals()[f"host_{key}"] = c
     for c in level_json.get("CharacterContainerSaveData", {}).get("value", []):
         cid = c["key"]["ID"]["value"]
-        if cid == inv_ids["pals"]: host_pals = c
-        elif cid == inv_ids["otomo"]: host_otomo = c
+        key = inv_lookup.get(cid)
+        if key:
+            globals()[f"host_{key}"] = c
 def replace_containers(inv_ids_targ):
     global host_main, host_key, host_weps, host_armor, host_foodbag, host_pals, host_otomo, targ_lvl
-    for c in targ_lvl["CharacterContainerSaveData"]["value"]:
-        cid = c["key"]["ID"]["value"]
-        if cid == inv_ids_targ["pals"] and host_pals:
-            c["value"] = fast_deepcopy(host_pals["value"])
-        elif cid == inv_ids_targ["otomo"] and host_otomo:
-            c["value"] = fast_deepcopy(host_otomo["value"])
-    for c in targ_lvl["ItemContainerSaveData"]["value"]:
-        cid = c["key"]["ID"]["value"]
-        if cid == inv_ids_targ["main"] and host_main:
-            c["value"] = fast_deepcopy(host_main["value"])
-        elif cid == inv_ids_targ["key"] and host_key:
-            c["value"] = fast_deepcopy(host_key["value"])
-        elif cid == inv_ids_targ["weps"] and host_weps:
-            c["value"] = fast_deepcopy(host_weps["value"])
-        elif cid == inv_ids_targ["armor"] and host_armor:
-            c["value"] = fast_deepcopy(host_armor["value"])
-        elif cid == inv_ids_targ["foodbag"] and host_foodbag:
-            c["value"] = fast_deepcopy(host_foodbag["value"])
+    host_lookup = {
+        inv_ids_targ["pals"]: host_pals,
+        inv_ids_targ["otomo"]: host_otomo,
+        inv_ids_targ["main"]: host_main,
+        inv_ids_targ["key"]: host_key,
+        inv_ids_targ["weps"]: host_weps,
+        inv_ids_targ["armor"]: host_armor,
+        inv_ids_targ["foodbag"]: host_foodbag
+    }
+    for container_list in ("CharacterContainerSaveData", "ItemContainerSaveData"):
+        for c in targ_lvl[container_list]["value"]:
+            val = host_lookup.get(c["key"]["ID"]["value"])
+            if val:
+                c["value"] = fast_deepcopy(val["value"])
 def double_transfer_character_and_containers(host_guid, targ_uid):
     exported_map = get_exported_map(host_guid)
     if not exported_map:
         print(f"[ERROR] Could not find exported_map for {host_guid}")
         return False
-    updated = 0
     targ_instance_id = targ_json["SaveData"]["value"]["IndividualId"]["value"]["InstanceId"]["value"]
-    for character in targ_lvl["CharacterSaveParameterMap"]["value"]:
-        key = character.get("key", {})
-        player_uid = key.get("PlayerUId", {}).get("value")
-        inst_id = key.get("InstanceId", {}).get("value")
-        if player_uid == targ_uid and inst_id == targ_instance_id:
-            character['value'] = fast_deepcopy(exported_map['value'])
-            updated += 1
-    if updated == 0:
-        targ_lvl["CharacterSaveParameterMap"]["value"].append(fast_deepcopy(exported_map))
-        updated = 1
-    targ_lvl.setdefault("CharacterContainerSaveData", {"value": []})
-    targ_lvl["CharacterContainerSaveData"]["value"] = [fast_deepcopy(c) for c in level_json["CharacterContainerSaveData"]["value"]]
-    targ_lvl.setdefault("ItemContainerSaveData", {"value": []})
-    targ_lvl["ItemContainerSaveData"]["value"] = [fast_deepcopy(c) for c in level_json["ItemContainerSaveData"]["value"]]
+    char_list = targ_lvl.setdefault("CharacterSaveParameterMap", {}).setdefault("value", [])
+    updated = False
+    for c in char_list:
+        key = c.get("key", {})
+        if key.get("PlayerUId", {}).get("value") == targ_uid and key.get("InstanceId", {}).get("value") == targ_instance_id:
+            c["value"] = exported_map["value"].copy()
+            updated = True
+            break
+    if not updated:
+        char_list.append(exported_map.copy())
+    targ_lvl.setdefault("CharacterContainerSaveData", {"value": []})["value"] = list(level_json.get("CharacterContainerSaveData", {}).get("value", []))
+    targ_lvl.setdefault("ItemContainerSaveData", {"value": []})["value"] = list(level_json.get("ItemContainerSaveData", {}).get("value", []))
     return True
 def get_exported_map(host_guid):
     host_instance_id = host_json["SaveData"]["value"]["IndividualId"]["value"]["InstanceId"]["value"]
@@ -339,17 +292,9 @@ def update_target_character_with_exported_map(targ_uid, exported_map):
         targ_lvl["CharacterSaveParameterMap"]["value"].append(fast_deepcopy(exported_map))
         updated = 1
     return updated
-def update_guild_data(targ_lvl, targ_json, host_guid, char_instanceid, keep_old_guild_id, source_guild_dict):
-    targ_uid = targ_json["SaveData"]["value"]["IndividualId"]["value"]["PlayerUId"]["value"]
+def update_guild_data(targ_lvl, targ_json, host_guid, targ_uid, source_guild_dict):
     if "GroupSaveDataMap" not in targ_lvl or targ_lvl["GroupSaveDataMap"].get("value") is None:
         targ_lvl["GroupSaveDataMap"] = {"value": []}
-    player_exists_in_target = any(
-        targ_uid == p.get("player_uid")
-        for g in targ_lvl.get("GroupSaveDataMap", {}).get("value", [])
-        for p in g.get("value", {}).get("RawData", {}).get("value", {}).get("players", [])
-    )
-    if not player_exists_in_target:
-        keep_old_guild_id = True
     group_map = {}
     target_guild = None
     for g in targ_lvl["GroupSaveDataMap"]["value"]:
@@ -362,65 +307,40 @@ def update_guild_data(targ_lvl, targ_json, host_guid, char_instanceid, keep_old_
     for gkey, gdata in group_map.items():
         if gkey in source_guild_dict:
             raw = gdata.get("value", {}).get("RawData", {}).get("value", {})
-            if "players" in raw:
-                for p in raw["players"]:
-                    if p["player_uid"] == host_guid:
-                        dest_guild = target_guild if target_guild else gdata
-                        dest_raw = dest_guild["value"]["RawData"]["value"]
-                        if not any(pl.get("player_uid") == targ_uid for pl in dest_raw.get("players", [])):
-                            new_player = fast_deepcopy(p)
-                            new_player["player_uid"] = targ_uid
-                            dest_raw.setdefault("players", []).append(new_player)
-                            for h in new_player.get("individual_character_handle_ids", []):
-                                h["guid"] = targ_uid
-                                h["instance_id"] = char_instanceid
-                            if dest_raw.get("admin_player_uid") == host_guid:
-                                dest_raw["admin_player_uid"] = targ_uid
-                            restored = True
-                            group_id = dest_guild["key"]
-                        break
+            for p in raw.get("players", []):
+                if p["player_uid"] == host_guid:
+                    dest_guild = target_guild if target_guild else gdata
+                    dest_raw = dest_guild["value"]["RawData"]["value"]
+                    if not any(pl.get("player_uid") == targ_uid for pl in dest_raw.get("players", [])):
+                        new_player = fast_deepcopy(p)
+                        new_player["player_uid"] = targ_uid
+                        dest_raw.setdefault("players", []).append(new_player)
+                        if dest_raw.get("admin_player_uid") == host_guid:
+                            dest_raw["admin_player_uid"] = targ_uid
+                        restored = True
+                        group_id = dest_guild["key"]
+                    break
             if restored:
                 break
-    if keep_old_guild_id:
-        old_guild = None
-        for g in source_guild_dict.values():
-            raw = g.get("value", {}).get("RawData", {}).get("value", {})
-            if "players" in raw and any(p["player_uid"] == host_guid for p in raw["players"]):
-                old_guild = fast_deepcopy(g)
-                raw = old_guild["value"]["RawData"]["value"]
-                for p in raw.get("players", []):
-                    if p["player_uid"] == host_guid:
-                        p["player_uid"] = targ_uid
-                        break
-                for h in raw.get("individual_character_handle_ids", []):
-                    if h["guid"] == host_guid:
-                        h["guid"] = targ_uid
-                        h["instance_id"] = char_instanceid
-                        break
-                if raw.get("admin_player_uid") == host_guid or raw.get("admin_player_uid") not in [p["player_uid"] for p in raw.get("players", [])]:
-                    raw["admin_player_uid"] = raw["players"][0]["player_uid"] if raw.get("players") else None
-                raw["base_ids"] = []
-                raw["map_object_instance_ids_base_camp_points"] = []
-                targ_lvl["GroupSaveDataMap"]["value"].append(old_guild)
-                group_id = old_guild["key"]
-                restored = True
-                break
-        if restored and old_guild:
-            old_key = old_guild["key"]
-            new_guilds = []
-            for g in targ_lvl["GroupSaveDataMap"]["value"]:
-                if g["key"] == old_key:
-                    new_guilds.append(g)
-                    continue
-                raw = g.get("value", {}).get("RawData", {}).get("value", {})
-                if "players" in raw:
-                    raw["players"] = [p for p in raw["players"] if p.get("player_uid") != targ_uid]
-                    if raw.get("admin_player_uid") == targ_uid and raw.get("players"):
-                        raw["admin_player_uid"] = raw["players"][0]["player_uid"]
-                if raw.get("players"):
-                    new_guilds.append(g)
-            targ_lvl["GroupSaveDataMap"]["value"] = new_guilds
-    final_guild = old_guild if keep_old_guild_id and old_guild else (target_guild if target_guild else old_guild)
+    old_guild = None
+    for g in source_guild_dict.values():
+        raw = g.get("value", {}).get("RawData", {}).get("value", {})
+        if "players" in raw and any(p["player_uid"] == host_guid for p in raw["players"]):
+            old_guild = fast_deepcopy(g)
+            raw = old_guild["value"]["RawData"]["value"]
+            for p in raw.get("players", []):
+                if p["player_uid"] == host_guid:
+                    p["player_uid"] = targ_uid
+                    break
+            if raw.get("admin_player_uid") == host_guid or raw.get("admin_player_uid") not in [p["player_uid"] for p in raw.get("players", [])]:
+                raw["admin_player_uid"] = raw["players"][0]["player_uid"] if raw.get("players") else None
+            raw["base_ids"] = []
+            raw["map_object_instance_ids_base_camp_points"] = []
+            targ_lvl["GroupSaveDataMap"]["value"].append(old_guild)
+            group_id = old_guild["key"]
+            restored = True
+            break
+    final_guild = old_guild if old_guild else (target_guild if target_guild else old_guild)
     if final_guild:
         dest_raw = final_guild["value"]["RawData"]["value"]
         if not any(p.get("player_uid") == targ_uid for p in dest_raw.get("players", [])):
@@ -430,9 +350,6 @@ def update_guild_data(targ_lvl, targ_json, host_guid, char_instanceid, keep_old_
                     if p["player_uid"] == host_guid:
                         new_player = fast_deepcopy(p)
                         new_player["player_uid"] = targ_uid
-                        for h in new_player.get("individual_character_handle_ids", []):
-                            h["guid"] = targ_uid
-                            h["instance_id"] = char_instanceid
                         dest_raw.setdefault("players", []).append(new_player)
                         if dest_raw.get("admin_player_uid") == host_guid:
                             dest_raw["admin_player_uid"] = targ_uid
@@ -488,8 +405,7 @@ def update_pal_params(param_maps, targ_uid, inv_pals_id, inv_otomo_id, host_pals
                     field["value"] = targ_uid if not isinstance(targ_uid, dict) else targ_uid.get("value", targ_uid)
                 else:
                     save_param["OwnerPlayerUId"] = targ_uid if not isinstance(targ_uid, dict) else targ_uid.get("value", targ_uid)
-            if target_group_id is not None:
-                pal_data['group_id'] = str(target_group_id)
+            pal_data['group_id'] = UUID(target_group_id) if isinstance(target_group_id, str) else target_group_id
             if "MapObjectConcreteInstanceIdAssignedToExpedition" in save_param:
                 del save_param["MapObjectConcreteInstanceIdAssignedToExpedition"]
             obj["SaveParameter"]["value"] = save_param
@@ -517,10 +433,31 @@ def update_targ_tech_and_data():
         targ_save["RecordData"] = fast_deepcopy(host_save["RecordData"])
     elif 'RecordData' in targ_save:
         del targ_save['RecordData']
+def transfer_all_characters():
+    def worker():
+        skipped_uids = set()
+        total_players = len(source_player_list.get_children())
+        count = 0
+        for item_id in source_player_list.get_children():
+            count += 1
+            player_uuid = source_player_list.item(item_id)['values'][1]
+            src_file = os.path.join(os.path.dirname(level_sav_path), "Players", f"{player_uuid.replace('-', '').upper()}.sav")
+            if not os.path.exists(src_file):
+                src_file = os.path.join(os.path.dirname(level_sav_path), "../Players", f"{player_uuid.replace('-', '').upper()}.sav")
+            if not os.path.exists(src_file):
+                print(f"Skipping missing player file {src_file} ({count}/{total_players})")
+                skipped_uids.add(player_uuid)
+                continue
+            print(f"Transferring player {count}/{total_players}: {player_uuid}")
+            global selected_source_player
+            selected_source_player = player_uuid
+            main()
+        print("All transfers done!")
+    threading.Thread(target=worker, daemon=True).start()
 def main():
     global host_guid, targ_uid, exported_map, selected_source_player, selected_target_player
     if not all([level_sav_path, t_level_sav_path, selected_source_player]):
-        messagebox.showerror("Error!", "Please have level files and source player selected before starting transfer.")
+        print("Error! Please have level files and source player selected before starting transfer.")
         return False
     if not selected_target_player:
         selected_target_player = selected_source_player
@@ -528,29 +465,24 @@ def main():
         host_guid = UUID.from_str(selected_source_player)
         targ_uid = UUID.from_str(selected_target_player)
     except Exception as e:
-        messagebox.showerror("UUID Error", f"Invalid UUID format: {e}")
+        print(f"UUID Error: Invalid UUID format: {e}")
         return
     if not load_json_files():
-        messagebox.showerror("Load Error", "Failed to load JSON files.")
+        print("Load Error: Failed to load JSON files.")
         return
     src_players_folder = os.path.join(os.path.dirname(level_sav_path), "Players")
     tgt_players_folder = os.path.join(os.path.dirname(t_level_sav_path), "Players")
     os.makedirs(tgt_players_folder, exist_ok=True)
-    if selected_source_player == selected_target_player:
-        src_file = os.path.join(src_players_folder, f"{str(host_guid).replace('-', '').upper()}.sav")
-        tgt_file = os.path.join(tgt_players_folder, f"{str(targ_uid).replace('-', '').upper()}.sav")
-        if not os.path.exists(src_file):
-            messagebox.showerror("Error!", f"Player file {src_file} not present.")
-            return
-        shutil.copy2(src_file, tgt_file)
     host_inv_ids = gather_inventory_ids(host_json)
     targ_inv_ids = gather_inventory_ids(targ_json)
     gather_host_containers(host_inv_ids)
-    group_id = update_guild_data(targ_lvl, targ_json, host_guid, targ_uid, keep_old_guild_id, source_guild_dict)
-    if group_id is None: return
+    group_id = update_guild_data(targ_lvl, targ_json, host_guid, targ_uid, source_guild_dict)
+    if group_id is None:
+        print(f"Error! Guild is None!")
+        return
     exported_map = get_exported_map(host_guid)
     if not exported_map:
-        messagebox.showerror("Error!", f"Couldn't find exported_map for OwnerUID {host_guid}")
+        print(f"Error! Couldn't find exported_map for OwnerUID {host_guid}")
         return
     param_maps, _ = collect_param_maps(host_guid)
     reassign_owner_uid(param_maps, targ_uid)
@@ -563,13 +495,8 @@ def main():
     gather_and_update_dynamic_containers()
     modified_target_players.add(selected_target_player)
     modified_targets_data[selected_target_player] = (fast_deepcopy(targ_json), targ_json_gvas)
-    def copy_dps_file(src_folder, src_uid, tgt_folder, tgt_uid):
-        src_file = os.path.join(src_folder, f"{str(src_uid).replace('-', '').upper()}_dps.sav")
-        tgt_file = os.path.join(tgt_folder, f"{str(tgt_uid).replace('-', '').upper()}_dps.sav")
-        if not os.path.exists(src_file): return None
-        shutil.copy2(src_file, tgt_file)
-    copy_dps_file(src_players_folder, host_guid, tgt_players_folder, targ_uid)
-    messagebox.showinfo(title="Transfer Successful!", message='Transfer successful in memory!\nHit "Save Changes" to save.')
+    print("Transfer successful in memory! Hit 'Save Changes' to save.")
+    load_players(targ_lvl, is_source=False)
     selected_source_player = None
     selected_target_player = None
     host_guid = None
@@ -588,10 +515,13 @@ def save_and_backup():
     gvas_to_sav(t_level_sav_path, output_data)
     for target_player, (json_data, gvas_obj) in modified_targets_data.items():
         t_host_sav_path = os.path.join(os.path.dirname(t_level_sav_path), 'Players', target_player + '.sav')
-        if not os.path.exists(t_host_sav_path):
-            t_host_sav_path = os.path.join(os.path.dirname(t_level_sav_path), '../Players', target_player + '.sav')
+        os.makedirs(os.path.dirname(t_host_sav_path), exist_ok=True)
         gvas_obj.properties = json_data
         gvas_to_sav(t_host_sav_path, gvas_obj.write())
+        src_dps_path = os.path.join(os.path.dirname(t_level_sav_path), 'Players', target_player + '_dps.sav')
+        tgt_dps_path = t_host_sav_path.replace('.sav', '_dps.sav')
+        if os.path.exists(src_dps_path):
+            shutil.copy2(src_dps_path, tgt_dps_path)
     print("Done saving all modified target players!")
 def sav_to_gvas(file):
     with open(file, 'rb') as f:
@@ -620,11 +550,11 @@ def load_player_file(level_sav_path, player_uid, use_source_folder=False):
     if not os.path.exists(player_file_path):
         player_file_path = os.path.join(os.path.dirname(level_sav_path), '../Players', f"{player_uid}.sav")
         if not os.path.exists(player_file_path):
-            messagebox.showerror("Error!", f"Player file {player_file_path} not present")
+            print(f"Error!", f"Player file {player_file_path} not present.")
             return None
     raw_gvas, save_type = load_file(player_file_path)
     if not raw_gvas:
-        messagebox.showerror("Error!", f"Invalid file {player_file_path}")
+        print(f"Error!", f"Invalid file {player_file_path}")
         return
     return SkipGvasFile.read(raw_gvas)
 def load_players(save_json, is_source):
@@ -638,7 +568,6 @@ def load_players(save_json, is_source):
             players[group_id] = group_data["value"]["RawData"]["value"]["players"]
             guild_dict[group_id] = group_data
     list_box = source_player_list if is_source else target_player_list
-    list_box.configure(displaycolumns=())
     list_box.delete(*list_box.get_children())
     if is_source:
         filter_treeview.source_original_rows = []
@@ -649,13 +578,14 @@ def load_players(save_json, is_source):
         for player_item in player_items:
             playerUId = ''.join(safe_uuid_str(player_item['player_uid']).split('-')).upper()
             rows_to_insert.append((safe_uuid_str(guild_id), playerUId, player_item['player_info']['player_name']))
+    row_ids = []
     for values in rows_to_insert:
         row_id = list_box.insert('', tk.END, values=values)
-        if is_source:
-            filter_treeview.source_original_rows.append(row_id)
-        else:
-            filter_treeview.target_original_rows.append(row_id)
-    list_box.configure(displaycolumns='#all')
+        row_ids.append(row_id)
+    if is_source:
+        filter_treeview.source_original_rows.extend(row_ids)
+    else:
+        filter_treeview.target_original_rows.extend(row_ids)
 def load_all_source_sections_async(group_save_section, reader):
     global level_json
     level_json, _ = reader.load_sections([
@@ -670,11 +600,11 @@ def source_level_file():
     tmp = select_file()
     if tmp:
         if not tmp.endswith("Level.sav"):
-            messagebox.showerror("Error!", "This is NOT Level.sav. Please select Level.sav file.")
+            print(f"Error!", "This is NOT Level.sav. Please select Level.sav file.")
             return
         raw_gvas, save_type = load_file(tmp)
         if not raw_gvas:
-            messagebox.showerror("Error!", "Invalid file, must be Level.sav!")
+            print(f"Error!", "Invalid file, must be Level.sav!")
             return
         print("Now loading the data from Source Save...")
         reader = MyReader(raw_gvas, PALWORLD_TYPE_HINTS, PALWORLD_CUSTOM_PROPERTIES)
@@ -703,11 +633,11 @@ def target_level_file():
     tmp = select_file()
     if tmp:
         if not tmp.endswith("Level.sav"):
-            messagebox.showerror("Error!", "This is NOT Level.sav. Please select Level.sav file.")
+            print(f"Error!", "This is NOT Level.sav. Please select Level.sav file.")
             return
         raw_gvas, target_save_type = load_file(tmp)
         if not raw_gvas:
-            messagebox.showerror("Error!", "Invalid file, must be Level.sav!")
+            print(f"Error!", "Invalid file, must be Level.sav!")
             return
         print("Now loading the data from Target Save...")
         target_raw_gvas = raw_gvas
@@ -758,20 +688,19 @@ def filter_treeview(tree, query, is_source):
         else:
             tree.detach(row)
 def finalize_save(window):
-    #if not validate_inputs(): return
     try:
         save_and_backup()
         messagebox.showinfo("Save Complete", "Changes saved successfully.")
         window.destroy()
     except Exception as e:
         print(f"Exception in finalize_save: {e}")
-        messagebox.showerror("Save Failed", f"Save failed:\n{e}")
+        print(f"Save Failed", f"Save failed:\n{e}")
         try:
             window.after(100, window.destroy)
         except:
             pass
 def character_transfer():
-    global source_player_list, target_player_list, source_level_path_label, target_level_path_label, current_selection_label, btn_toggle, keep_old_guild_id
+    global source_player_list, target_player_list, source_level_path_label, target_level_path_label, current_selection_label, btn_toggle
     window = tk.Toplevel()
     window.title("Character Transfer")
     window.minsize(1100, 500)
@@ -838,17 +767,7 @@ def character_transfer():
     current_selection_label.grid(row=4, column=0, columnspan=2, padx=10, pady=10, sticky="ew")
     window.grid_columnconfigure(0, weight=1)
     window.grid_columnconfigure(1, weight=1)
-    keep_old_guild_id = False
-    def toggle_keep_old_guild():
-        global keep_old_guild_id
-        keep_old_guild_id = not keep_old_guild_id
-        txt = "☑ " if keep_old_guild_id else "☐ "
-        btn_toggle.config(text=txt + "Keep old Guild ID after Transfer")
-        print("Keep old guild id after transfer:", "on" if keep_old_guild_id else "off")
-    txt = "☑ " if keep_old_guild_id else "☐ "
-    btn_toggle = tk.Button(window, text=txt + "Keep old Guild ID after Transfer", command=toggle_keep_old_guild,
-                           relief="flat", fg="white", bg="#2f2f2f", activebackground="black", activeforeground="white")
-    btn_toggle.grid(row=5, column=0, sticky='w', padx=10, pady=(0, 10))
+    ttk.Button(window, text='Transfer All', command=transfer_all_characters, style="Dark.TButton").grid(row=6, column=0, padx=10, pady=(0,10), sticky="ew")
     ttk.Button(window, text='Transfer', command=lambda: main(), style="Dark.TButton").grid(row=5, column=1, padx=10, pady=(10, 0), sticky="ew")
     ttk.Button(window, text='Save Changes', command=lambda: finalize_save(window), style="Dark.TButton").grid(row=6, column=1, padx=10, pady=(0, 10), sticky="ew")
     def on_exit(): window.destroy()

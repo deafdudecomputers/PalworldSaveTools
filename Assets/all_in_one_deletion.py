@@ -1086,20 +1086,23 @@ def delete_unreferenced_data():
     all_removed_uids = set(unreferenced_uids + invalid_uids)
     files_to_delete.update(all_removed_uids)
     removed_pals = delete_player_pals(wsd, all_removed_uids)
-    removed_broken, removed_drops = 0, 0
     map_objects_wrapper = wsd.get('MapObjectSaveData', {}).get('value', {})
     map_objects = map_objects_wrapper.get('values', [])
-    for obj in map_objects[:]:
+    broken_ids, dropped_ids = [], []
+    new_map_objects = []
+    for obj in map_objects:
         if is_broken_mapobject(obj):
             instance_id = obj.get('Model', {}).get('value', {}).get('RawData', {}).get('value', {}).get('instance_id')
-            map_objects.remove(obj)
-            print(f"Deleted broken MapObject (state=0) — ID: {instance_id}")
-            removed_broken += 1
+            broken_ids.append(instance_id)
         elif is_dropped_item(obj):
             instance_id = obj.get('ConcreteModel', {}).get('value', {}).get('RawData', {}).get('value', {}).get('instance_id')
-            map_objects.remove(obj)
-            print(f"Deleted dropped item MapObject — ID: {instance_id}")
-            removed_drops += 1
+            dropped_ids.append(instance_id)
+        else:
+            new_map_objects.append(obj)
+    map_objects_wrapper['values'] = new_map_objects
+    removed_broken, removed_drops = len(broken_ids), len(dropped_ids)
+    for bid in broken_ids: print(f"Deleted broken MapObject — ID: {bid}")
+    for did in dropped_ids: print(f"Deleted dropped item — ID: {did}")
     delete_orphaned_bases()
     build_player_levels()
     refresh_all()
