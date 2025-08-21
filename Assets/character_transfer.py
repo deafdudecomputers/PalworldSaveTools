@@ -365,6 +365,7 @@ def update_guild_data(targ_lvl, targ_json, host_guid, targ_uid, source_guild_dic
             raw["players"] = [p for p in raw["players"] if p.get("player_uid") != targ_uid]
             if raw.get("admin_player_uid") == targ_uid and raw.get("players"):
                 raw["admin_player_uid"] = raw["players"][0]["player_uid"]
+    targ_lvl["GroupSaveDataMap"]["value"] = [g for g in targ_lvl["GroupSaveDataMap"]["value"] if g.get("value", {}).get("RawData", {}).get("value", {}).get("players")]
     return group_id
 def reassign_owner_uid(param_maps, new_owner_uid):
     for character in param_maps:
@@ -441,6 +442,9 @@ def transfer_all_characters():
         for item_id in source_player_list.get_children():
             count += 1
             player_uuid = source_player_list.item(item_id)['values'][1]
+            if player_uuid in modified_target_players:
+                print(f"Player {player_uuid} already transferred. Skipping duplicate transfer.")
+                continue
             src_file = os.path.join(os.path.dirname(level_sav_path), "Players", f"{player_uuid.replace('-', '').upper()}.sav")
             if not os.path.exists(src_file):
                 src_file = os.path.join(os.path.dirname(level_sav_path), "../Players", f"{player_uuid.replace('-', '').upper()}.sav")
@@ -449,8 +453,9 @@ def transfer_all_characters():
                 skipped_uids.add(player_uuid)
                 continue
             print(f"Transferring player {count}/{total_players}: {player_uuid}")
-            global selected_source_player
+            global selected_source_player, selected_target_player
             selected_source_player = player_uuid
+            selected_target_player = player_uuid
             main()
         print("All transfers done!")
     threading.Thread(target=worker, daemon=True).start()
@@ -461,11 +466,17 @@ def main():
         return False
     if not selected_target_player:
         selected_target_player = selected_source_player
+    if selected_target_player in modified_target_players:
+        print(f"Player {selected_target_player} already transferred. Skipping duplicate transfer.")
+        return False
     try:
         host_guid = UUID.from_str(selected_source_player)
         targ_uid = UUID.from_str(selected_target_player)
     except Exception as e:
         print(f"UUID Error: Invalid UUID format: {e}")
+        return
+    if str(host_guid).endswith('000000000001') or str(targ_uid).endswith('000000000001'):
+        messagebox.showerror("Error", "Error! Cannot transfer 0001 UID player! Please use Fix Host Save instead!")
         return
     if not load_json_files():
         print("Load Error: Failed to load JSON files.")
@@ -493,6 +504,7 @@ def main():
     replace_containers(targ_inv_ids)
     double_transfer_character_and_containers(host_guid, targ_uid)
     gather_and_update_dynamic_containers()
+    #count_owned_pals_for_uid(targ_lvl, targ_uid)
     modified_target_players.add(selected_target_player)
     modified_targets_data[selected_target_player] = (fast_deepcopy(targ_json), targ_json_gvas)
     print("Transfer successful in memory! Hit 'Save Changes' to save.")
@@ -505,6 +517,19 @@ def main():
     current_selection_label.config(text="Source: None, Target: None")
     source_player_list.selection_remove(source_player_list.selection())
     target_player_list.selection_remove(target_player_list.selection())
+def count_owned_pals_for_uid(targ_lvl, targ_uid):
+    char_map = targ_lvl.get('CharacterSaveParameterMap', {}).get('value', [])
+    count = 0
+    for idx, item in enumerate(char_map, 1):
+        try:
+            raw_data = item.get('value', {}).get('RawData', {}).get('value', {}).get('object', {}).get('SaveParameter', {}).get('value', {})
+            owner_uid = raw_data.get('OwnerPlayerUId', {}).get('value')
+            if owner_uid == targ_uid:
+                count += 1
+        except Exception:
+            continue
+    print(f"{targ_uid} owns {count} pals")
+    return count
 def save_and_backup():
     print("Now saving the data...")
     WORLDSAVESIZEPREFIX = b'\x0e\x00\x00\x00worldSaveData\x00\x0f\x00\x00\x00StructProperty\x00'

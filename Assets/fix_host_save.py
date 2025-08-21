@@ -82,8 +82,6 @@ def fix_save(save_path, new_guid, old_guid, guild_fix=True):
         elif isinstance(data, list):
             for item in data:
                 count_owner_uid(item, uid)
-    def ends_with_0001(uid):
-        return uid[-4:] == '0001'
     if old_guid_formatted.endswith('000000000001') or new_guid_formatted.endswith('000000000001'):
         deep_swap_ownership(level_json, old_guid_formatted, new_guid_formatted)
         count = 0
