@@ -116,7 +116,10 @@ def clean_character_save_parameter_map(data_source, valid_uids):
            no_owner:
             keep.append(entry)
     entries[:] = keep
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, as_completed
+dps_executor = None
+dps_futures = []
+dps_tasks = []
 def top_process_player(p, playerdir, log_folder):
     uid = p.get('player_uid')
     pname = p.get('player_info', {}).get('player_name', 'Unknown')
@@ -130,7 +133,7 @@ def top_process_player(p, playerdir, log_folder):
             with open(sav_file, "rb") as f: data = f.read()
             raw_gvas, _ = decompress_sav_to_gvas(data)
             gvas_file = GvasFile.read(raw_gvas, PALWORLD_TYPE_HINTS, SKP_PALWORLD_CUSTOM_PROPERTIES, allow_nan=True)
-            json_data = json.loads(json.dumps(gvas_file.dump(), cls=CustomEncoder))
+            json_data = gvas_file.dump()
             pal_capture_count_list = json_data.get('properties', {}).get('SaveData', {}).get('value', {}).get('RecordData', {}).get('value', {}).get('PalCaptureCount', {}).get('value', [])
             uniques = len(pal_capture_count_list) if pal_capture_count_list else 0
             caught = sum(e.get('value',0) for e in pal_capture_count_list) if pal_capture_count_list else 0
@@ -138,8 +141,27 @@ def top_process_player(p, playerdir, log_folder):
             encounters = max(len(pal_deck_unlock_flag_list) if pal_deck_unlock_flag_list else 0, uniques)
         except: pass
     if os.path.isfile(dps_file):
-        process_dps_save(uid, pname, dps_file, log_folder)
+        dps_tasks.append((uid, pname, dps_file, log_folder))
     return uid, pname, uniques, caught, encounters
+def start_dps_processing():
+    global dps_executor, dps_futures
+    if not dps_tasks: return []
+    dps_executor = ProcessPoolExecutor(max_workers=os.cpu_count() or 4)
+    dps_futures = [dps_executor.submit(process_dps_save, uid, pname, dps_file, log_folder)
+                   for uid, pname, dps_file, log_folder in dps_tasks]
+    return dps_futures
+def check_dps_done():
+    global dps_futures, dps_executor
+    if not dps_futures: return True
+    done = all(f.done() for f in dps_futures)
+    if done:
+        for f in dps_futures:
+            try: f.result()
+            except Exception as e: print(f"DPS processing failed: {e}")
+        dps_executor.shutdown()
+        dps_futures = []
+        dps_executor = None
+    return done
 def load_save():
     global current_save_path, loaded_level_json, backup_save_path, srcGuildMapping, player_levels, original_loaded_level_json
     base_path = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -244,8 +266,7 @@ def load_save():
             new_coords_str = f"{int(new_coords[0])}, {int(new_coords[1])}" if new_coords else "unknown"
             rawdata_str = f"{rawdata_xyz[0]}, {rawdata_xyz[1]}, {rawdata_xyz[2]}" if rawdata_xyz else "unknown"
             logger.info(f"Base {i}: Base ID: {base_id} | {new_coords_str} | RawData: {rawdata_str}")
-        with ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as executor:
-            results = list(executor.map(lambda p: top_process_player(p, playerdir, log_folder), players))
+        results = [top_process_player(p, playerdir, log_folder) for p in players]
         for uid, pname, uniques, caught, encounters in results:
             level = player_levels.get(str(uid).replace('-', ''), '?') if uid else '?'
             owned = owned_counts.get(uid, 0)
@@ -278,6 +299,23 @@ def load_save():
         h.close()
     t2 = time.perf_counter()
     print(f"Fully loaded and processed in: {t2-t0:.2f}s")
+    def run_dps_background():
+        futures = start_dps_processing()
+        if futures:
+            t_dps_start = time.perf_counter()
+            for future in as_completed(futures):
+                try: future.result()
+                except Exception as e: print(f"DPS processing failed: {e}")
+            t3 = time.perf_counter()
+            print(f"DPS processing has completed in: {t3-t_dps_start:.2f}s")
+            print(f"Total time (loading + DPS): {t3-t0:.2f}s")
+        else:
+            print("No DPS tasks to process")
+            print(f"Total time (loading only): {t2-t0:.2f}s")
+    threading.Thread(target=run_dps_background, daemon=True).start()
+    for h in logger.handlers[:]:
+        logger.removeHandler(h)
+        h.close()
 def setup_logging():
     batch_title = f"Pylar's Save Tool"
     set_console_title(batch_title)
