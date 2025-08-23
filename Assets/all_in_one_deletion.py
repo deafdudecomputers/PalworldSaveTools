@@ -475,7 +475,7 @@ def process_dps_save(player_uid, nickname, dps_file_path, log_folder):
             data = f.read()
         raw_gvas, _ = decompress_sav_to_gvas(data)
         gvas = GvasFile.read(raw_gvas, PALWORLD_TYPE_HINTS, SKP_PALWORLD_CUSTOM_PROPERTIES, allow_nan=True)
-        json_data = json.loads(json.dumps(gvas.dump(), cls=CustomEncoder))
+        json_data = gvas.dump()
         values = json_data.get("properties", {}).get("SaveParameterArray", {}).get("value", {}).get("values", [])
         if not values:
             print(f"No DPS pals found in {os.path.basename(dps_file_path)}")
