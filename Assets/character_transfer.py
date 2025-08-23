@@ -456,18 +456,42 @@ def transfer_all_characters():
             global selected_source_player, selected_target_player
             selected_source_player = player_uuid
             selected_target_player = player_uuid
-            main()
-        print("All transfers done!")
+            main(skip_msgbox=True)
+        selected_source_player = None
+        selected_target_player = None
+        host_guid = None
+        targ_uid = None
+        exported_map = None
+        current_selection_label.config(text="Source: None, Target: None")
+        source_player_list.selection_remove(source_player_list.selection())
+        target_player_list.selection_remove(target_player_list.selection())
+        messagebox.showinfo("Transfer Successful", "Transfer successful in memory! Hit 'Save Changes' to save.")
     threading.Thread(target=worker, daemon=True).start()
-def main():
+def main(skip_msgbox=False):
     global host_guid, targ_uid, exported_map, selected_source_player, selected_target_player
     if not all([level_sav_path, t_level_sav_path, selected_source_player]):
         print("Error! Please have level files and source player selected before starting transfer.")
+        selected_source_player = None
+        selected_target_player = None
+        host_guid = None
+        targ_uid = None
+        exported_map = None
+        current_selection_label.config(text="Source: None, Target: None")
+        source_player_list.selection_remove(source_player_list.selection())
+        target_player_list.selection_remove(target_player_list.selection())
         return False
     if not selected_target_player:
         selected_target_player = selected_source_player
     if selected_target_player in modified_target_players:
         print(f"Player {selected_target_player} already transferred. Skipping duplicate transfer.")
+        selected_source_player = None
+        selected_target_player = None
+        host_guid = None
+        targ_uid = None
+        exported_map = None
+        current_selection_label.config(text="Source: None, Target: None")
+        source_player_list.selection_remove(source_player_list.selection())
+        target_player_list.selection_remove(target_player_list.selection())
         return False
     try:
         host_guid = UUID.from_str(selected_source_player)
@@ -504,10 +528,8 @@ def main():
     replace_containers(targ_inv_ids)
     double_transfer_character_and_containers(host_guid, targ_uid)
     gather_and_update_dynamic_containers()
-    #count_owned_pals_for_uid(targ_lvl, targ_uid)
     modified_target_players.add(selected_target_player)
     modified_targets_data[selected_target_player] = (fast_deepcopy(targ_json), targ_json_gvas)
-    print("Transfer successful in memory! Hit 'Save Changes' to save.")
     load_players(targ_lvl, is_source=False)
     selected_source_player = None
     selected_target_player = None
@@ -517,19 +539,8 @@ def main():
     current_selection_label.config(text="Source: None, Target: None")
     source_player_list.selection_remove(source_player_list.selection())
     target_player_list.selection_remove(target_player_list.selection())
-def count_owned_pals_for_uid(targ_lvl, targ_uid):
-    char_map = targ_lvl.get('CharacterSaveParameterMap', {}).get('value', [])
-    count = 0
-    for idx, item in enumerate(char_map, 1):
-        try:
-            raw_data = item.get('value', {}).get('RawData', {}).get('value', {}).get('object', {}).get('SaveParameter', {}).get('value', {})
-            owner_uid = raw_data.get('OwnerPlayerUId', {}).get('value')
-            if owner_uid == targ_uid:
-                count += 1
-        except Exception:
-            continue
-    print(f"{targ_uid} owns {count} pals")
-    return count
+    if not skip_msgbox:
+        messagebox.showinfo("Transfer Successful", "Transfer successful in memory! Hit 'Save Changes' to save.")
 def save_and_backup():
     print("Now saving the data...")
     WORLDSAVESIZEPREFIX = b'\x0e\x00\x00\x00worldSaveData\x00\x0f\x00\x00\x00StructProperty\x00'
@@ -538,15 +549,20 @@ def save_and_backup():
     backup_folder = "Backups/Character Transfer"
     backup_whole_directory(os.path.dirname(t_level_sav_path), backup_folder)
     gvas_to_sav(t_level_sav_path, output_data)
+    src_players_folder = os.path.join(os.path.dirname(level_sav_path), "Players")
+    tgt_players_folder = os.path.join(os.path.dirname(t_level_sav_path), "Players")
     for target_player, (json_data, gvas_obj) in modified_targets_data.items():
-        t_host_sav_path = os.path.join(os.path.dirname(t_level_sav_path), 'Players', target_player + '.sav')
+        t_host_sav_path = os.path.join(tgt_players_folder, target_player + '.sav')
         os.makedirs(os.path.dirname(t_host_sav_path), exist_ok=True)
         gvas_obj.properties = json_data
         gvas_to_sav(t_host_sav_path, gvas_obj.write())
-        src_dps_path = os.path.join(os.path.dirname(t_level_sav_path), 'Players', target_player + '_dps.sav')
-        tgt_dps_path = t_host_sav_path.replace('.sav', '_dps.sav')
+        src_dps_path = os.path.join(src_players_folder, target_player + '_dps.sav')
+        tgt_dps_path = os.path.join(tgt_players_folder, target_player + '_dps.sav')
         if os.path.exists(src_dps_path):
             shutil.copy2(src_dps_path, tgt_dps_path)
+            print(f"DPS save copied from {src_dps_path} to {tgt_dps_path}")
+        else:
+            print(f"DPS source file missing: {src_dps_path}")
     print("Done saving all modified target players!")
 def sav_to_gvas(file):
     with open(file, 'rb') as f:
@@ -793,7 +809,7 @@ def character_transfer():
     window.grid_columnconfigure(0, weight=1)
     window.grid_columnconfigure(1, weight=1)
     ttk.Button(window, text='Transfer All', command=transfer_all_characters, style="Dark.TButton").grid(row=6, column=0, padx=10, pady=(0,10), sticky="ew")
-    ttk.Button(window, text='Transfer', command=lambda: main(), style="Dark.TButton").grid(row=5, column=1, padx=10, pady=(10, 0), sticky="ew")
+    ttk.Button(window, text='Transfer', command=lambda: main(skip_msgbox=False), style="Dark.TButton").grid(row=5, column=1, padx=10, pady=(10, 0), sticky="ew")
     ttk.Button(window, text='Save Changes', command=lambda: finalize_save(window), style="Dark.TButton").grid(row=6, column=1, padx=10, pady=(0, 10), sticky="ew")
     def on_exit(): window.destroy()
     window.protocol("WM_DELETE_WINDOW", on_exit)

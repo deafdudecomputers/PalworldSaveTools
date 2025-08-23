@@ -116,6 +116,30 @@ def clean_character_save_parameter_map(data_source, valid_uids):
            no_owner:
             keep.append(entry)
     entries[:] = keep
+from concurrent.futures import ThreadPoolExecutor
+def top_process_player(p, playerdir, log_folder):
+    uid = p.get('player_uid')
+    pname = p.get('player_info', {}).get('player_name', 'Unknown')
+    uniques = caught = encounters = 0
+    if not uid: return uid, pname, uniques, caught, encounters
+    clean_uid = str(uid).replace('-', '')
+    sav_file = os.path.join(playerdir, f"{clean_uid}.sav")
+    dps_file = os.path.join(playerdir, f"{clean_uid}_dps.sav")
+    if os.path.isfile(sav_file):
+        try:
+            with open(sav_file, "rb") as f: data = f.read()
+            raw_gvas, _ = decompress_sav_to_gvas(data)
+            gvas_file = GvasFile.read(raw_gvas, PALWORLD_TYPE_HINTS, SKP_PALWORLD_CUSTOM_PROPERTIES, allow_nan=True)
+            json_data = json.loads(json.dumps(gvas_file.dump(), cls=CustomEncoder))
+            pal_capture_count_list = json_data.get('properties', {}).get('SaveData', {}).get('value', {}).get('RecordData', {}).get('value', {}).get('PalCaptureCount', {}).get('value', [])
+            uniques = len(pal_capture_count_list) if pal_capture_count_list else 0
+            caught = sum(e.get('value',0) for e in pal_capture_count_list) if pal_capture_count_list else 0
+            pal_deck_unlock_flag_list = json_data.get('properties', {}).get('SaveData', {}).get('value', {}).get('RecordData', {}).get('value', {}).get('PaldeckUnlockFlag', {}).get('value', [])
+            encounters = max(len(pal_deck_unlock_flag_list) if pal_deck_unlock_flag_list else 0, uniques)
+        except: pass
+    if os.path.isfile(dps_file):
+        process_dps_save(uid, pname, dps_file, log_folder)
+    return uid, pname, uniques, caught, encounters
 def load_save():
     global current_save_path, loaded_level_json, backup_save_path, srcGuildMapping, player_levels, original_loaded_level_json
     base_path = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -145,10 +169,10 @@ def load_save():
         print(f"Total {k}: {v}")
     all_in_one_deletion.loaded_json = loaded_level_json
     data_source = loaded_level_json["properties"]["worldSaveData"]["value"]
+    reduce_memory = False
+    if 'args' in globals() and hasattr(args, "reduce_memory"):
+        reduce_memory = args.reduce_memory
     try:
-        reduce_memory = False
-        if 'args' in globals() and hasattr(args, "reduce_memory"):
-            reduce_memory = args.reduce_memory
         srcGuildMapping = MappingCacheObject.get(data_source, use_mp=not reduce_memory)
         if srcGuildMapping._worldSaveData.get('GroupSaveDataMap') is None:
             srcGuildMapping.GroupSaveDataMap = {}
@@ -156,14 +180,10 @@ def load_save():
         messagebox.showerror("Error", f"Failed to load guild mapping: {e}")
         srcGuildMapping = None
     log_folder = os.path.join(base_path, "Scan Save Logger")
-    if os.path.exists(log_folder): 
-        print("Deleting Scan Save Logger...")
-        shutil.rmtree(log_folder)
-    print("Making Scan Save Logger...")
+    if os.path.exists(log_folder): shutil.rmtree(log_folder)
     os.makedirs(log_folder, exist_ok=True)
     player_pals_count = {}
     count_pals_found(data_source, player_pals_count, log_folder)
-    processed_uids = set()
     def count_owned_pals(level_json):
         owned_count = {}
         char_map = level_json.get('properties', {}).get('worldSaveData', {}).get('value', {}).get('CharacterSaveParameterMap', {}).get('value', [])
@@ -172,52 +192,9 @@ def load_save():
                 raw_data = item.get('value', {}).get('RawData', {}).get('value', {}).get('object', {}).get('SaveParameter', {}).get('value', {})
                 owner_uid = raw_data.get('OwnerPlayerUId', {}).get('value')
                 if owner_uid:
-                    owned_count[owner_uid] = owned_count.get(owner_uid, 0) + 1
-            except Exception:
-                continue
+                    owned_count[owner_uid] = owned_count.get(owner_uid,0)+1
+            except: continue
         return owned_count
-    def process_player_save_file(player_uid, nickname, players_folder, target_log_folder):
-        def safe_text(text): return str(text).encode("utf-8", "replace").decode("utf-8")
-        nickname_safe = safe_text(nickname)
-        if not player_uid or player_uid in processed_uids:
-            return 0, 0, 0, []
-        clean_uid = str(player_uid).replace("-", "")
-        filename_safe = sanitize_filename(nickname_safe)
-        sav_files = [f for f in os.listdir(players_folder) if f.lower() == f"{clean_uid}.sav".lower()] 
-        detail_log = os.path.join(target_log_folder, f"{filename_safe}({player_uid}).log")
-        if not sav_files:
-            with open(detail_log, "w", encoding="utf-8") as f:
-                f.write(f"Player: {nickname_safe} | UID: {player_uid}\nNo pals found or player .sav missing.\n")
-            processed_uids.add(player_uid)
-            return 0, 0, 0, []
-        sav_file_path = os.path.join(players_folder, sav_files[0])
-        try:
-            with open(sav_file_path, "rb") as file:
-                data = file.read()
-                raw_gvas, save_type = decompress_sav_to_gvas(data)
-            gvas_file = GvasFile.read(raw_gvas, PALWORLD_TYPE_HINTS, SKP_PALWORLD_CUSTOM_PROPERTIES, allow_nan=True)
-            json_data = json.loads(json.dumps(gvas_file.dump(), cls=CustomEncoder))
-            pal_capture_count_list = json_data.get('properties', {}).get('SaveData', {}).get('value', {}).get('RecordData', {}).get('value', {}).get('PalCaptureCount', {}).get('value', [])
-            unique_captured = len(pal_capture_count_list) if pal_capture_count_list else 0
-            total_captured = sum(entry.get('value', 0) for entry in pal_capture_count_list) if pal_capture_count_list else 0
-            pal_deck_unlock_flag_list = json_data.get('properties', {}).get('SaveData', {}).get('value', {}).get('RecordData', {}).get('value', {}).get('PaldeckUnlockFlag', {}).get('value', [])
-            pal_deck_unlocked = len(pal_deck_unlock_flag_list) if pal_deck_unlock_flag_list else 0
-            pal_deck_unlocked = unique_captured if unique_captured > pal_deck_unlocked else pal_deck_unlocked
-            processed_uids.add(player_uid)
-            return unique_captured, total_captured, pal_deck_unlocked, []
-        except Exception:
-            with open(detail_log, "w", encoding="utf-8") as f:
-                f.write(f"Player: {nickname_safe} | UID: {player_uid}\nError reading player .sav or malformed data.\n")
-            processed_uids.add(player_uid)
-            return 0, 0, 0, []
-    def get_worker_dropped_from_log(log_path):
-        try:
-            with open(log_path, "r", encoding="utf-8") as f:
-                first_line = f.readline()
-                number = int(first_line.split()[0])
-                return number
-        except Exception:
-            return 0
     owned_counts = count_owned_pals(loaded_level_json)
     scan_log_path = os.path.join(log_folder, "scan_save.log")
     logger = logging.getLogger('LoadSaveLogger')
@@ -239,85 +216,68 @@ def load_save():
         if h < 24: return f"{h}h {m}m ago"
         d, h = divmod(h, 24)
         return f"{d}d {h}h ago"
-    try:
-        tick = loaded_level_json['properties']['worldSaveData']['value']['GameTimeSaveData']['value']['RealDateTimeTicks']['value']
-        total_players = total_caught = total_owned = total_bases = total_worker_dropped = active_guilds = 0
-        for gid, gdata in (srcGuildMapping.GroupSaveDataMap.items() if srcGuildMapping else []):
-            players = gdata['value']['RawData']['value'].get('players', [])
-            if not players:
-                continue
-            active_guilds += 1
-            total_bases += len(gdata['value']['RawData']['value'].get('base_ids', []))
-            total_worker_dropped += gdata['value']['RawData']['value'].get('worker_count', 0) + gdata['value']['RawData']['value'].get('dropped_count', 0)
-            guild_name = gdata['value']['RawData']['value'].get('guild_name', "Unnamed Guild")
-            guild_leader = "Unknown"
+    tick = loaded_level_json['properties']['worldSaveData']['value']['GameTimeSaveData']['value']['RealDateTimeTicks']['value']
+    total_players = total_caught = total_owned = total_bases = total_worker_dropped = active_guilds = 0
+    for gid, gdata in (srcGuildMapping.GroupSaveDataMap.items() if srcGuildMapping else []):
+        players = gdata['value']['RawData']['value'].get('players', [])
+        if not players: continue
+        active_guilds += 1
+        total_bases += len(gdata['value']['RawData']['value'].get('base_ids', []))
+        total_worker_dropped += gdata['value']['RawData']['value'].get('worker_count',0) + gdata['value']['RawData']['value'].get('dropped_count',0)
+        guild_name = gdata['value']['RawData']['value'].get('guild_name', "Unnamed Guild")
+        guild_leader = players[0].get('player_info', {}).get('player_name', "Unknown") if players else "Unknown"
+        logger.info("="*60)
+        logger.info("")
+        logger.info(f"Guild: {guild_name} | Guild Leader: {guild_leader} | Guild ID: {gid}")
+        logger.info(f"Base Locations: {len(gdata['value']['RawData']['value'].get('base_ids', []))}")
+        for i, base_id in enumerate(gdata['value']['RawData']['value'].get('base_ids', []), 1):
+            basecamp = None
+            new_coords = None
+            rawdata_xyz = None
             try:
-                if players:
-                    guild_leader = players[0].get('player_info', {}).get('player_name', "Unknown")
-            except:
-                pass
-            logger.info("="*60)
-            logger.info("")
-            logger.info(f"Guild: {guild_name} | Guild Leader: {guild_leader} | Guild ID: {gid}")
-            logger.info(f"Base Locations: {len(gdata['value']['RawData']['value'].get('base_ids', []))}")
-            for i, base_id in enumerate(gdata['value']['RawData']['value'].get('base_ids', []), 1):
-                basecamp = None
-                new_coords = None
-                rawdata_xyz = None
-                try:
-                    basecamp = srcGuildMapping.BaseCampMapping.get(toUUID(base_id))
-                    if basecamp:
-                        offset = basecamp['value']['RawData']['value']['transform']['translation']
-                        new_coords = palworld_coord.sav_to_map(offset['x'], offset['y'], new=True)
-                        rawdata_xyz = (offset['x'], offset['y'], offset['z'])
-                except Exception:
-                    pass
-                new_coords_str = f"{int(new_coords[0])}, {int(new_coords[1])}" if new_coords else "unknown"
-                rawdata_str = f"{rawdata_xyz[0]}, {rawdata_xyz[1]}, {rawdata_xyz[2]}" if rawdata_xyz else "unknown"
-                logger.info(f"Base {i}: Base ID: {base_id} | {new_coords_str} | RawData: {rawdata_str}")
-            logger.info(f"Guild Players: {len(players)}")
-            for p in players:
-                pname = p.get('player_info', {}).get('player_name', 'Unknown')
-                uid = p.get('player_uid')
-                unique_captured = total_captured = pal_deck_unlocked = 0
-                pals_details = []
-                if uid:
-                    unique_captured, total_captured, pal_deck_unlocked, pals_details = process_player_save_file(uid, pname, playerdir, log_folder)
-                level = player_levels.get(str(uid).replace('-', ''), '?') if uid else '?'
-                caught = total_captured
-                owned = owned_counts.get(uid, 0)
-                encounters = pal_deck_unlocked
-                uniques = unique_captured
-                last = p.get('player_info', {}).get('last_online_real_time')
-                lastseen = "Unknown" if last is None else format_duration((tick - int(last)) / 1e7)
-                logger.info(f"Player: {pname} | UID: {uid} | Level: {level} | Caught: {caught} | Owned: {owned} | Encounters: {encounters} | Uniques: {uniques} | Last Online: {lastseen}")
-                for pd in pals_details:
-                    nick = f" ({pd['NickName']})" if pd['NickName'] and pd['NickName'] != "Unknown" else ""
-                    logger.info(f"  Pal: {pd['Name']}{nick} | Lvl: {pd['Level']} | HP: {pd['HP']} | Atk: {pd['Attack']} | Def: {pd['Defense']} | HP IV: {pd['HP_IV']}% | Shot IV: {pd['Shot_IV']}% | Def IV: {pd['Defense_IV']}% | Rank HP: {pd['Rank_HP']}% | Rank Atk: {pd['Rank_Attack']}% | Rank Def: {pd['Rank_Defense']}%")
-                total_players += 1
-                total_caught += caught
-                total_owned += owned
-            logger.info("")
-        non_owner_log = os.path.join(log_folder, "non_owner_pals.log")
-        total_worker_dropped = get_worker_dropped_from_log(non_owner_log)
-        logger.info("="*60)
+                basecamp = srcGuildMapping.BaseCampMapping.get(toUUID(base_id))
+                if basecamp:
+                    offset = basecamp['value']['RawData']['value']['transform']['translation']
+                    new_coords = palworld_coord.sav_to_map(offset['x'], offset['y'], new=True)
+                    rawdata_xyz = (offset['x'], offset['y'], offset['z'])
+            except: pass
+            new_coords_str = f"{int(new_coords[0])}, {int(new_coords[1])}" if new_coords else "unknown"
+            rawdata_str = f"{rawdata_xyz[0]}, {rawdata_xyz[1]}, {rawdata_xyz[2]}" if rawdata_xyz else "unknown"
+            logger.info(f"Base {i}: Base ID: {base_id} | {new_coords_str} | RawData: {rawdata_str}")
+        with ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as executor:
+            results = list(executor.map(lambda p: top_process_player(p, playerdir, log_folder), players))
+        for uid, pname, uniques, caught, encounters in results:
+            level = player_levels.get(str(uid).replace('-', ''), '?') if uid else '?'
+            owned = owned_counts.get(uid, 0)
+            last = next((p.get('player_info', {}).get('last_online_real_time') for p in players if p.get('player_uid')==uid), None)
+            lastseen = "Unknown" if last is None else format_duration((tick - int(last))/1e7)
+            logger.info(f"Player: {pname} | UID: {uid} | Level: {level} | Caught: {caught} | Owned: {owned} | Encounters: {encounters} | Uniques: {uniques} | Last Online: {lastseen}")
+            total_players += 1
+            total_caught += caught
+            total_owned += owned
         logger.info("")
-        logger.info(f"Total Players: {total_players}")
-        logger.info(f"Total Caught Pals: {total_caught}")
-        logger.info(f"Total Overall Pals: {total_owned + total_worker_dropped}")
-        logger.info(f"Total Owned Pals: {total_owned}")
-        logger.info(f"Total Worker/Dropped Pals: {total_worker_dropped}")
-        logger.info(f"Total Active Guilds: {active_guilds}")
-        logger.info(f"Total Bases: {total_bases}")
-        logger.info("")
-        logger.info("="*60)
-    except Exception as e:
-        logger.error(f"Logging error: {e}")
+    non_owner_log = os.path.join(log_folder, "non_owner_pals.log")
+    try:
+        with open(non_owner_log,"r",encoding="utf-8") as f:
+            first_line = f.readline()
+            total_worker_dropped = int(first_line.split()[0])
+    except: total_worker_dropped = 0
+    logger.info("="*60)
+    logger.info("")
+    logger.info(f"Total Players: {total_players}")
+    logger.info(f"Total Caught Pals: {total_caught}")
+    logger.info(f"Total Overall Pals: {total_owned + total_worker_dropped}")
+    logger.info(f"Total Owned Pals: {total_owned}")
+    logger.info(f"Total Worker/Dropped Pals: {total_worker_dropped}")
+    logger.info(f"Total Active Guilds: {active_guilds}")
+    logger.info(f"Total Bases: {total_bases}")
+    logger.info("")
+    logger.info("="*60)
     for h in logger.handlers[:]:
         logger.removeHandler(h)
         h.close()
     t2 = time.perf_counter()
-    print(f"Fully loaded in: {t2 - t0:.2f}s")
+    print(f"Fully loaded and processed in: {t2-t0:.2f}s")
 def setup_logging():
     batch_title = f"Pylar's Save Tool"
     set_console_title(batch_title)
@@ -509,6 +469,71 @@ def count_pals_found(data, player_pals_count, log_folder):
             handler.flush()
             handler.close()
             owner_logger.removeHandler(handler)
+def process_dps_save(player_uid, nickname, dps_file_path, log_folder):
+    try:
+        with open(dps_file_path, "rb") as f:
+            data = f.read()
+        raw_gvas, _ = decompress_sav_to_gvas(data)
+        gvas = GvasFile.read(raw_gvas, PALWORLD_TYPE_HINTS, SKP_PALWORLD_CUSTOM_PROPERTIES, allow_nan=True)
+        json_data = json.loads(json.dumps(gvas.dump(), cls=CustomEncoder))
+        values = json_data.get("properties", {}).get("SaveParameterArray", {}).get("value", {}).get("values", [])
+        if not values:
+            print(f"No DPS pals found in {os.path.basename(dps_file_path)}")
+            return
+        valid_lines = []
+        for item in values:
+            pal = item.get("SaveParameter", {}).get("value", {})
+            cid = pal.get("CharacterID", {}).get("value", "Unknown")
+            name = PAL_NAMES.get(cid, cid)
+            if name.lower().startswith("boss_"):
+                base = PAL_NAMES.get(name[5:], name[5:])
+                name = f"Alpha {base.capitalize()}"
+            if name in ["Unknown", "None", None]:
+                continue
+            nick = pal.get("NickName", {}).get("value", "Unknown")
+            nickname_str = f", {nick}" if nick != "Unknown" else ""
+            lvl = extract_value(pal, "Level", 1)
+            rank = extract_value(pal, "Rank", 1)
+            gender = {"EPalGenderType::Male":"Male","EPalGenderType::Female":"Female"}.get(pal.get("Gender", {}).get("value", {}).get("value", ""), "Unknown")
+            hp_iv = extract_value(pal, "Talent_HP", "0")
+            atk_iv = extract_value(pal, "Talent_Shot", "0")
+            def_iv = extract_value(pal, "Talent_Defense", "0")
+            rank_hp = int(extract_value(pal, "Rank_HP", 0)) * 3
+            rank_atk = int(extract_value(pal, "Rank_Attack", 0)) * 3
+            rank_def = int(extract_value(pal, "Rank_Defence", 0)) * 3
+            rank_craft = int(extract_value(pal, "Rank_CraftSpeed", 0)) * 3
+            if lvl == 1 and all(str(v) == "0" for v in [hp_iv, atk_iv, def_iv]) and all(x == 0 for x in [rank_hp, rank_atk, rank_def]):
+                continue
+            skills = [PAL_PASSIVES.get(pid, {}).get("Name", pid) for pid in pal.get("PassiveSkillList", {}).get("value", {}).get("values", [])]
+            skill_str = ", Skills: " + ", ".join(skills) if skills else ""
+            talents = f"HP IV: {hp_iv}({rank_hp}%), ATK IV: {atk_iv}({rank_atk}%), DEF IV: {def_iv}({rank_def}%), Work Speed: ({rank_craft}%)"
+            valid_lines.append(f"{name}{nickname_str}, Level: {lvl}, Rank: {rank}, Gender: {gender}, {talents}{skill_str}")
+        if not valid_lines:
+            print(f"No valid DPS pals to log for {os.path.basename(dps_file_path)}")
+            return
+        log_name = sanitize_filename(nickname.encode("utf-8", "replace").decode("utf-8"))
+        log_file = os.path.join(log_folder, f"({log_name})({player_uid})_dps.log")
+        logger = logging.getLogger(f"dps_{player_uid}")
+        logger.setLevel(logging.INFO)
+        logger.propagate = False
+        if logger.hasHandlers():
+            for h in logger.handlers[:]:
+                h.flush()
+                h.close()
+                logger.removeHandler(h)
+        handler = logging.FileHandler(log_file, mode='w', encoding='utf-8', errors='replace')
+        handler.setFormatter(logging.Formatter('%(message)s'))
+        logger.addHandler(handler)
+        header = f"{nickname}'s {len(valid_lines)} DPS Pals"
+        logger.info(header)
+        logger.info("-" * len(header))
+        for line in valid_lines:
+            logger.info(line)
+        handler.flush()
+        handler.close()
+        logger.removeHandler(handler)
+    except Exception as e:
+        print(f"Failed to parse {dps_file_path} for {nickname}({player_uid}): {e}")
 def save_changes():
     global files_to_delete
     folder = current_save_path
