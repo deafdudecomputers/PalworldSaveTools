@@ -161,3 +161,12 @@ This process lets both players keep their characters and pals intact while swapp
 - Place the outdated save into Solo, Coop, or Dedicated Server mode.  
 - Load the game once to trigger an automatic structure update.  
 - Make sure the save was last updated on or after the latest game patch.
+
+---
+
+## 3. PalworldSaveTools.exe - System Error
+
+**Cause:** The code execution cannot proceed because VCRUNTIME140.dIl was not found. Reinstalling the program may fix this problem.  
+**Solution:**  
+- Latest Microsoft Visual C++ Redistributable version  
+- [Microsoft Visual C++ 2015-2022 Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170#latest-microsoft-visual-c-redistributable-version)
