@@ -75,6 +75,7 @@ class SlotNumUpdaterApp(tk.Tk):
         apply_btn = ttk.Button(frame, text="Apply Slot Injection", command=self.apply_slotnum_update, style="Dark.TButton")
         apply_btn.grid(row=row, column=0, columnspan=3, pady=10)
         frame.columnconfigure(2, weight=1)
+        center_window(self)
     def browse_file(self):
         file = filedialog.askopenfilename(title="Select Level.sav file", filetypes=[("SAV files", "Level.sav")])
         if file:
@@ -119,6 +120,12 @@ class SlotNumUpdaterApp(tk.Tk):
         backup_whole_directory(os.path.dirname(filepath), "Backups/Slot Injector")
         json_to_sav(level_json, filepath)
         messagebox.showinfo("Success", f"Updated {updated_count} SlotNum entries from {current_val} to {new_value} in Level.sav!")
+def center_window(win):
+    win.update_idletasks()
+    w, h = win.winfo_width(), win.winfo_height()
+    ws, hs = win.winfo_screenwidth(), win.winfo_screenheight()
+    x, y = (ws - w) // 2, (hs - h) // 2
+    win.geometry(f'{w}x{h}+{x}+{y}')
 def slot_injector():
     def on_exit(): app.destroy()
     app = SlotNumUpdaterApp()

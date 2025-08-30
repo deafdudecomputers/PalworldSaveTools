@@ -2278,5 +2278,14 @@ def all_in_one_deletion():
         base_result.config(text="Selected Base: N/A")
         player_result.config(text="Selected Player: N/A")
     window.bind("<F5>", on_f5_press)
+    center_window(window)
+    def on_exit(): window.destroy()
+    window.protocol("WM_DELETE_WINDOW", on_exit)
     return window
+def center_window(win):
+    win.update_idletasks()
+    w, h = win.winfo_width(), win.winfo_height()
+    ws, hs = win.winfo_screenwidth(), win.winfo_screenheight()
+    x, y = (ws - w) // 2, (hs - h) // 2
+    win.geometry(f'{w}x{h}+{x}+{y}')
 if __name__=="__main__": all_in_one_deletion()

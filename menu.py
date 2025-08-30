@@ -190,6 +190,7 @@ class MenuGUI(tk.Tk):
         self.geometry("800x530")
         self.resizable(False, True)
         self.setup_ui()
+        center_window(self)
     def setup_ui(self):
         container = ttk.Frame(self, style="TFrame")
         container.pack(fill="both", expand=True, padx=10, pady=10)
@@ -279,6 +280,12 @@ class MenuGUI(tk.Tk):
             pass
         print(f'Now closing "{tool_name}"...')
         self.deiconify()
+def center_window(win):
+    win.update_idletasks()
+    w, h = win.winfo_width(), win.winfo_height()
+    ws, hs = win.winfo_screenwidth(), win.winfo_screenheight()
+    x, y = (ws - w) // 2, (hs - h) // 2
+    win.geometry(f'{w}x{h}+{x}+{y}')
 def on_exit():
     app.destroy()
     sys.exit(0)

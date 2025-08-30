@@ -253,7 +253,14 @@ def game_pass_save_fix():
     steam_button.pack(pady=(0, 20), fill='x')
     save_frame = ttk.Frame(main_frame, style="TFrame")
     save_frame.pack(fill='both', expand=True)
+    center_window(window)
     def on_exit(): shutil.rmtree(os.path.join(root_dir, "saves"), ignore_errors=True); window.destroy()
     window.protocol("WM_DELETE_WINDOW", on_exit)
     return window
+def center_window(win):
+    win.update_idletasks()
+    w, h = win.winfo_width(), win.winfo_height()
+    ws, hs = win.winfo_screenwidth(), win.winfo_screenheight()
+    x, y = (ws - w) // 2, (hs - h) // 2
+    win.geometry(f'{w}x{h}+{x}+{y}')
 if __name__ == "__main__": game_pass_save_fix()

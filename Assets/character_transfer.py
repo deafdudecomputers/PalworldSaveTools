@@ -261,8 +261,17 @@ def double_transfer_character_and_containers(host_guid, targ_uid):
             break
     if not updated:
         char_list.append(exported_map.copy())
-    targ_lvl.setdefault("CharacterContainerSaveData", {"value": []})["value"] = list(level_json.get("CharacterContainerSaveData", {}).get("value", []))
-    targ_lvl.setdefault("ItemContainerSaveData", {"value": []})["value"] = list(level_json.get("ItemContainerSaveData", {}).get("value", []))
+    targ_lvl.setdefault("CharacterContainerSaveData", {"value": []})
+    targ_lvl.setdefault("ItemContainerSaveData", {"value": []})
+    host_ids = {container.get("key", {}).get("ID", {}).get("value") for container in
+                (host_main, host_key, host_weps, host_armor, host_foodbag, host_pals, host_otomo)
+                if container.get("key", {}).get("ID", {}).get("value")}
+    for container_list in ("CharacterContainerSaveData", "ItemContainerSaveData"):
+        existing_ids = {c.get("key", {}).get("ID", {}).get("value") for c in targ_lvl[container_list]["value"]}
+        for c in level_json.get(container_list, {}).get("value", []):
+            cid = c.get("key", {}).get("ID", {}).get("value")
+            if cid not in existing_ids:
+                targ_lvl[container_list]["value"].append(fast_deepcopy(c))
     return True
 def get_exported_map(host_guid):
     host_instance_id = host_json["SaveData"]["value"]["IndividualId"]["value"]["InstanceId"]["value"]
@@ -740,6 +749,12 @@ def finalize_save(window):
             window.after(100, window.destroy)
         except:
             pass
+def center_window(win):
+    win.update_idletasks()
+    w, h = win.winfo_width(), win.winfo_height()
+    ws, hs = win.winfo_screenwidth(), win.winfo_screenheight()
+    x, y = (ws - w) // 2, (hs - h) // 2
+    win.geometry(f'{w}x{h}+{x}+{y}')
 def character_transfer():
     global source_player_list, target_player_list, source_level_path_label, target_level_path_label, current_selection_label, btn_toggle
     window = tk.Toplevel()
@@ -811,6 +826,7 @@ def character_transfer():
     ttk.Button(window, text='Transfer All', command=transfer_all_characters, style="Dark.TButton").grid(row=6, column=0, padx=10, pady=(0,10), sticky="ew")
     ttk.Button(window, text='Transfer', command=lambda: main(skip_msgbox=False), style="Dark.TButton").grid(row=5, column=1, padx=10, pady=(10, 0), sticky="ew")
     ttk.Button(window, text='Save Changes', command=lambda: finalize_save(window), style="Dark.TButton").grid(row=6, column=1, padx=10, pady=(0, 10), sticky="ew")
+    center_window(window)
     def on_exit(): window.destroy()
     window.protocol("WM_DELETE_WINDOW", on_exit)
     return window

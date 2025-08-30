@@ -355,6 +355,13 @@ def fix_host_save():
             target_result_label.config(text="Target Player: N/A")
     old_tree.bind('<<TreeviewSelect>>', update_source_selection)
     new_tree.bind('<<TreeviewSelect>>', update_target_selection)
+    center_window(window)
     def on_exit(): window.destroy()
     window.protocol("WM_DELETE_WINDOW", on_exit)
     return window
+def center_window(win):
+    win.update_idletasks()
+    w, h = win.winfo_width(), win.winfo_height()
+    ws, hs = win.winfo_screenwidth(), win.winfo_screenheight()
+    x, y = (ws - w) // 2, (hs - h) // 2
+    win.geometry(f'{w}x{h}+{x}+{y}')
