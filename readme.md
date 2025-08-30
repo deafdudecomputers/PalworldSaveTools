@@ -140,24 +140,39 @@ This process lets both players keep their characters and pals intact while swapp
 ---
 
 
-# Known Bugs / Issues
+# 🐞 Known Bugs / Issues
 
-## 1. Steam to GamePass Converter Not Working
-
-**Issue:** Changes made via the converter aren't applied or retained.  
-**Steps to Fix:**  
+## 1. Steam ➝ GamePass Converter Not Working
+**Issue:** Changes made via the converter are not applied or retained.  
+**Steps to Fix:**
 1. Close the GamePass version of Palworld.  
 2. Wait a few minutes.  
-3. Run the Steam to GamePass converter.  
+3. Run the Steam ➝ GamePass converter.  
 4. Wait again.  
-5. Launch the game on GamePass and confirm the updated save is working.
+5. Launch Palworld on GamePass and confirm the updated save works.  
 
 ---
 
-## 2. `struct.error` When Parsing the Save
-
+## 2. `struct.error` When Parsing Save
 **Cause:** The save file format is outdated and incompatible with current tools.  
 **Solution:**  
-- Place the outdated save into Solo, Coop, or Dedicated Server mode.  
-- Load the game once to trigger an automatic structure update.  
-- Make sure the save was last updated on or after the latest game patch.
+- Place the outdated save into **Solo, Coop, or Dedicated Server** mode.  
+- Load the game once to trigger an **automatic structure update**.  
+- Ensure the save was last updated **on or after the latest game patch**.  
+
+---
+
+## 3. `PalworldSaveTools.exe - System Error`
+**Error Message:**
+  
+```
+The code execution cannot proceed because VCRUNTIME140.dll was not found.
+Reinstalling the program may fix this problem.
+
+```
+
+**Cause:** Some PCs (barebones setups, sandboxes, or VMs) do not include this DLL, which the tools require to run. 
+ 
+**Solution:**  
+- Install the latest **Microsoft Visual C++ Redistributable**  
+- Download here: [Microsoft Visual C++ 2015–2022 Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170#latest-microsoft-visual-c-redistributable-version)  
