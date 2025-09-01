@@ -123,7 +123,7 @@ build_exe_options = {
     "zip_include_packages": [],
     "zip_exclude_packages": ["customtkinter"],
     "build_exe": "PST_standalone",
-    "bin_includes": ["python311.dll"] if sys.platform == "win32" else [],
+    "bin_includes": ["python311.dll", "vcruntime140.dll"] if sys.platform == "win32" else [],
 }
 customtkinter_assets = find_customtkinter_assets()
 if customtkinter_assets:
@@ -136,7 +136,7 @@ if sys.platform == "win32":
     base = "Console"
 setup(
     name="PalworldSaveTools",
-    version="1.0.99",
+    version="1.1.01",
     description="All-in-one tool for fixing/transferring/editing Palworld saves",
     options={"build_exe": build_exe_options},
     executables=[
