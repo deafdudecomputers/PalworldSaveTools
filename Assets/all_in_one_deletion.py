@@ -163,10 +163,13 @@ def top_process_player(p, playerdir, log_folder):
     if os.path.isfile(dps_file):
         dps_tasks.append((uid, pname, dps_file, log_folder))
     return uid, pname, uniques, caught, encounters
-def load_save():
+def load_save(path=None):
     global current_save_path, loaded_level_json, backup_save_path, srcGuildMapping, player_levels, original_loaded_level_json
     base_path = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    p = filedialog.askopenfilename(title="Select Level.sav", filetypes=[("SAV","*.sav")])
+    if path is None:
+        p = filedialog.askopenfilename(title="Select Level.sav", filetypes=[("SAV","*.sav")])
+    else:
+        p = path
     if not p: return
     if not p.endswith("Level.sav"):
         messagebox.showerror("Error!", "This is NOT Level.sav. Please select Level.sav file.")
@@ -1060,6 +1063,7 @@ def delete_unreferenced_data():
         return
     players_folder = os.path.join(folder_path, 'Players')
     if not os.path.exists(players_folder):
+        print("Players folder not found, aborting.")
         return
     def normalize_uid(uid):
         if isinstance(uid, dict): uid = uid.get('value', '')
@@ -1071,7 +1075,8 @@ def delete_unreferenced_data():
         return obj.get('ConcreteModel', {}).get('value', {}).get('RawData', {}).get('value', {}).get('concrete_model_type') == "PalMapObjectDropItemModel"
     def count_mapobject_ids(wsd):
         total = 0
-        for obj in wsd.get('MapObjectSaveData', {}).get('value', {}).get('values', []):
+        map_objects = wsd.get('MapObjectSaveData', {}).get('value', {}).get('values', [])
+        for obj in map_objects:
             if "MapObjectId" in obj:
                 total += 1
         return total
@@ -1079,158 +1084,76 @@ def delete_unreferenced_data():
     group_data_list = wsd.get('GroupSaveDataMap', {}).get('value', [])
     char_map = wsd.get('CharacterSaveParameterMap', {}).get('value', [])
     char_uids = set()
-    valid_container_ids = set()
     for entry in char_map:
-        uid = normalize_uid(entry.get('key', {}).get('PlayerUId'))
-        owner_uid = normalize_uid(entry.get('value', {}).get('RawData', {}).get('value', {}).get('object', {}).get('SaveParameter', {}).get('value', {}).get('OwnerPlayerUId'))
+        uid_raw = entry.get('key', {}).get('PlayerUId')
+        uid = normalize_uid(uid_raw)
+        owner_uid_raw = entry.get('value', {}).get('RawData', {}).get('value', {}).get('object', {}).get('SaveParameter', {}).get('value', {}).get('OwnerPlayerUId')
+        owner_uid = normalize_uid(owner_uid_raw)
         if uid: char_uids.add(uid)
         if owner_uid: char_uids.add(owner_uid)
-        slot_id = entry.get('value', {}).get('RawData', {}).get('value', {}).get('object', {}).get('SaveParameter', {}).get('value', {}).get('SlotId', {}).get('value', {}).get('ContainerId', {}).get('ID', {}).get('value')
-        if slot_id: valid_container_ids.add(slot_id)
     unreferenced_uids, invalid_uids, removed_guilds = [], [], 0
-    guild_player_uids, valid_guild_ids, removed_guild_ids = set(), set(), set()
     for group in group_data_list[:]:
         if group['value']['GroupType']['value']['value'] != 'EPalGroupType::Guild': continue
-        gid_raw = group['key']
-        gid = normalize_uid(gid_raw)
-        valid_guild_ids.add(gid)
         raw = group['value']['RawData']['value']
         players = raw.get('players', [])
-        valid_players, all_invalid = [], True
+        valid_players = []
+        all_invalid = True
         for p in players:
-            pid = normalize_uid(p.get('player_uid'))
+            pid_raw = p.get('player_uid')
+            pid = normalize_uid(pid_raw)
             if pid not in char_uids:
+                name = p.get('player_info', {}).get('player_name', 'Unknown')
+                print(f"Removing unreferenced player {name} ({pid_raw})")
                 unreferenced_uids.append(pid)
                 continue
-            level = player_levels.get(pid)
+            level = player_levels.get(pid, None)
             if is_valid_level(level):
                 all_invalid = False
                 valid_players.append(p)
-                guild_player_uids.add(pid)
             else:
+                name = p.get('player_info', {}).get('player_name', 'Unknown')
+                print(f"Removing invalid player {name} ({pid_raw})")
                 invalid_uids.append(pid)
         if not valid_players or all_invalid:
+            gid_raw = group['key']
+            gid = normalize_uid(gid_raw)
             for b in wsd.get('BaseCampSaveData', {}).get('value', [])[:]:
                 base_gid_raw = b['value']['RawData']['value'].get('group_id_belong_to')
-                if normalize_uid(base_gid_raw) == gid:
+                base_gid = normalize_uid(base_gid_raw)
+                if base_gid == gid:
                     delete_base_camp(b, gid_raw, loaded_level_json)
             group_data_list.remove(group)
             removed_guilds += 1
-            removed_guild_ids.add(gid)
+            print(f"Removed guild {gid_raw} (Empty or invalid players).")
             continue
         raw['players'] = valid_players
-        admin_uid = normalize_uid(raw.get('admin_player_uid'))
+        admin_uid_raw = raw.get('admin_player_uid')
+        admin_uid = normalize_uid(admin_uid_raw)
         keep_uids = {normalize_uid(p.get('player_uid')) for p in valid_players}
         if admin_uid not in keep_uids:
             raw['admin_player_uid'] = valid_players[0]['player_uid']
-    orphaned_pals = []
-    for entry in char_map:
-        player_uid = normalize_uid(entry.get('key', {}).get('PlayerUId'))
-        raw_data = entry.get('value', {}).get('RawData', {}).get('value', {})
-        group_id = normalize_uid(raw_data.get('group_id'))
-        container_id = raw_data.get('SlotId', {}).get('value', {}).get('ContainerId', {}).get('ID', {}).get('value')
-        keep = False
-        if player_uid in char_uids:
-            keep = True
-        if group_id and group_id in valid_guild_ids:
-            keep = True
-        if container_id and container_id in valid_container_ids:
-            keep = True
-        if not keep:
-            orphaned_pals.append(player_uid)
-    char_map[:] = [e for e in char_map if normalize_uid(e.get('key', {}).get('PlayerUId')) not in orphaned_pals]
-    all_removed_uids = set(orphaned_pals)
+            print(f"Admin reassigned in group {group['key']} to {raw['admin_player_uid']}")
+    char_map[:] = [entry for entry in char_map if normalize_uid(entry.get('key', {}).get('PlayerUId')) not in unreferenced_uids + invalid_uids and normalize_uid(entry.get('value', {}).get('RawData', {}).get('value', {}).get('object', {}).get('SaveParameter', {}).get('value', {}).get('OwnerPlayerUId')) not in unreferenced_uids + invalid_uids]
+    all_removed_uids = set(unreferenced_uids + invalid_uids)
     files_to_delete.update(all_removed_uids)
-    removed_pals = delete_player_pals(wsd, all_removed_uids)    
-    container_data = wsd.get('CharacterContainerSaveData', {}).get('value', [])
-    valid_containers = []
-    removed_containers = 0
-    referenced_container_ids = set()
-    for entry in wsd.get('CharacterSaveParameterMap', {}).get('value', []):
-        try:
-            cid = entry['value']['RawData']['value']['object']['SaveParameter']['value']['SlotId']['value']['ContainerId']['value']['ID']['value']
-            if cid != "00000000-0000-0000-0000-000000000000":
-                referenced_container_ids.add(cid)
-        except KeyError as e:
-            continue
-    for cont in container_data:
-        cont_id = cont.get('key', {}).get('ID', {}).get('value')
-        if cont_id == "00000000-0000-0000-0000-000000000000":
-            removed_containers += 1
-            continue
-        if cont_id not in referenced_container_ids:
-            removed_containers += 1
-            continue
-        valid_containers.append(cont)
-    wsd['CharacterContainerSaveData']['value'] = valid_containers    
-    map_objects = wsd.get('MapObjectSaveData', {}).get('value', {}).get('values', [])
-    broken_ids, dropped_ids, orphaned_ids, new_map_objects = [], [], [], []
+    removed_pals = delete_player_pals(wsd, all_removed_uids)
+    map_objects_wrapper = wsd.get('MapObjectSaveData', {}).get('value', {})
+    map_objects = map_objects_wrapper.get('values', [])
+    broken_ids, dropped_ids = [], []
+    new_map_objects = []
     for obj in map_objects:
-        inst = obj.get('Model', {}).get('value', {}).get('RawData', {}).get('value', {}).get('instance_id')
-        owner_uid = normalize_uid(obj.get('Model', {}).get('value', {}).get('RawData', {}).get('value', {}).get('build_player_uid'))
         if is_broken_mapobject(obj):
-            broken_ids.append(inst)
+            instance_id = obj.get('Model', {}).get('value', {}).get('RawData', {}).get('value', {}).get('instance_id')
+            broken_ids.append(instance_id)
         elif is_dropped_item(obj):
-            dropped_ids.append(inst)
-        elif owner_uid not in char_uids:
-            orphaned_ids.append(inst)
+            instance_id = obj.get('ConcreteModel', {}).get('value', {}).get('RawData', {}).get('value', {}).get('instance_id')
+            dropped_ids.append(instance_id)
         else:
             new_map_objects.append(obj)
-    wsd.get('MapObjectSaveData', {}).get('value', {}).update({'values': new_map_objects})
-    item_containers = wsd.get('ItemContainerSaveData', {}).get('value', [])
-    valid_item_containers = []
-    for cont in item_containers:
-        if not isinstance(cont, dict):
-            continue
-        belong_info = cont.get('value', {}).get('BelongInfo', {}).get('value', {})
-        group_id_dict = belong_info.get('GroupId', {})
-        gid_value = group_id_dict.get('value') if isinstance(group_id_dict, dict) else None
-        if gid_value and gid_value != "00000000-0000-0000-0000-000000000000":
-            gid = normalize_uid(gid_value)
-            if gid not in valid_guild_ids:
-                continue
-        valid_item_containers.append(cont)
-    wsd['ItemContainerSaveData']['value'] = valid_item_containers
-    if 'GuildExtraSaveDataMap' in wsd and isinstance(wsd['GuildExtraSaveDataMap'].get('value'), list):
-        extra_map = wsd['GuildExtraSaveDataMap']['value']
-        before_count = len(extra_map)
-        referenced_ids = set()
-        for entry in char_map:
-            gid = entry.get('value', {}).get('RawData', {}).get('value', {}).get('group_id')
-            if gid and gid != "00000000-0000-0000-0000-000000000000":
-                referenced_ids.add(normalize_uid(gid))
-        for cont in item_containers:
-            gid_value = cont.get('value', {}).get('BelongInfo', {}).get('value', {}).get('GroupId', {}).get('value')
-            if gid_value and gid_value != "00000000-0000-0000-0000-000000000000":
-                referenced_ids.add(normalize_uid(gid_value))
-        for b in wsd.get('BaseCampSaveData', {}).get('value', []):
-            gid_value = b.get('value', {}).get('RawData', {}).get('value', {}).get('group_id_belong_to')
-            if gid_value and gid_value != "00000000-0000-0000-0000-000000000000":
-                referenced_ids.add(normalize_uid(gid_value))
-        extra_map[:] = [e for e in extra_map if normalize_uid(e.get('key')) in referenced_ids]
-        deleted_count = before_count - len(extra_map)
-        wsd['GuildExtraSaveDataMap']['value'] = extra_map
-    storage_data = wsd.get('CharacterParameterStorageSaveData', {}).get('value', {}).get('StoredParameterInfoSaveData', {}).get('value', {}).get('values', [])
-    valid_storage = []
-    removed_storage_count = 0
-    for entry in storage_data:
-        lost_uid = entry.get('LostPlayerUId', {}).get('value', '00000000-0000-0000-0000-000000000000')
-        if lost_uid == "00000000-0000-0000-0000-000000000000" or normalize_uid(lost_uid) not in char_uids:
-            removed_storage_count += 1
-            continue
-        valid_storage.append(entry)
-    wsd['CharacterParameterStorageSaveData']['value']['StoredParameterInfoSaveData']['value']['values'] = valid_storage
-    for key in [
-        "DungeonPointMarkerSaveData",
-        "EnemyCampSaveData",
-        "SupplySaveData",
-        "FixedWeaponDestroySaveData",
-        "OilrigSaveData",
-        "InvaderSaveData",
-        "DungeonLevelVersion"
-    ]:
-        if key in wsd:
-            del wsd[key]
+    map_objects_wrapper['values'] = new_map_objects
+    removed_broken, removed_drops = len(broken_ids), len(dropped_ids)
+    for bid in broken_ids: print(f"Deleted broken MapObject — ID: {bid}")
+    for did in dropped_ids: print(f"Deleted dropped item — ID: {did}")
     delete_orphaned_bases()
     build_player_levels()
     refresh_all()
@@ -1238,18 +1161,14 @@ def delete_unreferenced_data():
     mapobject_count = count_mapobject_ids(wsd)
     result_msg = (
         f"Players removed: {len(all_removed_uids)} "
-        f"(Unreferenced: {len(unreferenced_uids)}, Invalid: {len(invalid_uids)}, NoGuild: {len(orphaned_pals)})\n"
+        f"(Unreferenced: {len(unreferenced_uids)}, Invalid: {len(invalid_uids)})\n"
         f"Pals deleted: {removed_pals}\n"
         f"Guilds removed: {removed_guilds}\n"
-        f"Broken MapObjects removed: {len(broken_ids)}\n"
-        f"Dropped items removed: {len(dropped_ids)}\n"
-        f"Orphaned MapObjects removed: {len(orphaned_ids)}\n"
-        f"Orphaned ItemContainers removed: {len(item_containers) - len(valid_item_containers)}\n"
-        f"Orphaned CharacterContainers removed: {removed_containers}\n"
-        f"Orphaned CharacterParameterStorage entries removed: {removed_storage_count}\n"
-        f"GuildExtraSaveDataMap entries removed: {deleted_count}\n"
+        f"Broken MapObjects removed: {removed_broken}\n"
+        f"Dropped items removed: {removed_drops}\n"
         f"MapObjects total count: {mapobject_count}"
     )
+    print(result_msg)
     messagebox.showinfo("Done", result_msg)
 def delete_inactive_players(folder_path, inactive_days=30):
     global files_to_delete
@@ -2372,4 +2291,13 @@ def center_window(win):
     ws, hs = win.winfo_screenwidth(), win.winfo_screenheight()
     x, y = (ws - w) // 2, (hs - h) // 2
     win.geometry(f'{w}x{h}+{x}+{y}')
-if __name__=="__main__": all_in_one_deletion()
+if __name__=="__main__":
+    all_in_one_deletion()
+    if len(sys.argv) > 1:
+        if tk._default_root:
+            for w in [tk._default_root]+tk._default_root.winfo_children():
+                if isinstance(w, (tk.Tk, tk.Toplevel)):
+                    w.withdraw()
+        load_save(" ".join(sys.argv[1:]))
+        if tk._default_root:
+            tk._default_root.destroy()
