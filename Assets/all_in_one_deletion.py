@@ -2049,6 +2049,24 @@ def generate_map():
         messagebox.showerror("Error", f"Error generating map:\n{e}")
         print(f"Error generating map: {e}")
         return False
+def reset_anti_air_turrets():
+    folder_path = current_save_path
+    if not folder_path:
+        messagebox.showerror("Error", "No save loaded!")
+        return
+    try:
+        wsd = loaded_level_json['properties']['worldSaveData']['value']
+    except KeyError:
+        messagebox.showerror("Error", "Invalid Level.sav structure!")
+        return
+    if "FixedWeaponDestroySaveData" in wsd:
+        del wsd["FixedWeaponDestroySaveData"]
+        print("All FixedWeaponDestroySaveData (Anti-Air Turrets) reset successfully!")
+        messagebox.showinfo("Success", "Anti-Air Turrets reset successfully!")
+    else:
+        print("No FixedWeaponDestroySaveData found...")
+        messagebox.showinfo("Info", "No destroyed Anti-Air Turrets found to reset.")
+    refresh_all()
 def all_in_one_deletion():
     global window, stat_labels, guild_tree, base_tree, player_tree, guild_members_tree
     global guild_search_var, base_search_var, player_search_var, guild_members_search_var
@@ -2261,6 +2279,7 @@ def all_in_one_deletion():
     delete_menu.add_separator()
     delete_menu.add_command(label="Delete Unreferenced Data", command=delete_unreferenced_data)
     delete_menu.add_command(label="Generate PalDefender killnearestbase commands", command=open_kill_nearest_base_ui)
+    delete_menu.add_command(label="Reset Anti-Air Turrets", command=reset_anti_air_turrets)
     menubar.add_cascade(label="Delete", menu=delete_menu)
     view_menu = tk.Menu(menubar, tearoff=0)
     view_menu.add_command(label="Show Base Map", command=show_base_map)
