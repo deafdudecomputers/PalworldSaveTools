@@ -2067,6 +2067,34 @@ def reset_anti_air_turrets():
         print("No FixedWeaponDestroySaveData found...")
         messagebox.showinfo("Info", "No destroyed Anti-Air Turrets found to reset.")
     refresh_all()
+def unlock_all_private_chests():
+    folder_path = current_save_path
+    if not folder_path:
+        messagebox.showerror("Error", "No save loaded!")
+        return
+    global loaded_level_json
+    try:
+        wsd = loaded_level_json['properties']['worldSaveData']['value']
+    except KeyError:
+        messagebox.showinfo("Error", "Invalid Level.sav structure!")
+        return
+    count = 0
+    def deep_unlock(data):
+        nonlocal count
+        if isinstance(data, dict):
+            if "private_lock_player_uid" in data:
+                data["private_lock_player_uid"] = "00000000-0000-0000-0000-000000000000"
+                count += 1
+            for v in data.values():
+                deep_unlock(v)
+        elif isinstance(data, list):
+            for item in data:
+                deep_unlock(item)
+    deep_unlock(wsd)
+    msg = f"All private chests have been unlocked! Total unlocked: {count}"
+    print(msg)
+    messagebox.showinfo("Unlocked", msg)
+    refresh_all()
 def all_in_one_deletion():
     global window, stat_labels, guild_tree, base_tree, player_tree, guild_members_tree
     global guild_search_var, base_search_var, player_search_var, guild_members_search_var
@@ -2278,8 +2306,10 @@ def all_in_one_deletion():
     delete_menu.add_command(label="Delete Inactive Players", command=delete_inactive_players_button)
     delete_menu.add_separator()
     delete_menu.add_command(label="Delete Unreferenced Data", command=delete_unreferenced_data)
+    delete_menu.add_separator()
     delete_menu.add_command(label="Generate PalDefender killnearestbase commands", command=open_kill_nearest_base_ui)
     delete_menu.add_command(label="Reset Anti-Air Turrets", command=reset_anti_air_turrets)
+    delete_menu.add_command(label="Unlock All Private Chests", command=unlock_all_private_chests)
     menubar.add_cascade(label="Delete", menu=delete_menu)
     view_menu = tk.Menu(menubar, tearoff=0)
     view_menu.add_command(label="Show Base Map", command=show_base_map)

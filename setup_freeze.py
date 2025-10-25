@@ -3,7 +3,6 @@ from cx_Freeze import setup, Executable
 def find_customtkinter_assets():
     try:
         import customtkinter
-
         customtkinter_path = os.path.dirname(customtkinter.__file__)
         assets_path = os.path.join(customtkinter_path, "assets")
         if os.path.exists(assets_path):
@@ -136,7 +135,7 @@ if sys.platform == "win32":
     base = "Console"
 setup(
     name="PalworldSaveTools",
-    version="1.1.03",
+    version="1.1.04",
     description="All-in-one tool for fixing/transferring/editing Palworld saves",
     options={"build_exe": build_exe_options},
     executables=[
