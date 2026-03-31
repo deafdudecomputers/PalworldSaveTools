@@ -143,11 +143,14 @@ def run_aio():
         constants.current_save_path = d
         constants.backup_save_path = constants.current_save_path
         import time
-        from palworld_aio.utils import sav_to_gvas_wrapper
+        from palworld_aio.utils import sav_to_gvas_wrapper, load_global_pal_storage
         from palobject import MappingCacheObject, toUUID
         t0 = time.perf_counter()
         constants.loaded_level_json = sav_to_gvas_wrapper(p)
         t1 = time.perf_counter()
+        gps_gvas, gps_path = load_global_pal_storage(d)
+        constants.global_pal_storage_gvas = gps_gvas
+        constants.global_pal_storage_path = gps_path
         print(f'Save loaded in {t1 - t0:.2f} seconds')
         from palworld_aio.func_manager import scan_and_protect_death_bags
         scan_and_protect_death_bags()

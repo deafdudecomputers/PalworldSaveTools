@@ -27,3 +27,5 @@ uv.lock
 PST_standalone_v*
 .build
 PalworldSaveTools-beta
+存档示例/
+_generate_perfect_pals.py

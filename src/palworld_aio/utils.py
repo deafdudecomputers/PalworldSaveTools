@@ -76,6 +76,24 @@ def gvasfile_to_sav(gvas_file, path):
     compressed = compress_gvas_to_sav(data, t)
     with open(path, 'wb') as f:
         f.write(compressed)
+
+def load_global_pal_storage(save_dir):
+    gps_path = os.path.join(save_dir, 'GlobalPalStorage.sav')
+    if not os.path.isfile(gps_path):
+        return None, None
+    gvas_file = sav_to_gvasfile(gps_path)
+    return gvas_file, gps_path
+
+def get_global_pal_storage_entries(gvas_file):
+    if gvas_file is None:
+        return []
+    props = gvas_file.properties if hasattr(gvas_file, 'properties') else gvas_file
+    spa = props.get('SaveParameterArray', {})
+    if isinstance(spa, dict):
+        values = spa.get('value', {}).get('values', [])
+    else:
+        values = []
+    return values
 class GvasFileWrapper:
     def __init__(self, gvas_file):
         self._gvas_file = gvas_file

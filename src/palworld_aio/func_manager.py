@@ -2067,7 +2067,7 @@ def fix_illegal_pals_in_save(parent=None):
                     by_location = defaultdict(list)
                     for info in illegals:
                         by_location[info['location']].append(info)
-                    prio = ['DPS Storage', 'Current Party', 'PalBox Storage', 'Base Worker']
+                    prio = ['DPS Storage', 'Current Party', 'PalBox Storage', 'Base Worker', 'Global Pal Storage']
                     sorted_locations = prio + sorted([k for k in by_location.keys() if k not in prio])
                     for location in sorted_locations:
                         if location not in by_location:
@@ -2155,7 +2155,7 @@ def fix_illegal_pals_in_save(parent=None):
                     by_location = defaultdict(list)
                     for info in illegals:
                         by_location[info['location']].append(info)
-                    prio = ['DPS Storage', 'Current Party', 'PalBox Storage', 'Base Worker']
+                    prio = ['DPS Storage', 'Current Party', 'PalBox Storage', 'Base Worker', 'Global Pal Storage']
                     sorted_locations = prio + sorted([k for k in by_location.keys() if k not in prio])
                     for location in sorted_locations:
                         if location not in by_location:

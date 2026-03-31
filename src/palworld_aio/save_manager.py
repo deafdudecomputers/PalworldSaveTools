@@ -20,7 +20,7 @@ from import_libs import backup_whole_directory, run_with_loading
 import palworld_coord
 from i18n import t
 from palworld_aio import constants
-from palworld_aio.utils import sav_to_json, json_to_sav, sav_to_gvas_wrapper, wrapper_to_sav, sav_to_gvasfile, extract_value, sanitize_filename, format_duration_short
+from palworld_aio.utils import sav_to_json, json_to_sav, sav_to_gvas_wrapper, wrapper_to_sav, sav_to_gvasfile, gvasfile_to_sav, extract_value, sanitize_filename, format_duration_short, load_global_pal_storage, get_global_pal_storage_entries
 from palworld_aio.guild_manager import rebuild_all_guilds
 from palworld_aio.func_manager import check_is_illegal_pal
 class SaveManager(QObject):
@@ -67,6 +67,8 @@ class SaveManager(QObject):
             constants.dps_futures = []
             constants.dps_tasks = []
             constants.original_loaded_level_json = None
+            constants.global_pal_storage_gvas = None
+            constants.global_pal_storage_path = None
             self.dps_tasks.clear()
         from palobject import MappingCacheObject
         if hasattr(MappingCacheObject, '_MappingCacheInstances'):
@@ -78,6 +80,9 @@ class SaveManager(QObject):
             t0 = time.perf_counter()
             constants.loaded_level_json = sav_to_gvas_wrapper(p)
             t1 = time.perf_counter()
+            gps_gvas, gps_path = load_global_pal_storage(d)
+            constants.global_pal_storage_gvas = gps_gvas
+            constants.global_pal_storage_path = gps_path
             constants.invalidate_container_lookup()
             from palworld_aio.func_manager import scan_and_protect_death_bags
             scan_and_protect_death_bags()
@@ -128,6 +133,9 @@ class SaveManager(QObject):
         t0 = time.perf_counter()
         constants.loaded_level_json = sav_to_gvas_wrapper(level_sav_path)
         t1 = time.perf_counter()
+        gps_gvas, gps_path = load_global_pal_storage(constants.current_save_path)
+        constants.global_pal_storage_gvas = gps_gvas
+        constants.global_pal_storage_path = gps_path
         constants.invalidate_container_lookup()
         from palworld_aio.func_manager import scan_and_protect_death_bags
         scan_and_protect_death_bags()
@@ -170,6 +178,8 @@ class SaveManager(QObject):
             t0 = time.perf_counter()
             rebuild_all_guilds()
             wrapper_to_sav(constants.loaded_level_json, level_sav_path)
+            if constants.global_pal_storage_gvas and constants.global_pal_storage_path:
+                gvasfile_to_sav(constants.global_pal_storage_gvas, constants.global_pal_storage_path)
             t1 = time.perf_counter()
             players_folder = os.path.join(constants.current_save_path, 'Players')
             for uid in constants.files_to_delete:
@@ -378,6 +388,84 @@ class SaveManager(QObject):
                 player_pals_count['worker_dropped'] = player_pals_count.get('worker_dropped', 0) + 1
             else:
                 player_pals_count[u_str] = player_pals_count.get(u_str, 0) + 1
+        gps_entries = get_global_pal_storage_entries(constants.global_pal_storage_gvas)
+        for entry in gps_entries:
+            sp = entry.get('SaveParameter', {}).get('value', {})
+            cid = sp.get('CharacterID', {}).get('value', '')
+            if not cid or cid == 'None':
+                continue
+            if cid.lower() not in NAMEMAP:
+                miss['Pals'].add(cid)
+                invalid_objects['Invalid Pals'][cid] += 1
+            name = NAMEMAP.get(cid.lower(), cid)
+            lvl = extract_value(sp, 'Level', 1)
+            rk = extract_value(sp, 'Rank', 1)
+            gv = sp.get('Gender', {}).get('value', {}).get('value', '')
+            ginfo = {'EPalGenderType::Male': 'Male', 'EPalGenderType::Female': 'Female'}.get(gv, 'Unknown')
+            inst_obj = entry.get('InstanceId', {}).get('value', {})
+            inst = inst_obj.get('InstanceId', {}).get('value', 'Unknown')
+            uid_val = sp.get('OwnerPlayerUId', {}).get('value')
+            u_str = str(uid_val).replace('-', '').lower() if uid_val else '00000000000000000000000000000000'
+            p_list = sp.get('PassiveSkillList', {}).get('value', {}).get('values', [])
+            for s in (p_list if isinstance(p_list, list) else []):
+                if s.lower() not in PASSMAP:
+                    miss['Passives'].add(s)
+                    invalid_objects['Invalid Passives'][s] += 1
+            pskills = [PASSMAP.get(s.lower(), s) for s in (p_list if isinstance(p_list, list) else [])]
+            e_list = sp.get('EquipWaza', {}).get('value', {}).get('values', [])
+            for w in (e_list if isinstance(e_list, list) else []):
+                w_short = w.split('::')[-1]
+                if w_short.lower() not in SKILLMAP:
+                    miss['Skills'].add(w)
+                    invalid_objects['Invalid Active Skills'][w] += 1
+            active = [SKILLMAP.get(w.split('::')[-1].lower(), w.split('::')[-1]) for w in (e_list if isinstance(e_list, list) else [])]
+            m_list = sp.get('MasteredWaza', {}).get('value', {}).get('values', [])
+            for w in (m_list if isinstance(m_list, list) else []):
+                w_short = w.split('::')[-1]
+                if w_short.lower() not in SKILLMAP:
+                    miss['Skills'].add(w)
+                    invalid_objects['Invalid Learned Skills'][w] += 1
+            learned = [SKILLMAP.get(w.split('::')[-1].lower(), w.split('::')[-1]) for w in (m_list if isinstance(m_list, list) else [])]
+            talent_hp = int(extract_value(sp, 'Talent_HP', 0))
+            talent_shot = int(extract_value(sp, 'Talent_Shot', 0))
+            talent_defense = int(extract_value(sp, 'Talent_Defense', 0))
+            rank_hp = int(extract_value(sp, 'Rank_HP', 0))
+            rank_attack = int(extract_value(sp, 'Rank_Attack', 0))
+            rank_defense = int(extract_value(sp, 'Rank_Defence', 0))
+            rank_craftspeed = int(extract_value(sp, 'Rank_CraftSpeed', 0))
+            rh, ra, rd = (rank_hp * 3, rank_attack * 3, rank_defense * 3)
+            iv_str = f'HP: {talent_hp}(+{rh}%),ATK: {talent_shot}(+{ra}%),DEF: {talent_defense}(+{rd}%)'
+            nick = sp.get('NickName', {}).get('value', 'Unknown')
+            dn = f'{name}(Nickname: {nick})' if nick != 'Unknown' else name
+            passive_count = len(p_list) if isinstance(p_list, list) else 0
+            active_count = sum((1 for s in e_list if s and s.strip())) if isinstance(e_list, list) else 0
+            skills_str = f'Active: {active_count}/3, Passive: {passive_count}/4'
+            soul_str = f'HP Soul: {rank_hp}, ATK Soul: {rank_attack}, DEF Soul: {rank_defense}, Craft: {rank_craftspeed}'
+            rank_str = f'{rk} stars ({rk - 1}☆)'
+            lbl = 'Global Pal Storage'
+            info = f'\n[{dn}]\n'
+            info += f'  Level:    {lvl}\n'
+            info += f'  Rank:     {rank_str}\n'
+            info += f'  Gender:   {ginfo}\n'
+            info += f'  Skills:   {skills_str}\n'
+            if active:
+                info += f"    Active Skills:   {','.join(active)}\n"
+            else:
+                info += f'    Active Skills:   None\n'
+            if pskills:
+                info += f"    Passive Skills: {','.join(pskills)}\n"
+            else:
+                info += f'    Passive Skills: None\n'
+            if learned:
+                info += f"    Learned Skills:  {','.join(learned)}\n"
+            else:
+                info += f'    Learned Skills:  None\n'
+            info += f'  IVs:      {iv_str}\n'
+            info += f'  Souls:    {soul_str}\n'
+            info += f'  IDs:      Instance: {inst} | Owner: {u_str}\n'
+            target_id = u_str
+            owner_pals_grouped[target_id][lbl].append(info)
+            player_pals_count['global_pal_storage'] = player_pals_count.get('global_pal_storage', 0) + 1
         if any(miss.values()):
             with open(os.path.join(log_folder, 'missing_assets.log'), 'w', encoding='utf-8') as f:
                 for cat, items in miss.items():
@@ -411,7 +499,7 @@ class SaveManager(QObject):
                 except:
                     continue
             lg.info(f"{pname}'s {pal_count} Pals\n" + '=' * 40)
-            prio = ['Current Party', 'PalBox Storage', 'Base Worker']
+            prio = ['Current Party', 'PalBox Storage', 'Base Worker', 'Global Pal Storage']
             sorted_keys = prio + sorted([k for k in containers.keys() if k not in prio])
             for label in sorted_keys:
                 if label in containers:

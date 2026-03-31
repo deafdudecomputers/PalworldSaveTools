@@ -66,6 +66,8 @@ selected_source_player = None
 dps_executor = None
 dps_futures = []
 dps_tasks = []
+global_pal_storage_gvas = None
+global_pal_storage_path = None
 def get_container_lookup():
     global container_lookup
     if container_lookup and loaded_level_json:
