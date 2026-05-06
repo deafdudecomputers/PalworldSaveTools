@@ -1,5 +1,5 @@
 import os
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit, QListWidget, QListWidgetItem, QScrollArea, QGroupBox, QCheckBox, QMessageBox, QSpinBox, QButtonGroup, QRadioButton, QFrame, QGridLayout, QAbstractItemView, QListView, QTabWidget
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit, QListWidget, QListWidgetItem, QScrollArea, QGroupBox, QCheckBox, QMessageBox, QSpinBox, QButtonGroup, QRadioButton, QFrame, QGridLayout, QAbstractItemView, QListView, QTabWidget, QComboBox
 from PySide6.QtCore import Qt, Signal, QSize, QTimer
 from PySide6.QtGui import QPixmap, QIcon, QFont
 from i18n import t
@@ -325,4 +325,5 @@ class PlayerItemActionDialog(QDialog):
         QTimer.singleShot(3000, lambda: self.status_label.setText(''))
         if self.selected_item_id:
             self._load_players()
+            self._update_player_list()
             self._find_players_with_item()

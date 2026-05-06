@@ -1130,11 +1130,9 @@ def add_item_to_players(item_id, quantity=1, container_type='key', player_uids=N
     containers_modified = 0
     try:
         from palworld_aio.data_manager import get_guilds, get_guild_members
-        from palworld_aio.utils import sav_to_gvasfile, gvasfile_to_sav, as_uuid, generate_dynamic_item_uuid
-        from palworld_aio.dynamic_item_manager import get_dynamic_item_manager
+        from palworld_aio.inventory_manager import PlayerInventory
+        from palworld_aio.utils import sav_to_gvasfile, gvasfile_to_sav, as_uuid
         import os
-        wsd = constants.loaded_level_json['properties']['worldSaveData']['value']
-        container_lookup = constants.get_container_lookup()
         players_to_process = []
         if player_uids is not None:
             players_to_process = [{'uid': uid, 'name': 'Unknown'} for uid in player_uids]
@@ -1174,60 +1172,31 @@ def add_item_to_players(item_id, quantity=1, container_type='key', player_uids=N
                     container_id = inv_info.get('FoodEquipContainerId', {}).get('value', {}).get('ID', {}).get('value', '')
                 if not container_id:
                     continue
-                container_id_str = str(container_id)
-                container_id_low = container_id_str.replace('-', '').lower()
-                container_data = container_lookup.get(container_id_low)
-                if not container_data:
-                    continue
-                slots = container_data.get('value', {}).get('Slots', {}).get('value', {}).get('values', [])
-                existing_slot = None
-                empty_slot_index = None
-                for idx, slot in enumerate(slots):
-                    try:
-                        raw_data = slot.get('RawData', {})
-                        if not raw_data:
-                            if empty_slot_index is None:
-                                empty_slot_index = idx
-                            continue
-                        raw_value = raw_data.get('value', {}) if raw_data.get('type') in ('Array', 'ArrayProperty') else raw_data
-                        if not raw_value:
-                            if empty_slot_index is None:
-                                empty_slot_index = idx
-                            continue
-                        item_data = raw_value.get('item', {})
-                        if not item_data:
-                            if empty_slot_index is None:
-                                empty_slot_index = idx
-                            continue
-                        static_id = item_data.get('static_id', '')
-                        if static_id == item_id:
-                            existing_slot = slot
-                            break
-                        if static_id == '' and empty_slot_index is None:
-                            empty_slot_index = idx
-                    except:
-                        continue
-                if existing_slot is not None:
-                    raw_data = existing_slot.get('RawData', {})
-                    raw_value = raw_data.get('value', {}) if raw_data.get('type') in ('Array', 'ArrayProperty') else raw_data
-                    raw_value['count'] = raw_value.get('count', 0) + quantity
+                inv = PlayerInventory(player_uid)
+                inv.player_gvas = gvas
+                inv.load()
+                success = inv.add_item(container_type, item_id, quantity)
+                if success:
                     added_count += quantity
-                elif empty_slot_index is not None:
-                    if empty_slot_index < len(slots):
-                        slot = slots[empty_slot_index]
-                        from palworld_aio.inventory_manager import INVENTORY_EXPANSION_ITEMS
-                        dynamic_item_id = None
-                        from palworld_aio.dynamic_item import item_needs_dynamic_data
-                        if item_needs_dynamic_data(item_id):
-                            dynamic_item_id = generate_dynamic_item_uuid()
-                            dynamic_item_manager = get_dynamic_item_manager()
-                            dyn_data = dynamic_item_manager.create_dynamic_item(item_id, container_id, dynamic_item_id)
-                        slot['RawData'] = {'array_type': 'ByteProperty', 'value': {'item': {'static_id': item_id, 'dynamic_id': {'created_world_id': '00000000-0000-0000-0000-000000000000', 'local_id_in_created_world': str(dynamic_item_id) if dynamic_item_id else '00000000-0000-0000-0000-000000000000'}}, 'count': quantity}, 'type': 'ArrayProperty'}
-                        added_count += quantity
-                        containers_modified += 1
-                container_data['value']['Slots']['value']['values'] = slots
-                players_affected += 1
-                gvasfile_to_sav(gvas, sav_file)
+                    containers_modified += 1
+                    players_affected += 1
+                    wsd = constants.loaded_level_json['properties']['worldSaveData']['value']
+                    item_containers = wsd.get('ItemContainerSaveData', {}).get('value', [])
+                    container_lookup = {}
+                    for c in item_containers:
+                        cid = c.get('key', {}).get('ID', {}).get('value', '')
+                        if cid:
+                            container_lookup[cid] = c
+                    for ctype, inventory_container in inv.containers.items():
+                        cid = str(inventory_container.container_id)
+                        if cid in container_lookup:
+                            raw_slots = inventory_container._standardized_container.get_raw_slots()
+                            container_lookup[cid]['value']['Slots']['value']['values'] = raw_slots
+                    from palworld_aio.dynamic_item import sync_dynamic_items_with_registry
+                    sync_dynamic_items_with_registry(inv.containers)
+                    gvasfile_to_sav(gvas, sav_file)
+                else:
+                    continue
             except Exception as e:
                 print(f'Error processing player {player_uid}: {e}')
                 continue
