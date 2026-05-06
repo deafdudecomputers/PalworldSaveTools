@@ -30,6 +30,7 @@ from palworld_aio.dialogs import InputDialog, DaysInputDialog, LevelInputDialog,
 from palworld_aio.widgets import SearchPanel, StatsPanel, ScrollableContextMenu
 from palworld_aio.ui.container_selector_dialog import ContainerSelectorDialog
 from palworld_aio.ui.player_item_dialog import PlayerItemActionDialog
+from palworld_aio.ui.player_pal_dialog import PlayerPalActionDialog
 class DetachedStatusWindow(QWidget):
     def __init__(self, parent=None):
         super().__init__()
@@ -341,14 +342,18 @@ class MainWindow(QMainWindow):
         bulk_frame = QFrame()
         bulk_frame.setStyleSheet('QFrame { background-color: rgba(30, 35, 45, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; padding: 8px; }')
         bulk_layout = QHBoxLayout(bulk_frame)
-        bulk_label = QLabel(t('player.bulk_actions') if t else 'Bulk Actions:')
-        bulk_label.setStyleSheet('font-weight: bold; color: #e2e8f0;')
-        bulk_layout.addWidget(bulk_label)
+        self.bulk_label = QLabel(t('player.bulk_actions') if t else 'Bulk Actions:')
+        self.bulk_label.setStyleSheet('font-weight: bold; color: #e2e8f0;')
+        bulk_layout.addWidget(self.bulk_label)
         bulk_layout.addSpacing(10)
         self.bulk_item_btn = QPushButton(t('player.bulk_item_management') if t else 'Bulk Item Management')
         self.bulk_item_btn.setStyleSheet('\n            QPushButton {\n                background: rgba(125, 211, 252, 0.12);\n                color: #7DD3FC;\n                border: 1px solid rgba(125, 211, 252, 0.2);\n                border-radius: 6px;\n                padding: 8px 16px;\n                font-weight: 600;\n            }\n            QPushButton:hover {\n                background: rgba(125, 211, 252, 0.2);\n                border-color: rgba(125, 211, 252, 0.4);\n                color: #FFFFFF;\n            }\n        ')
         self.bulk_item_btn.clicked.connect(self._open_bulk_player_item_dialog)
         bulk_layout.addWidget(self.bulk_item_btn)
+        self.bulk_pal_btn = QPushButton(t('player.bulk_pal_management') if t else 'Bulk Pal Management')
+        self.bulk_pal_btn.setStyleSheet('\n            QPushButton {\n                background: rgba(125, 211, 252, 0.12);\n                color: #7DD3FC;\n                border: 1px solid rgba(125, 211, 252, 0.2);\n                border-radius: 6px;\n                padding: 8px 16px;\n                font-weight: 600;\n            }\n            QPushButton:hover {\n                background: rgba(125, 211, 252, 0.2);\n                border-color: rgba(125, 211, 252, 0.4);\n                color: #FFFFFF;\n            }\n        ')
+        self.bulk_pal_btn.clicked.connect(self._open_bulk_player_pal_dialog)
+        bulk_layout.addWidget(self.bulk_pal_btn)
         bulk_layout.addStretch()
         layout.addWidget(bulk_frame)
         self.tab_bar.addTab(t('deletion.search_players') if t else 'Players')
@@ -827,6 +832,10 @@ class MainWindow(QMainWindow):
         dialog = PlayerItemActionDialog(self)
         dialog.item_action_selected.connect(self._on_player_item_action)
         dialog.exec()
+    def _open_bulk_player_pal_dialog(self):
+        dialog = PlayerPalActionDialog(self)
+        dialog.pal_action_selected.connect(self._on_player_pal_action)
+        dialog.exec()
     def _on_player_item_action(self, item_id, action, player_uids):
         from palworld_aio.base_inventory_manager import remove_item_from_players, add_item_to_players
         from PySide6.QtWidgets import QMessageBox
@@ -856,6 +865,30 @@ class MainWindow(QMainWindow):
             import traceback
             traceback.print_exc()
             self._show_error(t('player_item.error') if t else 'Error', str(e))
+    def _on_player_pal_action(self, item_id, action, player_uids):
+        from palworld_aio.edit_pals import delete_pal_from_all, remove_skill_from_all_pals
+        from PySide6.QtWidgets import QMessageBox
+        try:
+            if action.startswith('delete_pal:'):
+                pal_id = action.split(':')[1]
+                result = delete_pal_from_all(pal_id)
+                if result and result.get('pals_removed', 0) > 0:
+                    self._show_info(t('player_pal.remove_complete') if t else 'Bulk Pal Remove Complete', t('player_pal.pals_removed_everywhere').format(count=result.get('pals_removed', 0), affected=result.get('affected_count', 0)) if t else f"Removed {result.get('pals_removed', 0)} pals from {result.get('affected_count', 0)} players/bases everywhere.")
+                else:
+                    self._show_info(t('player_pal.no_action') if t else 'No Action Taken', t('player_pal.no_pals_had_pal') if t else 'No pals of that type were found.')
+            elif action.startswith('remove_all:'):
+                parts = action.split(':')
+                active_skill_id = parts[1] if len(parts) > 1 and parts[1] else None
+                passive_skill_id = parts[2] if len(parts) > 2 and parts[2] else None
+                result = remove_skill_from_all_pals(active_skill_id=active_skill_id, passive_skill_id=passive_skill_id)
+                if result and result.get('skills_removed', 0) > 0:
+                    self._show_info(t('player_pal.skill_remove_complete') if t else 'Bulk Skill Remove Complete', t('player_pal.skill_removed_from_all').format(count=result.get('skills_removed', 0), pals=result.get('pals_affected', 0)) if t else f"Removed {result.get('skills_removed', 0)} skills from {result.get('pals_affected', 0)} pals (players + bases).")
+                else:
+                    self._show_info(t('player_pal.no_action') if t else 'No Action Taken', t('player_pal.no_pals_had_skill') if t else 'No pals had the selected skills.')
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            self._show_error(t('player_pal.error') if t else 'Error', str(e))
     def _on_player_selected(self, data):
         if data:
             self.results_widget.set_player(data[0])
@@ -1343,6 +1376,12 @@ class MainWindow(QMainWindow):
                 self.base_inventory_tab.refresh_labels()
             if hasattr(self, 'pal_editor_tab') and self.pal_editor_tab:
                 self.pal_editor_tab.refresh_labels()
+            if hasattr(self, 'bulk_label'):
+                self.bulk_label.setText(t('player.bulk_actions') if t else 'Bulk Actions:')
+            if hasattr(self, 'bulk_item_btn'):
+                self.bulk_item_btn.setText(t('player.bulk_item_management') if t else 'Bulk Item Management')
+            if hasattr(self, 'bulk_pal_btn'):
+                self.bulk_pal_btn.setText(t('player.bulk_pal_management') if t else 'Bulk Pal Management')
     def _update_tab_texts(self):
         self.tab_bar.setTabText(0, t('tools_tab') if t else 'Tools')
         self.tab_bar.setTabText(1, t('base_inventory.tab') if t else 'Base Inventory')

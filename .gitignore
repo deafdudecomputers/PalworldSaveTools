@@ -1,29 +1,50 @@
-.git/
-.github/
+# Python
 __pycache__/
-venv/
-GamePassSave/
-saves/
-Restore Map/
-.venv/
-PST_standalone/
+*.py[cod]
+*$py.class
+*.so
+.Python
 build/
-PalworldSaveTools.egg-info/
-src/data/configs/
-.venv/
-CLAUDE.md
-.claude/
-Logs/
-updated_worldmap.png
-task_progress.md
-Backups/
-.coderef.psp/
-.coderef.palsave/
-src/palworld_base_editor/base_json_eg
-Agent.md
-runtime.cfg
-uv.lock
-.ruff_cache
-PST_standalone_v*
-.build
-PalworldSaveTools-beta
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Logs
+*.log
+
+# Temp
+temp/
+tmp/
+*.tmp
+
+# Compiled
+*.pyc
+*.pyo
