@@ -1025,3 +1025,217 @@ def remove_item_from_guilds(item_id, percentage=None, guild_ids=None):
         import traceback
         traceback.print_exc()
         return {'removed': 0, 'containers_affected': 0}
+def remove_item_from_players(item_id, percentage=None, player_uids=None):
+    if not constants.loaded_level_json:
+        return {'removed': 0, 'players_affected': 0, 'containers_modified': 0}
+    removed_count = 0
+    players_affected = 0
+    containers_modified = 0
+    try:
+        from palworld_aio.data_manager import get_guilds, get_guild_members
+        from palworld_aio.utils import sav_to_gvasfile, gvasfile_to_sav, as_uuid
+        import os
+        wsd = constants.loaded_level_json['properties']['worldSaveData']['value']
+        container_lookup = constants.get_container_lookup()
+        players_to_process = []
+        if player_uids is not None:
+            players_to_process = [{'uid': uid, 'name': 'Unknown'} for uid in player_uids]
+        else:
+            guilds = get_guilds()
+            for guild in guilds:
+                members = get_guild_members(guild['id'])
+                players_to_process.extend(members)
+        for player in players_to_process:
+            player_uid = player.get('uid', '')
+            if not player_uid:
+                continue
+            uid_clean = str(player_uid).replace('-', '').lower()
+            player_modified = False
+            try:
+                if not constants.current_save_path:
+                    continue
+                sav_file = os.path.join(constants.current_save_path, 'Players', f'{uid_clean.upper()}.sav')
+                if not os.path.exists(sav_file):
+                    continue
+                gvas = sav_to_gvasfile(sav_file)
+                save_data = gvas.properties.get('SaveData', {}).get('value', {})
+                if not save_data:
+                    continue
+                inv_info = save_data.get('InventoryInfo', {}).get('value', {})
+                if not inv_info:
+                    continue
+                container_types = {'main': inv_info.get('CommonContainerId', {}).get('value', {}).get('ID', {}).get('value', ''), 'key': inv_info.get('EssentialContainerId', {}).get('value', {}).get('ID', {}).get('value', ''), 'weapons': inv_info.get('WeaponLoadOutContainerId', {}).get('value', {}).get('ID', {}).get('value', ''), 'armor': inv_info.get('PlayerEquipArmorContainerId', {}).get('value', {}).get('ID', {}).get('value', ''), 'foodbag': inv_info.get('FoodEquipContainerId', {}).get('value', {}).get('ID', {}).get('value', '')}
+                for cont_type, container_id in container_types.items():
+                    if not container_id:
+                        continue
+                    container_id_str = str(container_id)
+                    container_id_low = container_id_str.replace('-', '').lower()
+                    container_data = container_lookup.get(container_id_low)
+                    if not container_data:
+                        continue
+                    slots = container_data.get('value', {}).get('Slots', {}).get('value', {}).get('values', [])
+                    if not slots:
+                        continue
+                    modified = False
+                    for idx, slot in enumerate(slots):
+                        try:
+                            raw_data = slot.get('RawData', {})
+                            if not raw_data:
+                                continue
+                            raw_value = raw_data.get('value', {}) if raw_data.get('type') in ('Array', 'ArrayProperty') else raw_data
+                            if not raw_value:
+                                continue
+                            item_data = raw_value.get('item', {})
+                            if not item_data:
+                                continue
+                            static_id = item_data.get('static_id', '')
+                            if static_id == item_id:
+                                current_count = raw_value.get('count', 1)
+                                if percentage is not None:
+                                    new_count = int(current_count * (1 - percentage / 100.0))
+                                    raw_value['count'] = new_count
+                                    if new_count == 0:
+                                        item_data['static_id'] = ''
+                                        raw_value['count'] = 0
+                                else:
+                                    item_data['static_id'] = ''
+                                    raw_value['count'] = 0
+                                modified = True
+                                removed_count += current_count
+                        except:
+                            continue
+                    if modified:
+                        container_data['value']['Slots']['value']['values'] = slots
+                        containers_modified += 1
+                        player_modified = True
+                if player_modified:
+                    players_affected += 1
+                    gvasfile_to_sav(gvas, sav_file)
+            except Exception as e:
+                print(f'Error processing player {player_uid}: {e}')
+                continue
+        if removed_count > 0 or containers_modified > 0:
+            constants.invalidate_container_lookup()
+        return {'removed': removed_count, 'players_affected': players_affected, 'containers_modified': containers_modified}
+    except Exception as e:
+        print(f'remove_item_from_players error: {e}')
+        import traceback
+        traceback.print_exc()
+        return {'removed': 0, 'players_affected': 0, 'containers_modified': 0}
+def add_item_to_players(item_id, quantity=1, container_type='key', player_uids=None):
+    if not constants.loaded_level_json:
+        return {'added': 0, 'players_affected': 0, 'containers_modified': 0}
+    added_count = 0
+    players_affected = 0
+    containers_modified = 0
+    try:
+        from palworld_aio.data_manager import get_guilds, get_guild_members
+        from palworld_aio.utils import sav_to_gvasfile, gvasfile_to_sav, as_uuid, generate_dynamic_item_uuid
+        from palworld_aio.dynamic_item_manager import get_dynamic_item_manager
+        import os
+        wsd = constants.loaded_level_json['properties']['worldSaveData']['value']
+        container_lookup = constants.get_container_lookup()
+        players_to_process = []
+        if player_uids is not None:
+            players_to_process = [{'uid': uid, 'name': 'Unknown'} for uid in player_uids]
+        else:
+            guilds = get_guilds()
+            for guild in guilds:
+                members = get_guild_members(guild['id'])
+                players_to_process.extend(members)
+        for player in players_to_process:
+            player_uid = player.get('uid', '')
+            if not player_uid:
+                continue
+            uid_clean = str(player_uid).replace('-', '').lower()
+            try:
+                if not constants.current_save_path:
+                    continue
+                sav_file = os.path.join(constants.current_save_path, 'Players', f'{uid_clean.upper()}.sav')
+                if not os.path.exists(sav_file):
+                    continue
+                gvas = sav_to_gvasfile(sav_file)
+                save_data = gvas.properties.get('SaveData', {}).get('value', {})
+                if not save_data:
+                    continue
+                inv_info = save_data.get('InventoryInfo', {}).get('value', {})
+                if not inv_info:
+                    continue
+                container_id = None
+                if container_type == 'main':
+                    container_id = inv_info.get('CommonContainerId', {}).get('value', {}).get('ID', {}).get('value', '')
+                elif container_type == 'key':
+                    container_id = inv_info.get('EssentialContainerId', {}).get('value', {}).get('ID', {}).get('value', '')
+                elif container_type == 'weapons':
+                    container_id = inv_info.get('WeaponLoadOutContainerId', {}).get('value', {}).get('ID', {}).get('value', '')
+                elif container_type == 'armor':
+                    container_id = inv_info.get('PlayerEquipArmorContainerId', {}).get('value', {}).get('ID', {}).get('value', '')
+                elif container_type == 'foodbag':
+                    container_id = inv_info.get('FoodEquipContainerId', {}).get('value', {}).get('ID', {}).get('value', '')
+                if not container_id:
+                    continue
+                container_id_str = str(container_id)
+                container_id_low = container_id_str.replace('-', '').lower()
+                container_data = container_lookup.get(container_id_low)
+                if not container_data:
+                    continue
+                slots = container_data.get('value', {}).get('Slots', {}).get('value', {}).get('values', [])
+                existing_slot = None
+                empty_slot_index = None
+                for idx, slot in enumerate(slots):
+                    try:
+                        raw_data = slot.get('RawData', {})
+                        if not raw_data:
+                            if empty_slot_index is None:
+                                empty_slot_index = idx
+                            continue
+                        raw_value = raw_data.get('value', {}) if raw_data.get('type') in ('Array', 'ArrayProperty') else raw_data
+                        if not raw_value:
+                            if empty_slot_index is None:
+                                empty_slot_index = idx
+                            continue
+                        item_data = raw_value.get('item', {})
+                        if not item_data:
+                            if empty_slot_index is None:
+                                empty_slot_index = idx
+                            continue
+                        static_id = item_data.get('static_id', '')
+                        if static_id == item_id:
+                            existing_slot = slot
+                            break
+                        if static_id == '' and empty_slot_index is None:
+                            empty_slot_index = idx
+                    except:
+                        continue
+                if existing_slot is not None:
+                    raw_data = existing_slot.get('RawData', {})
+                    raw_value = raw_data.get('value', {}) if raw_data.get('type') in ('Array', 'ArrayProperty') else raw_data
+                    raw_value['count'] = raw_value.get('count', 0) + quantity
+                    added_count += quantity
+                elif empty_slot_index is not None:
+                    if empty_slot_index < len(slots):
+                        slot = slots[empty_slot_index]
+                        from palworld_aio.inventory_manager import INVENTORY_EXPANSION_ITEMS
+                        dynamic_item_id = None
+                        from palworld_aio.dynamic_item import item_needs_dynamic_data
+                        if item_needs_dynamic_data(item_id):
+                            dynamic_item_id = generate_dynamic_item_uuid()
+                            dynamic_item_manager = get_dynamic_item_manager()
+                            dyn_data = dynamic_item_manager.create_dynamic_item(item_id, container_id, dynamic_item_id)
+                        slot['RawData'] = {'array_type': 'ByteProperty', 'value': {'item': {'static_id': item_id, 'dynamic_id': {'created_world_id': '00000000-0000-0000-0000-000000000000', 'local_id_in_created_world': str(dynamic_item_id) if dynamic_item_id else '00000000-0000-0000-0000-000000000000'}}, 'count': quantity}, 'type': 'ArrayProperty'}
+                        added_count += quantity
+                        containers_modified += 1
+                container_data['value']['Slots']['value']['values'] = slots
+                players_affected += 1
+                gvasfile_to_sav(gvas, sav_file)
+            except Exception as e:
+                print(f'Error processing player {player_uid}: {e}')
+                continue
+        if added_count > 0 or containers_modified > 0:
+            constants.invalidate_container_lookup()
+        return {'added': added_count, 'players_affected': players_affected, 'containers_modified': containers_modified}
+    except Exception as e:
+        print(f'add_item_to_players error: {e}')
+        import traceback
+        traceback.print_exc()
+        return {'added': 0, 'players_affected': 0, 'containers_modified': 0}

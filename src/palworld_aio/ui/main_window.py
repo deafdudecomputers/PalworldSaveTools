@@ -29,6 +29,7 @@ from palworld_aio.map_generator import generate_world_map
 from palworld_aio.dialogs import InputDialog, DaysInputDialog, LevelInputDialog, RadiusInputDialog, PalDefenderDialog, GameDaysInputDialog
 from palworld_aio.widgets import SearchPanel, StatsPanel, ScrollableContextMenu
 from palworld_aio.ui.container_selector_dialog import ContainerSelectorDialog
+from palworld_aio.ui.player_item_dialog import PlayerItemActionDialog
 class DetachedStatusWindow(QWidget):
     def __init__(self, parent=None):
         super().__init__()
@@ -337,6 +338,19 @@ class MainWindow(QMainWindow):
         self.players_panel.item_selected.connect(self._on_player_selected)
         self.players_panel.tree.customContextMenuRequested.connect(self._show_player_context_menu)
         layout.addWidget(self.players_panel)
+        bulk_frame = QFrame()
+        bulk_frame.setStyleSheet('QFrame { background-color: rgba(30, 35, 45, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; padding: 8px; }')
+        bulk_layout = QHBoxLayout(bulk_frame)
+        bulk_label = QLabel(t('player.bulk_actions') if t else 'Bulk Actions:')
+        bulk_label.setStyleSheet('font-weight: bold; color: #e2e8f0;')
+        bulk_layout.addWidget(bulk_label)
+        bulk_layout.addSpacing(10)
+        self.bulk_item_btn = QPushButton(t('player.bulk_item_management') if t else 'Bulk Item Management')
+        self.bulk_item_btn.setStyleSheet('\n            QPushButton {\n                background: rgba(125, 211, 252, 0.12);\n                color: #7DD3FC;\n                border: 1px solid rgba(125, 211, 252, 0.2);\n                border-radius: 6px;\n                padding: 8px 16px;\n                font-weight: 600;\n            }\n            QPushButton:hover {\n                background: rgba(125, 211, 252, 0.2);\n                border-color: rgba(125, 211, 252, 0.4);\n                color: #FFFFFF;\n            }\n        ')
+        self.bulk_item_btn.clicked.connect(self._open_bulk_player_item_dialog)
+        bulk_layout.addWidget(self.bulk_item_btn)
+        bulk_layout.addStretch()
+        layout.addWidget(bulk_frame)
         self.tab_bar.addTab(t('deletion.search_players') if t else 'Players')
         self.stacked_widget.addWidget(players_tab)
     def _setup_guilds_tab(self):
@@ -809,6 +823,39 @@ class MainWindow(QMainWindow):
         msg_box.setStandardButtons(QMessageBox.Ok)
         center_on_parent(msg_box)
         msg_box.exec()
+    def _open_bulk_player_item_dialog(self):
+        dialog = PlayerItemActionDialog(self)
+        dialog.item_action_selected.connect(self._on_player_item_action)
+        dialog.exec()
+    def _on_player_item_action(self, item_id, action, player_uids):
+        from palworld_aio.base_inventory_manager import remove_item_from_players, add_item_to_players
+        from PySide6.QtWidgets import QMessageBox
+        try:
+            result = None
+            if action == 'remove_all':
+                result = remove_item_from_players(item_id, player_uids=player_uids)
+                if result and result.get('players_affected', 0) > 0:
+                    self._show_info(t('player_item.remove_complete') if t else 'Bulk Remove Complete', t('player_item.removed_from_players').format(count=result.get('removed', 0), players=result.get('players_affected', 0)) if t else f"Removed {result.get('removed', 0)} items from {result.get('players_affected', 0)} player(s).")
+                else:
+                    self._show_info(t('player_item.no_action') if t else 'No Action Taken', t('player_item.no_players_had_item') if t else 'No players had this item.')
+            elif action.startswith('remove_pct:'):
+                pct = float(action.split(':')[1])
+                result = remove_item_from_players(item_id, percentage=pct, player_uids=player_uids)
+                if result and result.get('players_affected', 0) > 0:
+                    self._show_info(t('player_item.remove_complete') if t else 'Bulk Remove Complete', t('player_item.removed_pct_from_players').format(count=result.get('removed', 0), players=result.get('players_affected', 0), pct=int(pct)) if t else f"Removed {pct}% ({result.get('removed', 0)} items) from {result.get('players_affected', 0)} player(s).")
+            elif action.startswith('add:'):
+                parts = action.split(':')
+                quantity = int(parts[1])
+                container_type = parts[2] if len(parts) > 2 else 'key'
+                result = add_item_to_players(item_id, quantity=quantity, container_type=container_type, player_uids=player_uids)
+                if result and result.get('players_affected', 0) > 0:
+                    self._show_info(t('player_item.add_complete') if t else 'Bulk Add Complete', t('player_item.added_to_players').format(count=result.get('added', 0), players=result.get('players_affected', 0)) if t else f"Added {result.get('added', 0)} items to {result.get('players_affected', 0)} player(s).")
+                else:
+                    self._show_info(t('player_item.no_action') if t else 'No Action Taken', t('player_item.could_not_add') if t else 'Could not add items to any players.')
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            self._show_error(t('player_item.error') if t else 'Error', str(e))
     def _on_player_selected(self, data):
         if data:
             self.results_widget.set_player(data[0])
