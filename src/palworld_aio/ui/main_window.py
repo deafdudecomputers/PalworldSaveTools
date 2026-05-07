@@ -31,6 +31,7 @@ from palworld_aio.widgets import SearchPanel, StatsPanel, ScrollableContextMenu
 from palworld_aio.ui.container_selector_dialog import ContainerSelectorDialog
 from palworld_aio.ui.player_item_dialog import PlayerItemActionDialog
 from palworld_aio.ui.player_pal_dialog import PlayerPalActionDialog
+from palworld_aio.ui.player_technology_dialog import PlayerTechnologyActionDialog
 class DetachedStatusWindow(QWidget):
     def __init__(self, parent=None):
         super().__init__()
@@ -354,6 +355,10 @@ class MainWindow(QMainWindow):
         self.bulk_pal_btn.setStyleSheet('\n            QPushButton {\n                background: rgba(125, 211, 252, 0.12);\n                color: #7DD3FC;\n                border: 1px solid rgba(125, 211, 252, 0.2);\n                border-radius: 6px;\n                padding: 8px 16px;\n                font-weight: 600;\n            }\n            QPushButton:hover {\n                background: rgba(125, 211, 252, 0.2);\n                border-color: rgba(125, 211, 252, 0.4);\n                color: #FFFFFF;\n            }\n        ')
         self.bulk_pal_btn.clicked.connect(self._open_bulk_player_pal_dialog)
         bulk_layout.addWidget(self.bulk_pal_btn)
+        self.bulk_tech_btn = QPushButton(t('player.bulk_technology_management') if t else 'Bulk Technology Management')
+        self.bulk_tech_btn.setStyleSheet('\n            QPushButton {\n                background: rgba(125, 211, 252, 0.12);\n                color: #7DD3FC;\n                border: 1px solid rgba(125, 211, 252, 0.2);\n                border-radius: 6px;\n                padding: 8px 16px;\n                font-weight: 600;\n            }\n            QPushButton:hover {\n                background: rgba(125, 211, 252, 0.2);\n                border-color: rgba(125, 211, 252, 0.4);\n                color: #FFFFFF;\n            }\n        ')
+        self.bulk_tech_btn.clicked.connect(self._open_bulk_technology_dialog)
+        bulk_layout.addWidget(self.bulk_tech_btn)
         bulk_layout.addStretch()
         layout.addWidget(bulk_frame)
         self.tab_bar.addTab(t('deletion.search_players') if t else 'Players')
@@ -836,6 +841,14 @@ class MainWindow(QMainWindow):
         dialog = PlayerPalActionDialog(self)
         dialog.pal_action_selected.connect(self._on_player_pal_action)
         dialog.exec()
+    def _open_bulk_technology_dialog(self):
+        dialog = PlayerTechnologyActionDialog(self)
+        if not hasattr(self, '_active_dialogs'):
+            self._active_dialogs = []
+        self._active_dialogs.append(dialog)
+        dialog.exec()
+        if dialog in self._active_dialogs:
+            self._active_dialogs.remove(dialog)
     def _on_player_item_action(self, item_id, action, player_uids):
         from palworld_aio.base_inventory_manager import remove_item_from_players, add_item_to_players
         from PySide6.QtWidgets import QMessageBox
@@ -865,6 +878,8 @@ class MainWindow(QMainWindow):
             import traceback
             traceback.print_exc()
             self._show_error(t('player_item.error') if t else 'Error', str(e))
+        if hasattr(self, 'refresh_all'):
+            self.refresh_all()
     def _on_player_pal_action(self, item_id, action, player_uids):
         from palworld_aio.edit_pals import delete_pal_from_all, remove_skill_from_all_pals
         from PySide6.QtWidgets import QMessageBox
@@ -889,6 +904,8 @@ class MainWindow(QMainWindow):
             import traceback
             traceback.print_exc()
             self._show_error(t('player_pal.error') if t else 'Error', str(e))
+        if hasattr(self, 'refresh_all'):
+            self.refresh_all()
     def _on_player_selected(self, data):
         if data:
             self.results_widget.set_player(data[0])
@@ -1382,6 +1399,12 @@ class MainWindow(QMainWindow):
                 self.bulk_item_btn.setText(t('player.bulk_item_management') if t else 'Bulk Item Management')
             if hasattr(self, 'bulk_pal_btn'):
                 self.bulk_pal_btn.setText(t('player.bulk_pal_management') if t else 'Bulk Pal Management')
+            if hasattr(self, 'bulk_tech_btn'):
+                self.bulk_tech_btn.setText(t('player.bulk_technology_management') if t else 'Bulk Technology Management')
+            if hasattr(self, '_active_dialogs'):
+                for dialog in self._active_dialogs:
+                    if hasattr(dialog, 'refresh_labels'):
+                        dialog.refresh_labels()
     def _update_tab_texts(self):
         self.tab_bar.setTabText(0, t('tools_tab') if t else 'Tools')
         self.tab_bar.setTabText(1, t('base_inventory.tab') if t else 'Base Inventory')
