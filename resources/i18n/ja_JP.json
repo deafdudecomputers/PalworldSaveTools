@@ -929,19 +929,11 @@
   "tool.character_transfer": "キャラクター転送",
   "tool.convert.done": "変換完了",
   "tool.convert.gamepass.steam": "GamePass ⇔ Steam 変換",
-  "tool.convert.level.to_json": "Level.sav を Level.json に変換",
-  "tool.convert.level.to_sav": "Level.json を Level.sav に変換",
   "tool.convert.level_done": "{source} を {target} に変換しました",
-  "tool.convert.levelmeta.to_json": "LevelMeta.savをJSONに変換",
-  "tool.convert.levelmeta.to_sav": "LevelMeta.jsonをSAVに変換",
   "tool.convert.levelmeta_done": "{source}が{target}に変換されました",
-  "tool.convert.players.to_json": "Players を JSON に変換",
-  "tool.convert.players.to_sav": "Players を SAV に変換",
   "tool.convert.players_done": "{count} 個のプレイヤーファイルを変換しました",
   "tool.convert.saves": "セーブファイルを変換",
   "tool.convert.steamid": "SteamID 変換",
-  "tool.convert.worldoption.to_json": "WorldOption.savをJSONに変換",
-  "tool.convert.worldoption.to_sav": "WorldOption.jsonをSAVに変換",
   "tool.convert.worldoption_done": "{source}が{target}に変換されました",
   "tool.deletion": "オールインワンツール",
   "tool.fix_host_save": "ホストセーブ修復",
@@ -1331,5 +1323,7 @@
   "player_technology.removed_from_players": "「{tech_name}」を {players} プレーヤーから削除しました。",
   "player_technology.no_action": "何もアクションは取られませんでした",
   "player_technology.error": "エラー",
-  "player_technology.select_tech_prompt": "アクションを実行するテクノロジーを選択してください"
+  "player_technology.select_tech_prompt": "アクションを実行するテクノロジーを選択してください",
+  "tool.convert.any.to_json": "SAV から JSON への変換",
+  "tool.convert.any.to_sav": "JSON を SAV に変換する"
 }

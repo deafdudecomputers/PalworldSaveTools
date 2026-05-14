@@ -1,5 +1,5 @@
 import os
-import json
+from palworld_save_tools import json_tools
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QGraphicsScene, QGraphicsPixmapItem, QMenu, QLineEdit, QTreeWidget, QTreeWidgetItem, QSplitter, QLabel, QFileDialog, QCheckBox, QTabWidget, QDialog, QPushButton
 from PySide6.QtCore import Qt, QRectF, QPointF, QPoint, QTimer, QPropertyAnimation, QEasingCurve
 from PySide6.QtGui import QPixmap, QPen, QBrush, QColor, QPainter, QFont
@@ -229,6 +229,7 @@ class MapTab(QWidget):
         self.info_label = QLabel(t('map.info.select_base') if t else 'Click on a base marker or list item to view details')
         self.info_label.setWordWrap(True)
         self.info_label.setObjectName('sectionHeader')
+        self.info_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
         sidebar_layout.addWidget(self.info_label)
         self._splitter = splitter
         splitter.addWidget(self._map_widget)
@@ -905,13 +906,7 @@ class MapTab(QWidget):
             default_name = f'base_{bid[:8]}.json'
             file_path, _ = QFileDialog.getSaveFileName(self, t('base.export.title') if t else 'Export Base', default_name, 'JSON Files(*.json)')
             if file_path:
-                class CustomEncoder(json.JSONEncoder):
-                    def default(self, obj):
-                        if hasattr(obj, 'bytes') or obj.__class__.__name__ == 'UUID':
-                            return str(obj)
-                        return super().default(obj)
-                with open(file_path, 'w', encoding='utf-8') as f:
-                    json.dump(data, f, cls=CustomEncoder, indent=2)
+                json_tools.dump(data, file_path, cls=json_tools.CustomEncoder, indent=2)
                 img_x, img_y = base_data['img_coords']
                 self._play_effect(ExportEffect, img_x, img_y)
                 show_information(self, t('success.title') if t else 'Success', t('base.export.success') if t else 'Base exported successfully')
@@ -1033,8 +1028,7 @@ class MapTab(QWidget):
         imported_coords_list = []
         for file_path in file_paths:
             try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    exported_data = json.load(f)
+                exported_data = json_tools.load(file_path)
                 if import_base_json(constants.loaded_level_json, exported_data, guild_id):
                     constants.invalidate_container_lookup()
                     if self.parent_window and hasattr(self.parent_window, 'base_inventory_tab'):
@@ -1084,11 +1078,6 @@ class MapTab(QWidget):
         successful_exports = 0
         failed_exports = 0
         failed_bases = []
-        class CustomEncoder(json.JSONEncoder):
-            def default(self, obj):
-                if hasattr(obj, 'bytes') or obj.__class__.__name__ == 'UUID':
-                    return str(obj)
-                return super().default(obj)
         for base_data in guild_bases:
             bid = str(base_data['base_id'])
             try:
@@ -1100,8 +1089,7 @@ class MapTab(QWidget):
                 safe_gname = ''.join((c for c in guild_name if c.isalnum() or c in (' ', '-', '_'))).rstrip()
                 filename = f'base_{bid}_{safe_gname}.json'
                 file_path = os.path.join(export_dir, filename)
-                with open(file_path, 'w', encoding='utf-8') as f:
-                    json.dump(data, f, cls=CustomEncoder, indent=2)
+                json_tools.dump(data, file_path, cls=json_tools.CustomEncoder, indent=2)
                 successful_exports += 1
                 img_x, img_y = base_data['img_coords']
                 self._play_effect(ExportEffect, img_x, img_y)
@@ -1380,8 +1368,7 @@ class MapTab(QWidget):
             file_path, _ = QFileDialog.getSaveFileName(self, t('zone_management.export_title') if t else 'Export Protection Zones', default_name, 'JSON Files(*.json)')
             if file_path:
                 zone_data = zone_manager.export_zones()
-                with open(file_path, 'w', encoding='utf-8') as f:
-                    json.dump(zone_data, f, indent=2)
+                json_tools.dump(zone_data, file_path, indent=2)
                 show_information(self, t('success.title') if t else 'Success', t('zone_management.export_success') if t else 'Protection zones exported successfully')
         except Exception as e:
             show_critical(self, t('error.title') if t else 'Error', f"{(t('zone_management.export_failed') if t else 'Failed to export zones')}: {str(e)}")
@@ -1390,8 +1377,7 @@ class MapTab(QWidget):
         try:
             file_path, _ = QFileDialog.getOpenFileName(self, t('zone_management.import_title') if t else 'Import Protection Zones', '', 'JSON Files(*.json)')
             if file_path:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    zone_data = json.load(f)
+                zone_data = json_tools.load(file_path)
                 if zone_manager.import_zones(zone_data):
                     self._update_zone_items()
                     show_information(self, t('success.title') if t else 'Success', t('zone_management.import_success') if t else 'Protection zones imported successfully')

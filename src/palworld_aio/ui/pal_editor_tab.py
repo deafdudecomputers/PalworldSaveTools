@@ -1,5 +1,6 @@
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QFrame, QSizePolicy
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QFont
 from i18n import t
 from palworld_aio.edit_pals import PalEditorWidget
 from palworld_aio.ui.styled_combo import StyledCombo
@@ -18,7 +19,8 @@ class PalEditorTab(QWidget):
         main_layout.setSpacing(10)
         header = QHBoxLayout()
         self.title_label = QLabel(t('pal_editor.title'))
-        self.title_label.setStyleSheet('font-size: 16px; font-weight: bold; color: #fff;')
+        self.title_label.setFont(QFont(constants.FONT_FAMILY, constants.FONT_SIZE, QFont.Bold))
+        self.title_label.setObjectName('sectionHeader')
         header.addWidget(self.title_label)
         header.addStretch()
         player_selector_layout = QHBoxLayout()

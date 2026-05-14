@@ -1,7 +1,8 @@
-import os, sys, subprocess, json, configparser
+import os, sys, subprocess, configparser
+from palworld_save_tools import json_tools
 APP_NAME = 'PalworldSaveTools'
-APP_VERSION = '1.1.86'
-APP_BETA_VERSION = '1.1.87'
+APP_VERSION = '1.1.87'
+APP_BETA_VERSION = '1.1.88'
 BETA_SUBVERSION = '1'
 GAME_VERSION = '0.7.3'
 BRANCH_VERSION = 'main'
@@ -57,8 +58,7 @@ def get_update_settings():
     else:
         defaults = {'git_pull': True, 'check_updates': True}
     try:
-        with open(cfg_path, 'r', encoding='utf-8') as f:
-            config = json.load(f)
+        config = json_tools.load(cfg_path)
         defaults.update({k: config.get(k, v) for k, v in defaults.items()})
     except:
         pass
@@ -67,8 +67,7 @@ def save_update_settings(settings):
     cfg_path = os.path.join(get_src_directory(), 'data', 'configs', 'config.json')
     config = {}
     try:
-        with open(cfg_path, 'r', encoding='utf-8') as f:
-            config = json.load(f)
+        config = json_tools.load(cfg_path)
     except:
         pass
     if is_standalone():
@@ -79,8 +78,7 @@ def save_update_settings(settings):
         for key in ['git_pull', 'check_updates']:
             if key in settings:
                 config[key] = settings[key]
-    with open(cfg_path, 'w', encoding='utf-8') as f:
-        json.dump(config, f, indent=2)
+    json_tools.dump(config, cfg_path)
 def open_file_with_default_app(file_path):
     import platform
     if not os.path.exists(file_path):

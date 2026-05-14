@@ -1,4 +1,4 @@
-import sys, os, glob, gc, threading, time
+import sys, os, gc, threading, time
 from import_libs import *
 from loading_manager import run_with_loading, show_information
 from PySide6.QtCore import QEventLoop
@@ -23,37 +23,37 @@ def file_picker(ext):
     app = QApplication.instance() or QApplication(sys.argv)
     path = None
     if ext == 'sav':
-        path, _ = QFileDialog.getOpenFileName(None, 'Select Level.json', '', 'Level.json (Level.json)')
+        path, _ = QFileDialog.getOpenFileName(None, 'Select JSON File', '', 'JSON Files (*.json)')
     elif ext == 'json':
-        path, _ = QFileDialog.getOpenFileName(None, 'Select Level.sav', '', 'Level.sav (Level.sav)')
+        path, _ = QFileDialog.getOpenFileName(None, 'Select SAV File', '', 'SAV Files (*.sav)')
     return path
-def convert_level_location_finder(ext):
-    level_file = file_picker(ext)
-    if not level_file:
+def convert_generic(ext):
+    input_file = file_picker(ext)
+    if not input_file:
         return False
+    root, _ = os.path.splitext(input_file)
+    output_path = root + ('.sav' if ext == 'sav' else '.json')
     loop = QEventLoop()
     if ext == 'sav':
-        output_path = level_file.replace('.json', '.sav')
         def task():
-            convert_json_to_sav(level_file, output_path)
+            convert_json_to_sav(input_file, output_path)
             gc.collect()
     else:
-        output_path = level_file.replace('.sav', '.json')
         def task():
-            convert_sav_to_json(level_file, output_path)
+            convert_sav_to_json(input_file, output_path)
             gc.collect()
     run_with_loading(lambda _: loop.quit(), task)
     loop.exec()
     time.sleep(0.5)
-    print(f'Converted {level_file} to {output_path}')
+    print(f'Converted {input_file} to {output_path}')
     parent = QApplication.activeWindow()
-    show_information(parent, t('tool.convert.done'), t('tool.convert.level_done', source=level_file, target=output_path))
+    show_information(parent, t('tool.convert.done'), t('tool.convert.level_done', source=input_file, target=output_path))
     return True
 def main():
     if len(sys.argv) != 2 or sys.argv[1] not in ['sav', 'json']:
         print('Usage: script.py <sav|json>')
         exit(1)
-    if not convert_level_location_finder(sys.argv[1]):
+    if not convert_generic(sys.argv[1]):
         exit(1)
 if __name__ == '__main__':
     main()

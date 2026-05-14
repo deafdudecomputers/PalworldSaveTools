@@ -1,26 +1,24 @@
-import os, sys, subprocess, shutil, re, argparse, configparser
+import os, subprocess, shutil, re, argparse, configparser
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(SCRIPT_DIR)
 os.chdir(ROOT_DIR)
 VENV_DIR = '.venv'
-PYTHON_EXE = os.path.join(VENV_DIR, 'Scripts', 'python.exe') if os.name == 'nt' else os.path.join(VENV_DIR, 'bin', 'python')
 USE_EXISTING_VENV = False
 BUILD_CFG_PATH = os.path.join('src', 'data', 'configs', 'runtime.cfg')
 BUILD_CFG_DIR = os.path.join('src', 'data', 'configs')
 def create_venv():
     if not os.path.exists(VENV_DIR):
-        print('Creating virtual environment...')
-        subprocess.check_call([sys.executable, '-m', 'venv', VENV_DIR])
+        print('Creating virtual environment with uv...')
+        subprocess.check_call(['uv', 'venv', VENV_DIR])
     else:
         print('Virtual environment already exists.')
 def install_deps():
-    print('Installing dependencies in venv...')
-    subprocess.check_call([PYTHON_EXE, '-m', 'pip', 'install', 'pip==25.3', 'setuptools>=78.1.1,<81', 'wheel'])
-    subprocess.check_call([PYTHON_EXE, '-m', 'pip', 'install', 'numpy==2.1.3'])
-    subprocess.check_call([PYTHON_EXE, '-m', 'pip', 'install', 'PySide6-Essentials', 'cx_Freeze==8.5.1'])
-    subprocess.check_call([PYTHON_EXE, '-m', 'pip', 'install', 'py7zr'])
-    if os.path.exists('requirements.txt'):
-        subprocess.check_call([PYTHON_EXE, '-m', 'pip', 'install', '-r', 'requirements.txt'])
+    print('Installing dependencies with uv...')
+    req_file = 'requirements.txt'
+    if os.path.exists(req_file):
+        subprocess.check_call(['uv', 'pip', 'install', '-r', req_file])
+    if os.path.exists('uv.lock'):
+        os.remove('uv.lock')
 def sync_version():
     common_file = os.path.join('src', 'common.py')
     pyproject_file = 'pyproject.toml'
@@ -44,7 +42,9 @@ def sync_version():
     print(f'Synchronized version to {version} and branch to main')
 def build_with_cx_freeze():
     print('Running cx_Freeze build...')
-    subprocess.check_call([PYTHON_EXE, 'setup_freeze.py', 'build'])
+    subprocess.check_call(['uv', 'run', 'setup_freeze.py', 'build'])
+    if os.path.exists('uv.lock'):
+        os.remove('uv.lock')
     lib_folder = os.path.join('PST_standalone', 'src', 'palworld_save_tools', 'lib')
     if os.path.exists(lib_folder):
         print(f'Removing {lib_folder}...')

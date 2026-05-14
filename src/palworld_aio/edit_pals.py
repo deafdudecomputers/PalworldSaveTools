@@ -1,5 +1,5 @@
 import os
-import json
+from palworld_save_tools import json_tools
 import uuid
 import threading
 from functools import partial
@@ -145,8 +145,7 @@ def _get_pal_icon_path(character_id):
     icon_path = None
     try:
         paldata_path = os.path.join(base_dir, 'resources', 'game_data', 'paldata.json')
-        with open(paldata_path, 'r', encoding='utf-8') as f:
-            paldata = json.load(f)
+        paldata = json_tools.load(paldata_path)
         for pal in paldata.get('pals', []):
             if pal.get('asset', '').lower() == cid_for_icon:
                 icon_rel_path = pal.get('icon', '')
@@ -159,8 +158,7 @@ def _get_pal_icon_path(character_id):
     if not icon_path:
         try:
             npcdata_path = os.path.join(base_dir, 'resources', 'game_data', 'npcdata.json')
-            with open(npcdata_path, 'r', encoding='utf-8') as f:
-                npcdata = json.load(f)
+            npcdata = json_tools.load(npcdata_path)
             for npc in npcdata.get('npcs', []):
                 if npc.get('asset', '').lower() == cid_for_icon:
                     icon_rel_path = npc.get('icon', '')
@@ -236,8 +234,7 @@ class PalIcon(QFrame):
             if cid_for_icon not in _ICON_CACHE:
                 try:
                     paldata_path = os.path.join(base_dir, 'resources', 'game_data', 'paldata.json')
-                    with open(paldata_path, 'r', encoding='utf-8') as f:
-                        paldata = json.load(f)
+                    paldata = json_tools.load(paldata_path)
                     for pal in paldata.get('pals', []):
                         if pal.get('asset', '').lower() == cid_for_icon:
                             icon_rel_path = pal.get('icon', '')
@@ -250,8 +247,7 @@ class PalIcon(QFrame):
                 if not icon_path:
                     try:
                         npcdata_path = os.path.join(base_dir, 'resources', 'game_data', 'npcdata.json')
-                        with open(npcdata_path, 'r', encoding='utf-8') as f:
-                            npcdata = json.load(f)
+                        npcdata = json_tools.load(npcdata_path)
                         for npc in npcdata.get('npcs', []):
                             if npc.get('asset', '').lower() == cid_for_icon:
                                 icon_rel_path = npc.get('icon', '')
@@ -608,8 +604,7 @@ class PalCardWidget(QFrame):
             icon_path = None
             try:
                 paldata_path = os.path.join(base_dir, 'resources', 'game_data', 'paldata.json')
-                with open(paldata_path, 'r', encoding='utf-8') as f:
-                    paldata = json.load(f)
+                paldata = json_tools.load(paldata_path)
                 for pal in paldata.get('pals', []):
                     if pal.get('asset', '').lower() == cid_for_icon:
                         icon_rel_path = pal.get('icon', '')
@@ -2036,8 +2031,7 @@ class PalEditorWidget(QWidget):
             is_lucky = extract_value(raw, 'IsRarePal', False)
             base_dir = constants.get_base_path()
             exp_table_path = os.path.join(base_dir, 'resources', 'game_data', 'pal_exp_table.json')
-            with open(exp_table_path, 'r', encoding='utf-8') as f:
-                PAL_EXP_TABLE = json.load(f)
+            PAL_EXP_TABLE = json_tools.load(exp_table_path)
             try:
                 exp = PAL_EXP_TABLE[str(value)]['PalTotalEXP']
             except Exception:
@@ -2102,9 +2096,8 @@ class PalEditorWidget(QWidget):
             try:
                 base_dir = constants.get_base_path()
                 friendship_path = os.path.join(base_dir, 'resources', 'game_data', 'friendship.json')
-                with open(friendship_path, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    self._friendship_data = {k: v for k, v in data.items() if v['rank'] >= 0}
+                data = json_tools.load(friendship_path)
+                self._friendship_data = {k: v for k, v in data.items() if v['rank'] >= 0}
             except Exception as e:
                 print(f'Error loading friendship data: {e}')
                 self._friendship_data = {'Friendship_Rank_0': {'rank': 0, 'required_point': 0}}
@@ -3521,16 +3514,15 @@ class PalFrame(QFrame):
         def load_map(fname, key):
             try:
                 fp = os.path.join(base_dir, 'resources', 'game_data', fname)
-                with open(fp, 'r', encoding='utf-8') as f:
-                    js = json.load(f)
-                    if not isinstance(js, dict):
-                        return {}
-                    data = js.get(key, [])
-                    result = {}
-                    for x in data:
-                        if isinstance(x, dict) and 'asset' in x and ('name' in x):
-                            result[x['asset'].lower()] = x['name']
-                    return result
+                js = json_tools.load(fp)
+                if not isinstance(js, dict):
+                    return {}
+                data = js.get(key, [])
+                result = {}
+                for x in data:
+                    if isinstance(x, dict) and 'asset' in x and ('name' in x):
+                        result[x['asset'].lower()] = x['name']
+                return result
             except Exception as e:
                 import traceback
                 traceback.print_exc()

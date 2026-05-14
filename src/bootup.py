@@ -7,12 +7,12 @@ import queue
 import time
 import traceback
 import tempfile
-import json
 import signal
 import atexit
 from pathlib import Path
 from packaging.requirements import Requirement
 from importlib.metadata import version, PackageNotFoundError
+from palworld_save_tools import json_tools
 from typing import Optional, Tuple
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 if os.environ.get('PST_NO_GUI', '') in ('1', 'true', 'True'):
@@ -181,8 +181,7 @@ def unlock_self_folder():
 def get_config_value(key: str, default=None):
     config_path = PROJECT_DIR / 'src' / 'data' / 'configs' / 'config.json'
     try:
-        with open(config_path, 'r') as f:
-            config = json.load(f)
+        config = json_tools.load(str(config_path))
         return config.get(key, default)
     except Exception:
         return default
@@ -212,8 +211,7 @@ def load_splash_styles():
     theme = 'dark'
     if os.path.exists(user_cfg_path):
         try:
-            with open(user_cfg_path, 'r') as f:
-                data = json.load(f)
+            data = json_tools.load(user_cfg_path)
             theme = data.get('theme', 'dark')
         except:
             pass

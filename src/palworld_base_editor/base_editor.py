@@ -1,5 +1,5 @@
 import os
-import json
+from palworld_save_tools import json_tools
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QFileDialog, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QGraphicsEllipseItem, QGraphicsItem, QGroupBox, QFormLayout, QMessageBox
 from PySide6.QtCore import Qt, QPointF, QRectF, Signal
 from PySide6.QtGui import QPixmap, QPen, QBrush, QColor, QPainter
@@ -187,8 +187,7 @@ class BaseEditorDialog(QDialog):
         if not file_path:
             return
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                self.base_json_data = json.load(f)
+            self.base_json_data = json_tools.load(file_path)
             self.base_json_path = file_path
         except Exception as e:
             QMessageBox.critical(self, 'Error', f'Failed to load JSON: {str(e)}')
@@ -269,13 +268,7 @@ class BaseEditorDialog(QDialog):
         if not save_path:
             return
         try:
-            class CustomEncoder(json.JSONEncoder):
-                def default(self, obj):
-                    if hasattr(obj, 'bytes') or obj.__class__.__name__ == 'UUID':
-                        return str(obj)
-                    return super().default(obj)
-            with open(save_path, 'w', encoding='utf-8') as f:
-                json.dump(modified_data, f, cls=CustomEncoder, indent=2)
+            json_tools.dump(modified_data, save_path)
             QMessageBox.information(self, 'Success', f"Base relocated successfully!\n\nUpdated {stats['updated']} transforms.\nSaved to: {os.path.basename(save_path)}")
         except Exception as e:
             QMessageBox.critical(self, 'Error', f'Failed to save JSON: {str(e)}')
@@ -285,8 +278,7 @@ class BaseEditorDialog(QDialog):
         if file_path:
             dialog.base_json_path = file_path
             try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    dialog.base_json_data = json.load(f)
+                dialog.base_json_data = json_tools.load(file_path)
                 dialog._analyze_base_json()
                 dialog._display_original_location()
                 dialog.file_label.setText(os.path.basename(file_path))

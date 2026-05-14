@@ -384,8 +384,7 @@ class CharacterTransferWindow(QWidget):
         theme = 'dark'
         if os.path.exists(user_cfg_path):
             try:
-                with open(user_cfg_path, 'r') as f:
-                    data = json.load(f)
+                data = json_tools.load(user_cfg_path)
                 theme = data.get('theme', 'dark')
             except:
                 pass
@@ -966,8 +965,6 @@ def save_and_backup():
         WORLDSAVESIZEPREFIX = b'\x0e\x00\x00\x00worldSaveData\x00\x0f\x00\x00\x00StructProperty\x00'
         size_idx = target_raw_gvas.find(WORLDSAVESIZEPREFIX) + len(WORLDSAVESIZEPREFIX)
         output_data = MyWriter(custom_properties=PALWORLD_CUSTOM_PROPERTIES).write_sections(targ_lvl, target_section_ranges, target_raw_gvas, size_idx)
-        backup_folder = 'Backups/Character Transfer'
-        backup_whole_directory(os.path.dirname(t_level_sav_path), backup_folder)
         tmp_world = t_level_sav_path + '.tmp'
         gvas_to_sav(tmp_world, output_data)
         os.replace(tmp_world, t_level_sav_path)
@@ -1137,6 +1134,7 @@ def target_level_file():
         target_raw_gvas = raw_gvas
         target_save_type = save_type
         target_level_path_label.setText(path)
+        backup_whole_directory(os.path.dirname(path), 'Backups/Character Transfer')
         selected_target_player = None
         load_players(group_section, False)
         current_selection_label.setText(f'Source: {selected_source_player},Target: {selected_target_player}')

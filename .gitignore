@@ -24,6 +24,7 @@ wheels/
 venv/
 ENV/
 env/
+.venv/
 
 # IDEs
 .vscode/
@@ -48,3 +49,8 @@ tmp/
 # Compiled
 *.pyc
 *.pyo
+
+.build/
+uv.lock
+
+Logs/

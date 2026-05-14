@@ -1,8 +1,8 @@
 from __future__ import annotations
-import json
 import os
 import sys
 from typing import Dict, Any
+from palworld_save_tools import json_tools
 _current_dir = os.path.dirname(os.path.abspath(__file__))
 if getattr(sys, 'frozen', False):
     base_dir = getattr(sys, '_MEIPASS', os.path.dirname(sys.executable))
@@ -26,8 +26,7 @@ _LANG: str = 'zh_CN'
 _RES: Dict[str, Dict[str, str]] = {}
 def _load_json(path: str) -> Dict[str, Any]:
     try:
-        with open(path, 'r', encoding='utf-8') as f:
-            return json.load(f)
+        return json_tools.load(path)
     except Exception:
         return {}
 def load_resources(lang: str | None=None) -> None:
@@ -46,8 +45,7 @@ def set_language(lang: str) -> None:
     try:
         cfg = _load_json(_CFG) if os.path.exists(_CFG) else {}
         cfg['lang'] = lang
-        with open(_CFG, 'w', encoding='utf-8') as f:
-            json.dump(cfg, f, ensure_ascii=False, indent=2)
+        json_tools.dump(cfg, _CFG)
     except Exception:
         pass
 def get_config_value(key: str, default: Any=None) -> Any:

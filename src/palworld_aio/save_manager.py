@@ -2,7 +2,7 @@ import os
 import sys
 import time
 import shutil
-import json
+from palworld_save_tools import json_tools
 import logging
 import threading
 import re
@@ -74,6 +74,7 @@ class SaveManager(QObject):
         self.load_started.emit()
         constants.current_save_path = d
         constants.backup_save_path = constants.current_save_path
+        backup_whole_directory(constants.backup_save_path, 'Backups/AllinOneTools')
         def load_task():
             t0 = time.perf_counter()
             constants.loaded_level_json = sav_to_gvas_wrapper(p)
@@ -164,7 +165,6 @@ class SaveManager(QObject):
         if not constants.current_save_path or not constants.loaded_level_json:
             return
         self.save_started.emit()
-        backup_whole_directory(constants.backup_save_path, 'Backups/AllinOneTools')
         level_sav_path = os.path.join(constants.current_save_path, 'Level.sav')
         def save_task():
             t0 = time.perf_counter()
@@ -221,9 +221,8 @@ class SaveManager(QObject):
         def load_map(fname, key):
             try:
                 fp = os.path.join(base_dir, 'resources', 'game_data', fname)
-                with open(fp, 'r', encoding='utf-8') as f:
-                    js = json.load(f)
-                    return {x['asset'].lower(): x['name'] for x in js.get(key, [])}
+                js = json_tools.load(fp)
+                return {x['asset'].lower(): x['name'] for x in js.get(key, [])}
             except:
                 return {}
         PALMAP = load_map('paldata.json', 'pals')
@@ -585,9 +584,8 @@ class SaveManager(QObject):
                 def load_map(fname, key):
                     try:
                         fp = os.path.join(base_dir, 'resources', 'game_data', fname)
-                        with open(fp, 'r', encoding='utf-8') as f:
-                            js = json.load(f)
-                            return {x['asset'].lower(): x['name'] for x in js.get(key, [])}
+                        js = json_tools.load(fp)
+                        return {x['asset'].lower(): x['name'] for x in js.get(key, [])}
                     except:
                         return {}
                 PASSMAP = load_map('passivedata.json', 'passives')
@@ -686,9 +684,8 @@ class SaveManager(QObject):
                 def load_map(fname, key):
                     try:
                         fp = os.path.join(base_dir, 'resources', 'game_data', fname)
-                        with open(fp, 'r', encoding='utf-8') as f:
-                            js = json.load(f)
-                            return {x['asset'].lower(): x['name'] for x in js.get(key, [])}
+                        js = json_tools.load(fp)
+                        return {x['asset'].lower(): x['name'] for x in js.get(key, [])}
                     except:
                         return {}
                 PASSMAP = load_map('passivedata.json', 'passives')
@@ -881,7 +878,6 @@ class SaveManager(QObject):
                 return admin_uid == player_uid
         return False
     def _create_player_summary_json(self, data_source, log_folder, guild_name_map):
-        import json
         from .utils import as_uuid
         json_logger_folder = os.path.join(os.path.dirname(log_folder), 'Json Logger')
         os.makedirs(json_logger_folder, exist_ok=True)
@@ -930,8 +926,7 @@ class SaveManager(QObject):
                     player_data.append(player_entry)
         json_file_path = os.path.join(json_logger_folder, 'exported.json')
         try:
-            with open(json_file_path, 'w', encoding='utf-8', errors='replace') as f:
-                json.dump(player_data, f, ensure_ascii=False, indent=2)
+            json_tools.dump(player_data, json_file_path)
             print(f'Created Json Logger: {json_file_path}')
         except Exception as e:
             print(f'Error creating Json Logger: {e}')
@@ -941,9 +936,8 @@ def _process_dps_scan_worker(args):
     def load_map(fname, key):
         try:
             fp = os.path.join(base_dir, 'resources', 'game_data', fname)
-            with open(fp, 'r', encoding='utf-8') as f:
-                js = json.load(f)
-                return {x['asset'].lower(): x['name'] for x in js.get(key, [])}
+            js = json_tools.load(fp)
+            return {x['asset'].lower(): x['name'] for x in js.get(key, [])}
         except:
             return {}
     PALMAP = load_map('paldata.json', 'pals')

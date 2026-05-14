@@ -1,4 +1,4 @@
-import json
+from palworld_save_tools import json_tools
 import os
 import uuid
 from typing import List, Dict, Optional, Tuple
@@ -18,9 +18,8 @@ def load_zones() -> List[Dict]:
         zone_file = _get_zone_file()
         os.makedirs(os.path.dirname(zone_file), exist_ok=True)
         if os.path.exists(zone_file):
-            with open(zone_file, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                _zones = data.get('zones', [])
+            data = json_tools.load(zone_file)
+            _zones = data.get('zones', [])
         else:
             _zones = []
             save_zones()
@@ -34,8 +33,7 @@ def save_zones():
         zone_file = _get_zone_file()
         os.makedirs(os.path.dirname(zone_file), exist_ok=True)
         data = {'zones': _zones, 'version': 1}
-        with open(zone_file, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=4)
+        json_tools.dump(data, zone_file)
     except Exception as e:
         print(f'Error saving zones: {e}')
 def add_zone(zone_data: Dict) -> str:

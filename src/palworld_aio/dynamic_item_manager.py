@@ -1,6 +1,6 @@
 import uuid
 import os
-import json
+from palworld_save_tools import json_tools
 from typing import Any, Dict, Optional, List
 class UnifiedUUID:
     def __init__(self, value):
@@ -37,8 +37,7 @@ def load_items_psp_metadata():
         base_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         items_file = os.path.join(base_path, 'resources', 'game_data', 'items_psp.json')
         if os.path.exists(items_file):
-            with open(items_file, 'r', encoding='utf-8') as f:
-                return json.load(f)
+            return json_tools.load(items_file)
     except Exception as e:
         pass
     return {}

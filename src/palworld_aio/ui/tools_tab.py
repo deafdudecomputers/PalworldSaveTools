@@ -1,6 +1,6 @@
 import os
 import sys
-import json
+from palworld_save_tools import json_tools
 import traceback
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QFrame, QScrollArea, QSizePolicy, QSpacerItem, QGridLayout, QApplication, QDialog
 from PySide6.QtCore import Qt, QSize, Signal, QPropertyAnimation, QEasingCurve
@@ -29,8 +29,7 @@ def load_tool_icons():
     if not os.path.exists(icon_file):
         return {}
     try:
-        with open(icon_file, 'r', encoding='utf-8') as f:
-            data = json.load(f)
+        data = json_tools.load(icon_file)
         return data if isinstance(data, dict) else {}
     except Exception:
         return {}
@@ -103,7 +102,7 @@ class ConversionOptionsDialog(QDialog):
         separator.setObjectName('dialogSeparator')
         glass_layout.addWidget(separator)
         glass_layout.addSpacing(4)
-        options = [('tool.convert.level.to_json', 0), ('tool.convert.level.to_sav', 1), ('tool.convert.players.to_json', 2), ('tool.convert.players.to_sav', 3), ('tool.convert.levelmeta.to_json', 4), ('tool.convert.levelmeta.to_sav', 5), ('tool.convert.worldoption.to_json', 6), ('tool.convert.worldoption.to_sav', 7)]
+        options = [('tool.convert.any.to_json', 0), ('tool.convert.any.to_sav', 1)]
         for key, index in options:
             btn = QPushButton(t(key) if t else key)
             btn.setObjectName('dialogOption')
@@ -329,21 +328,9 @@ class ToolsTab(QWidget):
                 result = options_dialog.exec()
                 if result == QDialog.Accepted and options_dialog.selected_option is not None:
                     if options_dialog.selected_option == 0:
-                        self._import_and_call('palworld_toolsets.convert_level_location_finder', 'convert_level_location_finder', 'json')
+                        self._import_and_call('palworld_toolsets.convert_generic', 'convert_generic', 'json')
                     elif options_dialog.selected_option == 1:
-                        self._import_and_call('palworld_toolsets.convert_level_location_finder', 'convert_level_location_finder', 'sav')
-                    elif options_dialog.selected_option == 2:
-                        self._import_and_call('palworld_toolsets.convert_players_location_finder', 'convert_players_location_finder', 'json')
-                    elif options_dialog.selected_option == 3:
-                        self._import_and_call('palworld_toolsets.convert_players_location_finder', 'convert_players_location_finder', 'sav')
-                    elif options_dialog.selected_option == 4:
-                        self._import_and_call('palworld_toolsets.convert_levelmeta', 'convert_levelmeta_to_json')
-                    elif options_dialog.selected_option == 5:
-                        self._import_and_call('palworld_toolsets.convert_levelmeta', 'convert_levelmeta_to_sav')
-                    elif options_dialog.selected_option == 6:
-                        self._import_and_call('palworld_toolsets.convert_worldoption', 'convert_worldoption_to_json')
-                    elif options_dialog.selected_option == 7:
-                        self._import_and_call('palworld_toolsets.convert_worldoption', 'convert_worldoption_to_sav')
+                        self._import_and_call('palworld_toolsets.convert_generic', 'convert_generic', 'sav')
             elif index == 1:
                 dialog = self._import_and_call('palworld_toolsets.game_pass_save_fix', 'game_pass_save_fix')
             elif index == 2:

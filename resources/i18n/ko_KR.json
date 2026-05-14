@@ -929,19 +929,11 @@
   "tool.character_transfer": "캐릭터 이전",
   "tool.convert.done": "변환 완료",
   "tool.convert.gamepass.steam": "GamePass ⇔ Steam 변환",
-  "tool.convert.level.to_json": "Level.sav → Level.json 변환",
-  "tool.convert.level.to_sav": "Level.json → Level.sav 변환",
   "tool.convert.level_done": "{source}을(를) {target}로 변환했습니다",
-  "tool.convert.levelmeta.to_json": "LevelMeta.sav를 JSON로 변환",
-  "tool.convert.levelmeta.to_sav": "LevelMeta.json을 SAV로 변환",
   "tool.convert.levelmeta_done": "{source}이(가) {target}(으)로 변환되었습니다",
-  "tool.convert.players.to_json": "Players → JSON 변환",
-  "tool.convert.players.to_sav": "Players → SAV 변환",
   "tool.convert.players_done": "{count}개의 플레이어 파일을 변환했습니다",
   "tool.convert.saves": "저장 파일 변환",
   "tool.convert.steamid": "SteamID 변환",
-  "tool.convert.worldoption.to_json": "WorldOption.sav를 JSON로 변환",
-  "tool.convert.worldoption.to_sav": "WorldOption.json을 SAV로 변환",
   "tool.convert.worldoption_done": "{source}이(가) {target}(으)로 변환되었습니다",
   "tool.deletion": "올인원 도구",
   "tool.fix_host_save": "호스트 저장 데이터 수정",
@@ -1330,5 +1322,7 @@
   "player_technology.removed_from_players": "{players} 플레이어에서 \"{tech_name}\"을(를) 제거했습니다.",
   "player_technology.no_action": "취해진 조치 없음",
   "player_technology.error": "오류",
-  "player_technology.select_tech_prompt": "작업을 수행할 기술을 선택하세요."
+  "player_technology.select_tech_prompt": "작업을 수행할 기술을 선택하세요.",
+  "tool.convert.any.to_json": "SAV를 JSON으로 변환",
+  "tool.convert.any.to_sav": "JSON을 SAV로 변환"
 }

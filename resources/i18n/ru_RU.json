@@ -927,19 +927,11 @@
   "tool.character_transfer": "Перенос персонажей",
   "tool.convert.done": "Преобразование завершено",
   "tool.convert.gamepass.steam": "Конвертировать GamePass ←→ Steam",
-  "tool.convert.level.to_json": "Конвертировать Level.sav в Level.json",
-  "tool.convert.level.to_sav": "Конвертировать Level.json обратно в Level.sav",
   "tool.convert.level_done": "Преобразовано {source} в {target}",
-  "tool.convert.levelmeta.to_json": "Конвертировать LevelMeta.sav в JSON",
-  "tool.convert.levelmeta.to_sav": "Конвертировать LevelMeta.json в SAV",
   "tool.convert.levelmeta_done": "{source} конвертирован в {target}",
-  "tool.convert.players.to_json": "Конвертировать файлы игроков в формат JSON",
-  "tool.convert.players.to_sav": "Конвертировать файлы игроков обратно в формат SAV",
   "tool.convert.players_done": "Преобразовано {count} файлов игроков.",
   "tool.convert.saves": "Конвертировать файлы сохранений",
   "tool.convert.steamid": "Конвертировать SteamID",
-  "tool.convert.worldoption.to_json": "Конвертировать WorldOption.sav в JSON",
-  "tool.convert.worldoption.to_sav": "Конвертировать WorldOption.json в SAV",
   "tool.convert.worldoption_done": "{source} конвертирован в {target}",
   "tool.deletion": "Инструменты «всё в одном»",
   "tool.fix_host_save": "Исправить сохранение хоста",
@@ -1329,5 +1321,7 @@
   "player_technology.removed_from_players": "Удален «{tech_name}» из игроков: {players}.",
   "player_technology.no_action": "Никаких действий не предпринято",
   "player_technology.error": "Ошибка",
-  "player_technology.select_tech_prompt": "Выберите технологию для выполнения действий"
+  "player_technology.select_tech_prompt": "Выберите технологию для выполнения действий",
+  "tool.convert.any.to_json": "Конвертировать SAV в JSON",
+  "tool.convert.any.to_sav": "Конвертировать JSON в SAV"
 }

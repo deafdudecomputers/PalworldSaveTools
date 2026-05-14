@@ -1,5 +1,5 @@
 import os
-import json
+from palworld_save_tools import json_tools
 import webbrowser
 import urllib.request
 import re
@@ -616,11 +616,10 @@ class MainWindow(QMainWindow):
         default_settings = {'language': 'en_US', 'show_icons': True, 'boot_preference': 'menu', 'console_detached': False, 'console_window_geometry': None}
         if os.path.exists(user_cfg_path):
             try:
-                with open(user_cfg_path, 'r') as f:
-                    self.user_settings = json.load(f)
-                    for key, value in default_settings.items():
-                        if key not in self.user_settings:
-                            self.user_settings[key] = value
+                self.user_settings = json_tools.load(user_cfg_path)
+                for key, value in default_settings.items():
+                    if key not in self.user_settings:
+                        self.user_settings[key] = value
             except Exception as e:
                 print(f'Failed to load user settings: {e}')
                 self.user_settings = default_settings.copy()
@@ -633,8 +632,7 @@ class MainWindow(QMainWindow):
         user_cfg_path = os.path.join(base_path, 'data', 'configs', 'user.cfg')
         try:
             os.makedirs(os.path.dirname(user_cfg_path), exist_ok=True)
-            with open(user_cfg_path, 'w') as f:
-                json.dump(self.user_settings, f, indent=2)
+            json_tools.dump(self.user_settings, user_cfg_path, indent=2)
         except Exception as e:
             print(f'Failed to save user settings: {e}')
     def _load_theme(self):
@@ -1567,8 +1565,7 @@ class MainWindow(QMainWindow):
         failed_files = []
         for file_path in file_paths:
             try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    exported_data = json.load(f)
+                exported_data = json_tools.load(file_path)
                 if import_base_json(constants.loaded_level_json, exported_data, gid):
                     successful_imports += 1
                 else:
@@ -1603,11 +1600,6 @@ class MainWindow(QMainWindow):
             successful_exports = 0
             failed_exports = 0
             failed_bases = []
-            class CustomEncoder(json.JSONEncoder):
-                def default(self, obj):
-                    if hasattr(obj, 'bytes') or obj.__class__.__name__ == 'UUID':
-                        return str(obj)
-                    return super().default(obj)
             for base in bases:
                 bid = base['id']
                 gid = base['guild_id']
@@ -1621,8 +1613,7 @@ class MainWindow(QMainWindow):
                     safe_gname = ''.join((c for c in gname if c.isalnum() or c in (' ', '-', '_'))).rstrip()
                     filename = f'base_{bid}_{safe_gname}.json'
                     file_path = os.path.join(export_dir, filename)
-                    with open(file_path, 'w', encoding='utf-8') as f:
-                        json.dump(data, f, cls=CustomEncoder, indent=2)
+                    json_tools.dump(data, file_path, cls=json_tools.CustomEncoder, indent=2)
                     successful_exports += 1
                 except Exception as e:
                     failed_exports += 1
@@ -1657,11 +1648,6 @@ class MainWindow(QMainWindow):
         successful_exports = 0
         failed_exports = 0
         failed_bases = []
-        class CustomEncoder(json.JSONEncoder):
-            def default(self, obj):
-                if hasattr(obj, 'bytes') or obj.__class__.__name__ == 'UUID':
-                    return str(obj)
-                return super().default(obj)
         for base in guild_bases:
             bid = base['id']
             gname = base['guild_name']
@@ -1674,8 +1660,7 @@ class MainWindow(QMainWindow):
                 safe_gname = ''.join((c for c in gname if c.isalnum() or c in (' ', '-', '_'))).rstrip()
                 filename = f'base_{bid}_{safe_gname}.json'
                 file_path = os.path.join(export_dir, filename)
-                with open(file_path, 'w', encoding='utf-8') as f:
-                    json.dump(data, f, cls=CustomEncoder, indent=2)
+                json_tools.dump(data, file_path, cls=json_tools.CustomEncoder, indent=2)
                 successful_exports += 1
             except Exception as e:
                 failed_exports += 1
@@ -1700,13 +1685,7 @@ class MainWindow(QMainWindow):
         if not file_path:
             return
         try:
-            class CustomEncoder(json.JSONEncoder):
-                def default(self, obj):
-                    if hasattr(obj, 'bytes') or obj.__class__.__name__ == 'UUID':
-                        return str(obj)
-                    return super().default(obj)
-            with open(file_path, 'w', encoding='utf-8') as f:
-                json.dump(data, f, cls=CustomEncoder, indent=2)
+            json_tools.dump(data, file_path, cls=json_tools.CustomEncoder, indent=2)
             self._show_info(t('success.title') if t else 'Success', t('base.export.success') if t else 'Base exported successfully')
         except Exception as e:
             self._show_error(t('error.title') if t else 'Error', t('base.export.failed') if t else f'Failed to export base: {str(e)}')

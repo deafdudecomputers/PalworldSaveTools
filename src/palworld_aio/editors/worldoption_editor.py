@@ -1,6 +1,6 @@
 import os
 import sys
-import json
+from palworld_save_tools import json_tools
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QScrollArea, QFrame, QCheckBox, QSpinBox, QDoubleSpinBox, QLineEdit, QComboBox, QWidget, QApplication, QGroupBox, QFormLayout, QGridLayout, QTabWidget, QTextEdit, QListWidget, QListWidgetItem, QSplitter
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont, QCursor
@@ -292,8 +292,7 @@ if __name__ == '__main__':
     if not json_path:
         print('No file selected')
         exit(0)
-    with open(json_path, 'r', encoding='utf-8') as f:
-        data = json.load(f)
+    data = json_tools.load(json_path)
     result = edit_worldoption_settings(data, json_path)
     if result:
         print('Settings saved successfully!')

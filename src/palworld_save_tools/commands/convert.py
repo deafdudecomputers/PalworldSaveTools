@@ -1,16 +1,26 @@
 import argparse
+import contextlib
+import gc
 import sys
 import time
-import json
 import os
 from loguru import logger
 from palworld_save_tools.gvas import GvasFile
-from palworld_save_tools.json_tools import CustomEncoder
+from palworld_save_tools import json_tools
 from palworld_save_tools.palsav import compress_gvas_to_sav, decompress_sav_to_gvas
 from palworld_save_tools.paltypes import DISABLED_PROPERTIES, PALWORLD_CUSTOM_PROPERTIES, PALWORLD_TYPE_HINTS
+@contextlib.contextmanager
+def _gc_paused():
+    was_enabled = gc.isenabled()
+    if was_enabled:
+        gc.disable()
+    try:
+        yield
+    finally:
+        if was_enabled:
+            gc.enable()
+            gc.collect()
 def main():
-    import loguru
-    loguru.logger.remove()
     parser = argparse.ArgumentParser(prog='palworld-save-tools', description='Converts Palworld save files to and from JSON')
     parser.add_argument('filename')
     parser.add_argument('--to-json', action='store_true', help='Override heuristics and convert SAV file to JSON')
@@ -22,6 +32,7 @@ def main():
     parser.add_argument('--custom-properties', default=','.join(set(PALWORLD_CUSTOM_PROPERTIES.keys()) - DISABLED_PROPERTIES), type=lambda t: [s.strip() for s in t.split(',')], help="Comma-separated list of custom properties to decode, or 'all' for all known properties. This can be used to speed up processing by excluding properties that are not of interest. (default: all)")
     parser.add_argument('--minify-json', action='store_true', help='Minify JSON output')
     parser.add_argument('--raw', action='store_true', help='Output raw GVAS file')
+    parser.add_argument('--resave', action='store_true', help='Load SAV and resave as SAV (no JSON). Useful for benchmarking the load/write cycle.')
     parser.add_argument('--debug', action='store_true', help='Enable debug logging')
     parser.add_argument('--debug-log', action='store_true', help='Enable debug logging to file')
     args = parser.parse_args()
@@ -36,13 +47,25 @@ def main():
     if args.to_json and args.from_json:
         logger.error('Cannot specify both --to-json and --from-json')
         exit(1)
+    if args.resave and args.to_json:
+        logger.error('Cannot specify both --resave and --to-json')
+        exit(1)
+    if args.resave and args.from_json:
+        logger.error('Cannot specify both --resave and --from-json')
+        exit(1)
     if not os.path.exists(args.filename):
         logger.error(f'{args.filename} does not exist')
         exit(1)
     if not os.path.isfile(args.filename):
         logger.error(f'{args.filename} is not a file')
         exit(1)
-    if args.to_json or args.filename.endswith('.sav'):
+    if args.resave:
+        if not args.output:
+            output_path = args.filename + '.resave.sav'
+        else:
+            output_path = args.output
+        resave_sav(args.filename, output_path, force=args.force, custom_properties_keys=args.custom_properties)
+    elif args.to_json or args.filename.endswith('.sav'):
         if not args.output:
             output_path = args.filename + '.json'
         else:
@@ -54,6 +77,33 @@ def main():
         else:
             output_path = args.output
         convert_json_to_sav(args.filename, output_path, force=args.force, zlib=args.library == 'zlib')
+def resave_sav(filename, output_path, force=False, custom_properties_keys=['all']):
+    logger.info(f'Loading SAV file {filename}')
+    with open(filename, 'rb') as f:
+        data = f.read()
+    raw_gvas, _ = decompress_sav_to_gvas(data)
+    custom_properties = {}
+    if len(custom_properties_keys) > 0 and custom_properties_keys[0] == 'all':
+        custom_properties = PALWORLD_CUSTOM_PROPERTIES
+    else:
+        for prop in PALWORLD_CUSTOM_PROPERTIES:
+            if prop in custom_properties_keys:
+                custom_properties[prop] = PALWORLD_CUSTOM_PROPERTIES[prop]
+    with _gc_paused():
+        gvas_file = GvasFile.read(raw_gvas, PALWORLD_TYPE_HINTS, custom_properties)
+    if 'Pal.PalWorldSaveGame' in gvas_file.header.save_game_class_name or 'Pal.PalLocalWorldSaveGame' in gvas_file.header.save_game_class_name:
+        save_type = 50
+    else:
+        save_type = 49
+    with _gc_paused():
+        sav_file = compress_gvas_to_sav(gvas_file.write(PALWORLD_CUSTOM_PROPERTIES), save_type)
+    logger.info(f'Writing SAV file to {output_path}')
+    if os.path.exists(output_path):
+        if not force:
+            if not confirm_prompt(f'{output_path} already exists. Overwrite?'):
+                exit(1)
+    with open(output_path, 'wb') as f:
+        f.write(sav_file)
 def convert_sav_to_json(filename, output_path, force=False, minify=False, allow_nan=True, custom_properties_keys=['all'], raw=False):
     start_time = time.perf_counter()
     logger.info(f'Converting {filename} to JSON, saving to {output_path}')
@@ -69,7 +119,7 @@ def convert_sav_to_json(filename, output_path, force=False, minify=False, allow_
     if raw:
         output_dir = os.path.dirname(output_path)
         output_file = f'{os.path.basename(output_path)}.bin'
-        output_file_path = f'{output_dir}\\{output_file}' if raw else None
+        output_file_path = f'{output_dir}\\{output_file}'
         logger.info(f'Writing raw GVAS file to {output_file_path}')
         with open(output_file_path, 'wb') as f:
             f.write(raw_gvas)
@@ -81,14 +131,13 @@ def convert_sav_to_json(filename, output_path, force=False, minify=False, allow_
         for prop in PALWORLD_CUSTOM_PROPERTIES:
             if prop in custom_properties_keys:
                 custom_properties[prop] = PALWORLD_CUSTOM_PROPERTIES[prop]
-    gvas_file = GvasFile.read(raw_gvas, PALWORLD_TYPE_HINTS, custom_properties, allow_nan=allow_nan)
+    with _gc_paused():
+        gvas_file = GvasFile.read(raw_gvas, PALWORLD_TYPE_HINTS, custom_properties, allow_nan=allow_nan)
     gvas_parse_time = time.perf_counter()
     logger.info(f'GVAS file loaded in {gvas_parse_time - start_time:.2f} seconds')
     logger.info(f'Writing JSON to {output_path}')
     write_start_time = time.perf_counter()
-    with open(output_path, 'w', encoding='utf8') as f:
-        indent = None if minify else '\t'
-        json.dump(gvas_file.dump(), f, indent=indent, cls=CustomEncoder, allow_nan=allow_nan)
+    json_tools.dump(gvas_file.dump(), output_path, minify=minify, allow_nan=allow_nan)
     write_end_time = time.perf_counter()
     logger.info(f'JSON written in {write_end_time - write_start_time:.2f} seconds')
     end_time = time.perf_counter()
@@ -101,8 +150,7 @@ def convert_json_to_sav(filename, output_path, force=False, zlib=False):
             if not confirm_prompt('Are you sure you want to continue?'):
                 exit(1)
     logger.info(f'Loading JSON from {filename}')
-    with open(filename, 'r', encoding='utf8') as f:
-        data = json.load(f)
+    data = json_tools.load(filename)
     gvas_file = GvasFile.load(data)
     logger.info('Compressing SAV file')
     if 'Pal.PalWorldSaveGame' in gvas_file.header.save_game_class_name or 'Pal.PalLocalWorldSaveGame' in gvas_file.header.save_game_class_name:
@@ -111,7 +159,8 @@ def convert_json_to_sav(filename, output_path, force=False, zlib=False):
         save_type = 49
     if zlib:
         save_type = 50
-    sav_file = compress_gvas_to_sav(gvas_file.write(PALWORLD_CUSTOM_PROPERTIES), save_type)
+    with _gc_paused():
+        sav_file = compress_gvas_to_sav(gvas_file.write(PALWORLD_CUSTOM_PROPERTIES), save_type)
     logger.info(f'Writing SAV file to {output_path}')
     with open(output_path, 'wb') as f:
         f.write(sav_file)

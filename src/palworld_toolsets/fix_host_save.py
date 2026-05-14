@@ -195,7 +195,6 @@ def fix_save(save_path, new_guid, old_guid, guild_fix=True):
         deep_swap(level)
         players_folder = os.path.join(os.path.dirname(lvl), 'Players')
         copy_dps_file(players_folder, old_guid, players_folder, new_guid, new_player_pal_storage_id)
-        backup_whole_directory(save_path, 'Backups/Fix Host Save')
         json_to_sav(level, lvl)
         json_to_sav(old_j, old_sav)
         json_to_sav(new_j, new_sav)
@@ -393,6 +392,7 @@ def choose_level_file(window, level_sav_entry, old_tree, new_tree):
         window.level_json = level_json
         window.level_sav_path = path
         level_sav_entry.setText(path)
+        backup_whole_directory(os.path.dirname(path), 'Backups/Fix Host Save')
         old_tree.clear()
         new_tree.clear()
         for uid, name, guild, level, pals_count, last_seen in player_data_list:
@@ -596,8 +596,7 @@ class FixHostSaveWindow(QWidget):
         theme = 'dark'
         if os.path.exists(user_cfg_path):
             try:
-                with open(user_cfg_path, 'r') as f:
-                    data = json.load(f)
+                data = json_tools.load(user_cfg_path)
                 theme = data.get('theme', 'dark')
             except:
                 pass

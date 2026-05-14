@@ -33,14 +33,15 @@ def ensure_venv():
     log('Creating virtual environment...', CYAN)
     if VENV_DIR.exists():
         shutil.rmtree(VENV_DIR, ignore_errors=True)
-    result = subprocess.run([sys.executable, '-m', 'venv', str(VENV_DIR)])
+    result = subprocess.run(['uv', 'venv', str(VENV_DIR)])
     if result.returncode != 0:
         log('Failed to create venv', RED)
         return False
-    vpy = venv_python()
-    log('Installing core dependencies...', CYAN)
-    core_deps = ['pip==24.3.1', 'setuptools==75.6.0', 'wheel', 'numpy==2.1.3', 'PySide6-Essentials', 'shiboken6', 'packaging']
-    result = subprocess.run([str(vpy), '-m', 'pip', 'install'] + core_deps)
+    log('Installing dependencies...', CYAN)
+    result = subprocess.run(['uv', 'pip', 'install', '-r', str(PROJECT_DIR / 'requirements.txt')])
+    uv_lock = PROJECT_DIR / 'uv.lock'
+    if uv_lock.exists():
+        uv_lock.unlink()
     if result.returncode == 0:
         log('Environment ready', GREEN)
         return True

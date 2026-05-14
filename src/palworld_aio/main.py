@@ -142,6 +142,8 @@ def run_aio():
         print('Loading save...')
         constants.current_save_path = d
         constants.backup_save_path = constants.current_save_path
+        from import_libs import backup_whole_directory
+        backup_whole_directory(constants.backup_save_path, 'Backups/AllinOneTools')
         import time
         from palworld_aio.utils import sav_to_gvas_wrapper
         from palobject import MappingCacheObject, toUUID
@@ -202,9 +204,7 @@ def run_aio():
             fixed_count = fix_illegal_pals_in_save(parent=None)
             print('Saving changes...')
             if constants.current_save_path and constants.loaded_level_json:
-                from import_libs import backup_whole_directory
                 from palworld_aio.utils import wrapper_to_sav
-                backup_whole_directory(constants.backup_save_path, 'Backups/AllinOneTools')
                 level_sav_path = os.path.join(constants.current_save_path, 'Level.sav')
                 t0 = time.perf_counter()
                 wrapper_to_sav(constants.loaded_level_json, level_sav_path)

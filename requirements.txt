@@ -7,5 +7,6 @@ nerdfont
 py7zr
 pydantic
 loguru
+orjson
 
 git+https://github.com/oMaN-Rod/pyooz.git#egg=pyooz

@@ -1,5 +1,5 @@
 import os
-import json
+from palworld_save_tools import json_tools
 import sys
 import uuid
 from PySide6.QtGui import QPixmap, QIcon
@@ -27,11 +27,10 @@ class ItemData:
         base_path = constants.get_base_path()
         item_file = os.path.join(base_path, 'resources', 'game_data', 'itemdata.json')
         try:
-            with open(item_file, 'r', encoding='utf-8') as f:
-                cls._item_data = json.load(f).get('items', [])
-                cls._asset_to_item = {item['asset']: item for item in cls._item_data}
-                cls._asset_to_item_lower = {item['asset'].lower(): item for item in cls._item_data}
-                return cls._item_data
+            cls._item_data = json_tools.load(item_file).get('items', [])
+            cls._asset_to_item = {item['asset']: item for item in cls._item_data}
+            cls._asset_to_item_lower = {item['asset'].lower(): item for item in cls._item_data}
+            return cls._item_data
         except Exception as e:
             cls._item_data = []
             return cls._item_data

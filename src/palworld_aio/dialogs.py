@@ -1,5 +1,4 @@
 import os
-import json
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit, QSpinBox, QComboBox, QTextEdit, QFileDialog, QGroupBox, QFormLayout, QCheckBox, QRadioButton, QFrame, QTabWidget, QScrollArea, QWidget, QGridLayout, QSlider, QProgressBar, QApplication, QButtonGroup
 from PySide6.QtCore import Qt, Signal, QTimer
 from PySide6.QtGui import QIcon, QFont, QColor, QPen, QBrush, QPainter, QLinearGradient

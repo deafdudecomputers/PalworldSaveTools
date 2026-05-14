@@ -1,5 +1,5 @@
 import os
-import json
+from palworld_save_tools import json_tools
 from PySide6.QtWidgets import QApplication, QMessageBox
 from i18n import t
 from palworld_aio import constants
@@ -9,8 +9,7 @@ def _load_exp_data():
     base_dir = constants.get_base_path()
     exp_file = os.path.join(base_dir, 'resources', 'game_data', 'pal_exp_table.json')
     try:
-        with open(exp_file, 'r', encoding='utf-8') as f:
-            return json.load(f)
+        return json_tools.load(exp_file)
     except Exception as e:
         print(f'Error loading EXP_DATA from {exp_file}: {e}')
         return {}

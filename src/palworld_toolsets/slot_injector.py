@@ -296,6 +296,7 @@ class SlotNumUpdaterApp(QDialog):
         if file:
             self.file_entry.setText(file)
             self.save_folder = os.path.dirname(file)
+            backup_whole_directory(self.save_folder, 'Backups/Slot Injector')
             self.load_selected_save()
     def load_selected_save(self):
         fp = self.file_entry.text()
@@ -686,7 +687,6 @@ class SlotNumUpdaterApp(QDialog):
         gvas_file = self.gvas_file
         self.set_loading_state(True, 'Saving changes...')
         def task():
-            backup_whole_directory(os.path.dirname(filepath), 'Backups/Slot Injector')
             gvasfile_to_sav(gvas_file, filepath)
             return True
         def on_finished(result):
@@ -712,8 +712,7 @@ class SlotNumUpdaterApp(QDialog):
         theme = 'dark'
         if os.path.exists(user_cfg_path):
             try:
-                with open(user_cfg_path, 'r') as f:
-                    data = json.load(f)
+                data = json_tools.load(user_cfg_path)
                 theme = data.get('theme', 'dark')
             except:
                 pass

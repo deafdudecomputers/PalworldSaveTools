@@ -1,5 +1,5 @@
 import os
-import json
+from palworld_save_tools import json_tools
 import palworld_coord
 from palworld_save_tools.archive import UUID
 from i18n import t
@@ -357,14 +357,12 @@ def delete_player(uid, delete_files=True):
     return True
 def load_exclusions():
     try:
-        with open(constants.EXCLUSIONS_FILE, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-            constants.exclusions = {'guilds': data.get('guilds', []), 'players': data.get('players', []), 'bases': data.get('bases', [])}
+        data = json_tools.load(constants.EXCLUSIONS_FILE)
+        constants.exclusions = {'guilds': data.get('guilds', []), 'players': data.get('players', []), 'bases': data.get('bases', [])}
     except:
         constants.exclusions = {'guilds': [], 'players': [], 'bases': []}
 def save_exclusions():
-    with open(constants.EXCLUSIONS_FILE, 'w', encoding='utf-8') as f:
-        json.dump(constants.exclusions, f, indent=4)
+    json_tools.dump(constants.exclusions, constants.EXCLUSIONS_FILE)
 def get_base_containers(base_id):
     if not constants.loaded_level_json:
         return []

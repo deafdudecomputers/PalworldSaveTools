@@ -2,7 +2,7 @@ import os
 import sys
 import re
 import ssl
-import json
+from palworld_save_tools import json_tools
 import subprocess
 import tempfile
 import shutil
@@ -28,8 +28,7 @@ def get_update_settings() -> Dict:
     else:
         defaults = {'git_pull': True, 'check_updates': True}
     try:
-        with open(config_path, 'r', encoding='utf-8') as f:
-            config = json.load(f)
+        config = json_tools.load(config_path)
         defaults.update({k: config.get(k, v) for k, v in defaults.items()})
     except:
         pass
@@ -40,8 +39,7 @@ def save_update_settings(settings: Dict):
     standalone = is_standalone()
     config = {}
     try:
-        with open(config_path, 'r', encoding='utf-8') as f:
-            config = json.load(f)
+        config = json_tools.load(config_path)
     except:
         pass
     if standalone:
@@ -52,8 +50,7 @@ def save_update_settings(settings: Dict):
         for key in ['git_pull', 'check_updates']:
             if key in settings:
                 config[key] = settings[key]
-    with open(config_path, 'w', encoding='utf-8') as f:
-        json.dump(config, f, indent=2)
+    json_tools.dump(config, config_path)
 class SourceUpdater:
     @staticmethod
     def get_project_root() -> Path:

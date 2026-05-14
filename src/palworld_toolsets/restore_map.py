@@ -135,8 +135,7 @@ def restore_map():
             theme = 'dark'
             if os.path.exists(user_cfg_path):
                 try:
-                    with open(user_cfg_path, 'r') as f:
-                        data = json.load(f)
+                    data = json_tools.load(user_cfg_path)
                     theme = data.get('theme', 'dark')
                 except:
                     pass

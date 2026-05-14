@@ -1252,19 +1252,11 @@
   "tool.character_transfer": "Character Transfer",
   "tool.convert.done": "Conversion Done",
   "tool.convert.gamepass.steam": "Convert GamePass   Steam",
-  "tool.convert.level.to_json": "Convert Level.sav file to Level.json",
-  "tool.convert.level.to_sav": "Convert Level.json file back to Level.sav",
   "tool.convert.level_done": "{source} converted to {target}",
-  "tool.convert.levelmeta.to_json": "Convert LevelMeta.sav to JSON",
-  "tool.convert.levelmeta.to_sav": "Convert LevelMeta.json to SAV",
   "tool.convert.levelmeta_done": "{source} converted to {target}",
-  "tool.convert.players.to_json": "Convert Player files to json format",
-  "tool.convert.players.to_sav": "Convert Player files back to sav format",
   "tool.convert.players_done": "Converted {count} player files.",
   "tool.convert.saves": "Convert Save Files",
   "tool.convert.steamid": "Convert SteamID",
-  "tool.convert.worldoption.to_json": "Convert WorldOption.sav to JSON",
-  "tool.convert.worldoption.to_sav": "Convert WorldOption.json to SAV",
   "tool.convert.worldoption_done": "{source} converted to {target}",
   "tool.deletion": "All in One Tools",
   "tool.fix_host_save": "Fix Host Save",
@@ -1620,5 +1612,7 @@
   "player_technology.removed_from_players": "Removed \"{tech_name}\" from {players} player(s).",
   "player_technology.no_action": "No Action Taken",
   "player_technology.error": "Error",
-  "player_technology.select_tech_prompt": "Select a technology to perform actions"
+  "player_technology.select_tech_prompt": "Select a technology to perform actions",
+  "tool.convert.any.to_json": "Convert SAV to JSON",
+  "tool.convert.any.to_sav": "Convert JSON to SAV"
 }

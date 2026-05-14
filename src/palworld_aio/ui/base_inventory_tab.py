@@ -1,6 +1,6 @@
 import os
 import sys
-import json
+from palworld_save_tools import json_tools
 import time
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QComboBox, QTreeWidget, QTreeWidgetItem, QSplitter, QFrame, QScrollArea, QGridLayout, QGroupBox, QMenu, QHeaderView, QMessageBox, QFileDialog, QInputDialog, QDialog, QCheckBox, QSpinBox, QDoubleSpinBox, QSizePolicy, QAbstractItemView, QSpacerItem, QTabWidget, QTabBar, QStyleOptionTab, QStyle, QApplication, QStyledItemDelegate, QListWidget, QListWidgetItem, QLineEdit, QListView
 from PySide6.QtCore import Qt, Signal, QTimer, QPropertyAnimation, QEasingCurve, QSize, QPoint, QRect, QEvent, QMargins
@@ -492,8 +492,7 @@ class ContainerListWidget(QTreeWidget):
                 file_path, _ = QFileDialog.getSaveFileName(self, t('base_inventory.export_container') if t else 'Export Container', f'container_{container_id[:8]}.json', 'JSON Files (*.json)')
                 if file_path:
                     try:
-                        with open(file_path, 'w', encoding='utf-8') as f:
-                            json.dump(container_data, f, indent=2, ensure_ascii=False)
+                        json_tools.dump(container_data, file_path, indent=2, ensure_ascii=False)
                         parent._show_info(t('base_inventory.export_success') if t else 'Container exported successfully')
                     except Exception as e:
                         parent._show_warning(f'Failed to export container: {str(e)}')

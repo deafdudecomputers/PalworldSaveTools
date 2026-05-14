@@ -1,6 +1,6 @@
 import os
 import time
-import json
+from palworld_save_tools import json_tools
 import palworld_coord
 from i18n import t
 from palworld_aio import constants
@@ -70,9 +70,8 @@ def generate_world_map(output_path=None):
     is_dark_mode = True
     if os.path.exists(user_cfg_path):
         try:
-            with open(user_cfg_path, 'r') as f:
-                settings = json.load(f)
-                is_dark_mode = settings.get('theme', 'dark') == 'dark'
+            settings = json_tools.load(user_cfg_path)
+            is_dark_mode = settings.get('theme', 'dark') == 'dark'
         except:
             pass
     guild_bases = extract_guild_bases_from_save()

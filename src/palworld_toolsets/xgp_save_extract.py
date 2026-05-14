@@ -47,8 +47,7 @@ def get_xbox_user_name(user_id: int) -> str | None:
     xbox_app_package = 'Microsoft.XboxApp_8wekyb3d8bbwe'
     try:
         live_gamer_path = packages_root / xbox_app_package / 'LocalState/XboxLiveGamer.xml'
-        with live_gamer_path.open('r', encoding='utf-8') as f:
-            gamer = json.load(f)
+        gamer = json_tools.load(live_gamer_path)
         known_user_id = gamer.get('XboxUserId')
         if known_user_id != user_id:
             return None

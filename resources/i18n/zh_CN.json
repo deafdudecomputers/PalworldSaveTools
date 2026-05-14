@@ -931,19 +931,11 @@
   "tool.character_transfer": "角色转移",
   "tool.convert.done": "转换完成",
   "tool.convert.gamepass.steam": "GamePass ⇔ Steam 转换",
-  "tool.convert.level.to_json": "转换 Level.sav 为 Level.json",
-  "tool.convert.level.to_sav": "转换 Level.json 为 Level.sav",
   "tool.convert.level_done": "已将 {source} 转换为 {target}",
-  "tool.convert.levelmeta.to_json": "将 LevelMeta.sav 转换为 JSON",
-  "tool.convert.levelmeta.to_sav": "将 LevelMeta.json 转换为 SAV",
   "tool.convert.levelmeta_done": "{source} 已转换为 {target}",
-  "tool.convert.players.to_json": "转换 Players 为 json",
-  "tool.convert.players.to_sav": "转换 Players 为 sav",
   "tool.convert.players_done": "已转换 {count} 个玩家文件",
   "tool.convert.saves": "转换存档文件",
   "tool.convert.steamid": "SteamID 转换",
-  "tool.convert.worldoption.to_json": "将 WorldOption.sav 转换为 JSON",
-  "tool.convert.worldoption.to_sav": "将 WorldOption.json 转换为 SAV",
   "tool.convert.worldoption_done": "{source} 已转换为 {target}",
   "tool.deletion": "多合一工具",
   "tool.fix_host_save": "修复主机存档",
@@ -1333,5 +1325,7 @@
   "player_technology.removed_from_players": "从 {players} 名玩家中删除了“{tech_name}”。",
   "player_technology.no_action": "未采取任何行动",
   "player_technology.error": "错误",
-  "player_technology.select_tech_prompt": "选择一种技术来执行操作"
+  "player_technology.select_tech_prompt": "选择一种技术来执行操作",
+  "tool.convert.any.to_json": "将 SAV 转换为 JSON",
+  "tool.convert.any.to_sav": "将 JSON 转换为 SAV"
 }

@@ -1,5 +1,5 @@
 import os
-import json
+from palworld_save_tools import json_tools
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit, QListWidget, QListWidgetItem, QScrollArea, QGroupBox, QCheckBox, QMessageBox, QAbstractItemView, QListView
 from PySide6.QtCore import Qt, Signal, QSize, QEvent
 from PySide6.QtGui import QShowEvent
@@ -92,9 +92,8 @@ class PlayerTechnologyActionDialog(QDialog):
         try:
             base_dir = constants.get_base_path()
             tech_file = os.path.join(base_dir, 'resources', 'game_data', 'technologydata.json')
-            with open(tech_file, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                self.tech_data = data.get('technology', [])
+            data = json_tools.load(tech_file)
+            self.tech_data = data.get('technology', [])
             self._display_technologies(self.tech_data)
         except Exception as e:
             print(f'Error loading technologies: {e}')

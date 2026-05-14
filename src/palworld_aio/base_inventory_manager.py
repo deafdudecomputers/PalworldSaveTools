@@ -1,5 +1,5 @@
 import os
-import json
+from palworld_save_tools import json_tools
 import uuid
 import sys
 from collections import defaultdict
@@ -167,8 +167,7 @@ def load_structure_data():
         base_path = constants.get_base_path()
         structure_data_path = os.path.join(base_path, 'resources', 'game_data', 'structuredata.json')
         if os.path.exists(structure_data_path):
-            with open(structure_data_path, 'r', encoding='utf-8') as f:
-                _structure_data_cache = json.load(f)
+            _structure_data_cache = json_tools.load(structure_data_path)
             return _structure_data_cache
     except Exception as e:
         pass
@@ -808,12 +807,11 @@ class BaseInventoryManager:
             base_path = constants.get_base_path()
             structure_data_path = os.path.join(base_path, 'resources', 'game_data', 'structuredata.json')
             if os.path.exists(structure_data_path):
-                with open(structure_data_path, 'r', encoding='utf-8') as f:
-                    structure_data = json.load(f)
-                structures = structure_data.get('structures', [])
-                for structure in structures:
-                    if structure.get('asset') == map_object_id:
-                        return structure.get('name', map_object_id)
+                structure_data = json_tools.load(structure_data_path)
+            structures = structure_data.get('structures', [])
+            for structure in structures:
+                if structure.get('asset') == map_object_id:
+                    return structure.get('name', map_object_id)
             return map_object_id
         except Exception as e:
             return map_object_id

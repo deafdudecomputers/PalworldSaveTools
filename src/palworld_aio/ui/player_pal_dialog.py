@@ -1,5 +1,5 @@
 import os
-import json
+from palworld_save_tools import json_tools
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit, QListWidget, QListWidgetItem, QGroupBox, QMessageBox, QAbstractItemView, QListView, QTabWidget, QCheckBox, QWidget
 from PySide6.QtCore import Qt, Signal, QSize, QTimer
 from PySide6.QtGui import QPixmap, QIcon
@@ -151,8 +151,7 @@ class PlayerPalActionDialog(QDialog):
         icon_path = None
         try:
             paldata_path = os.path.join(base_dir, 'resources', 'game_data', 'paldata.json')
-            with open(paldata_path, 'r', encoding='utf-8') as f:
-                paldata = json.load(f)
+            paldata = json_tools.load(paldata_path)
             for pal in paldata.get('pals', []):
                 if pal.get('asset', '').lower() == pal_id.lower():
                     icon_rel_path = pal.get('icon', '')

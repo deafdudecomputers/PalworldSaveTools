@@ -4,7 +4,7 @@ import re
 import ssl
 import mmap
 import pickle
-import json
+from palworld_save_tools import json_tools
 import math
 import urllib.request
 from palworld_save_tools.archive import UUID
@@ -180,10 +180,9 @@ def get_pal_data(character_key):
         try:
             paldata_path = os.path.join(get_base_directory(), 'resources', 'game_data', 'paldata.json')
             if os.path.exists(paldata_path):
-                with open(paldata_path, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    pals_list = data.get('pals', [])
-                    _pal_data_cache = {pal['asset'].lower(): pal for pal in pals_list}
+                data = json_tools.load(paldata_path)
+                pals_list = data.get('pals', [])
+                _pal_data_cache = {pal['asset'].lower(): pal for pal in pals_list}
         except Exception as e:
             print(f'Error loading pal data: {e}')
             _pal_data_cache = {}
