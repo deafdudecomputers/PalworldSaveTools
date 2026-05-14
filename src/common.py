@@ -1,8 +1,8 @@
 import os, sys, subprocess, configparser
 from palworld_save_tools import json_tools
 APP_NAME = 'PalworldSaveTools'
-APP_VERSION = '1.1.87'
-APP_BETA_VERSION = '1.1.88'
+APP_VERSION = '1.1.88'
+APP_BETA_VERSION = '1.1.89'
 BETA_SUBVERSION = '1'
 GAME_VERSION = '0.7.3'
 BRANCH_VERSION = 'main'

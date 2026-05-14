@@ -175,14 +175,6 @@ class MyWriter(FArchiveWriter):
         new_size_bytes = struct.pack('Q', old_size + n_bytes_more)
         bytes_concat_array[0] = bytes_concat_array[0][:parent_section_size_idx] + new_size_bytes + bytes_concat_array[0][parent_section_size_idx + 8:]
         return b''.join(bytes_concat_array)
-    def guid(self, u):
-        self.data.write(u)
-    def optional_guid(self, u):
-        if u is None:
-            self.bool(False)
-        else:
-            self.bool(True)
-            self.data.write(u)
 def fast_deepcopy(json_dict):
     return pickle.loads(pickle.dumps(json_dict, -1))
 class SkipGvasFile(GvasFile):
@@ -906,6 +898,8 @@ def transfer_pals_only():
     new_oto = fast_deepcopy(src_oto['value']['Slots']['value'].get('values', []))
     remap_slots(new_oto, t_oto_id)
     tgt_oto['value']['Slots']['value']['values'] = new_oto
+    tgt_pal['value']['SlotNum']['value'] = src_pal['value']['SlotNum']['value']
+    tgt_oto['value']['SlotNum']['value'] = src_oto['value']['SlotNum']['value']
     targ_uid_str = str(targ_uid)
     t_chars = targ_lvl['CharacterSaveParameterMap']['value']
     new_map = [ch for ch in t_chars if str(get_val_safe(ch).get('OwnerPlayerUId', {}).get('value')) != targ_uid_str]
