@@ -159,7 +159,7 @@ jobs:
           path: artifacts
       - name: List all artifacts
         run: find artifacts -type f -ls
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.event.inputs.version }}
           name: ${{ github.event.inputs.release_name }}

@@ -56,7 +56,7 @@ jobs:
           VERSION=$(uv run python -c "from src.common import APP_VERSION; print(APP_VERSION)" 2>/dev/null || echo '0.0.0')
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=build-macos-v${VERSION}-$(date +'%Y%m%d%H%M%S')" >> "$GITHUB_OUTPUT"
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.version.outputs.tag }}
           name: "MacOS Build ${{ steps.version.outputs.version }}"
