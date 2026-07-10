@@ -41,7 +41,7 @@ jobs:
           git archive --format=tar.gz -o "PalworldSaveTools-${VERSION}-source.tar.gz" HEAD
       - name: List built files
         run: ls -la PalworldSaveTools-*-source.tar.gz || echo "source tarball not found"
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: source-tarball
           path: PalworldSaveTools-*-source.tar.gz
@@ -71,7 +71,7 @@ jobs:
         run: |
           echo "=== Files in dist/ ==="
           ls -la dist/ || echo "dist/ directory not found"
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: windows-build
           path: dist/PalworldSaveTools-*.exe
@@ -104,7 +104,7 @@ jobs:
         run: |
           echo "=== Files in dist/ ==="
           ls -la dist/ || echo "dist/ directory not found"
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: linux-build
           path: dist/PalworldSaveTools-*-linux
@@ -144,7 +144,7 @@ jobs:
         run: |
           echo "=== Files in dist/ ==="
           ls -la dist/ || echo "dist/ directory not found"
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: macos-build
           path: dist/PalworldSaveTools-*-macos.dmg

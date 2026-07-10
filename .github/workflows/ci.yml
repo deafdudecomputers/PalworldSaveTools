@@ -36,7 +36,7 @@ jobs:
           uv pip install --no-cache -r requirements.txt nuitka
       - name: Build with Nuitka
         run: uv run python build/nuitka/build_nuitka.py --onefile
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: windows-build
           path: dist/PalworldSaveTools-*.exe
@@ -64,7 +64,7 @@ jobs:
           uv pip install --no-cache -r requirements.txt nuitka
       - name: Build with Nuitka
         run: uv run python build/nuitka/build_nuitka.py --onefile
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: linux-build
           path: dist/PalworldSaveTools-*-linux
@@ -99,7 +99,7 @@ jobs:
             ls -la dist/ 2>/dev/null || echo "dist/ does not exist"
             exit 1
           fi
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: macos-build
           path: dist/PalworldSaveTools-*-macos.dmg

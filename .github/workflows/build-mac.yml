@@ -45,7 +45,7 @@ jobs:
         run: |
           echo "=== Files in dist/ ==="
           ls -la dist/ || echo "dist/ directory not found"
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: macos-build
           path: dist/PalworldSaveTools-*-macos.dmg
