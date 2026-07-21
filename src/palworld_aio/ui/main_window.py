@@ -319,6 +319,7 @@ class MainWindow(QMainWindow):
         self.splitter.addWidget(self.stacked_widget)
         from .chrome.results_widget import ResultsWidget
         self.results_widget = ResultsWidget()
+        self.results_widget.hide_requested.connect(self._toggle_dashboard)
         self.splitter.addWidget(self.results_widget)
         body_layout.addWidget(self.splitter, stretch=1)
         if self._init_collapse:
