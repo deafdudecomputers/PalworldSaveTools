@@ -661,6 +661,10 @@ The developers are not responsible for any loss of save data or issues that may 
 
 <div align="center">
 
+## Related Resources
+
+- [Palworld Guides](https://palworldguides.xyz/) — Palworld tier lists, base builds, Pal breeding chains, and boss strategies.
+
 ## License
 
 <img src="https://readme-typing-svg.demolab.com?lines=MIT+%E2%80%94+do+whatever+you+want;Free+as+in+beer;Open+source%2C+open+mind&center=true&width=430&height=28&font=monospace&size=22&color=7DD3FC&vCenter=true" alt="" />
