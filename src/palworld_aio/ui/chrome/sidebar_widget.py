@@ -92,14 +92,14 @@ class NavItem(QPushButton):
         if self._expanded:
             text = self._icon_code
             br = fm.boundingRect(text)
-            x = 8 - br.x()
+            x = 16 - br.x()
             y = (self.height() - br.height()) / 2 - br.y()
             p.drawText(int(x), int(y), text)
             label_font = QFont(constants.FONT_FAMILY_NERD, 7)
             p.setFont(label_font)
             p.setPen(self.palette().color(self.foregroundRole()))
             lfm = QFontMetrics(label_font)
-            lx = 34
+            lx = 42
             ly = (self.height() - lfm.height()) / 2 + lfm.ascent()
             p.drawText(int(lx), int(ly), self._label)
         else:
@@ -111,8 +111,8 @@ class NavItem(QPushButton):
         if self.property('active'):
             p = QPainter(self)
             p.setRenderHint(QPainter.Antialiasing)
-            pw, ph = (4, 20)
-            px, py = (3, (self.height() - ph) // 2)
+            pw, ph = (5, 24)
+            px, py = (5, (self.height() - ph) // 2)
             p.setPen(Qt.NoPen)
             p.setBrush(QBrush(QColor('#7DD3FC')))
             p.drawRoundedRect(px, py, pw, ph, pw / 2, pw / 2)
@@ -172,7 +172,7 @@ class BottomBtn(QPushButton):
         if self._expanded:
             text = self._icon_code
             br = fm.boundingRect(text)
-            x = 8 - br.x()
+            x = 16 - br.x()
             y = (self.height() - br.height()) / 2 - br.y()
             p.drawText(int(x), int(y), text)
             if self._label:
@@ -180,7 +180,7 @@ class BottomBtn(QPushButton):
                 p.setFont(label_font)
                 p.setPen(self.palette().color(self.foregroundRole()))
                 lfm = QFontMetrics(label_font)
-                lx = 38
+                lx = 46
                 ly = (self.height() - lfm.height()) / 2 + lfm.ascent()
                 p.drawText(int(lx), int(ly), self._label)
         else:
@@ -192,8 +192,8 @@ class BottomBtn(QPushButton):
         if self.property('active'):
             p = QPainter(self)
             p.setRenderHint(QPainter.Antialiasing)
-            pw, ph = (4, 20)
-            px, py = (3, (self.height() - ph) // 2)
+            pw, ph = (5, 24)
+            px, py = (5, (self.height() - ph) // 2)
             p.setPen(Qt.NoPen)
             p.setBrush(QBrush(QColor('#7DD3FC')))
             p.drawRoundedRect(px, py, pw, ph, pw / 2, pw / 2)
