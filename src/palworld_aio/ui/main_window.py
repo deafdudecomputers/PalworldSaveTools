@@ -260,8 +260,8 @@ class MainWindow(QMainWindow):
             self.sidebar.set_console_visible(True)
     def _setup_ui(self):
         self.setWindowTitle(t('deletion.title') if t else 'All-in-One Tools')
-        self.setMinimumSize(1448, 800)
-        self.resize(1448, 800)
+        self.setMinimumSize(1200, 750)
+        self.resize(1200, 750)
         self.setWindowFlags(Qt.FramelessWindowHint)
         if os.path.exists(constants.ICON_PATH):
             self.setWindowIcon(QIcon(constants.ICON_PATH))

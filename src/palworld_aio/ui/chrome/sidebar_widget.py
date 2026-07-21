@@ -232,8 +232,8 @@ class SidebarWidget(QWidget):
         self._console_btn.set_label(t('console.detach') if t else 'Console')
         self._console_btn.clicked.connect(self.console_toggled.emit)
         self._layout.addWidget(self._console_btn)
-        self._right_panel_btn = BottomBtn(ICONS['collapse_open'], t('sidebar.close') if t else 'Close Panel')
-        self._right_panel_btn.set_label(t('sidebar.close') if t else 'Close Panel')
+        self._right_panel_btn = BottomBtn(ICONS['collapse_open'], t('sidebar.close') if t else 'Hide Results')
+        self._right_panel_btn.set_label(t('sidebar.close') if t else 'Hide Results')
         self._right_panel_btn.clicked.connect(self._on_right_panel_toggle)
         self._right_panel_btn.set_active(True)
         self._layout.addWidget(self._right_panel_btn)
@@ -285,12 +285,12 @@ class SidebarWidget(QWidget):
     def _update_right_panel_icon(self):
         if self._right_panel_visible:
             self._right_panel_btn.set_icon(ICONS['collapse_open'])
-            self._right_panel_btn.set_label(t('sidebar.close') if t else 'Close Panel')
-            self._right_panel_btn.setToolTip(t('sidebar.close') if t else 'Close Panel' if self._collapsed else '')
+            self._right_panel_btn.set_label(t('sidebar.close') if t else 'Hide Results')
+            self._right_panel_btn.setToolTip(t('sidebar.close') if t else 'Hide Results' if self._collapsed else '')
         else:
             self._right_panel_btn.set_icon(ICONS['collapse_close'])
-            self._right_panel_btn.set_label(t('sidebar.open') if t else 'Open Panel')
-            self._right_panel_btn.setToolTip(t('sidebar.open') if t else 'Open Panel' if self._collapsed else '')
+            self._right_panel_btn.set_label(t('sidebar.open') if t else 'Show Results')
+            self._right_panel_btn.setToolTip(t('sidebar.open') if t else 'Show Results' if self._collapsed else '')
     def refresh_labels(self):
         nav_keys = {'tools': 'tools_tab', 'map': 'map.viewer', 'base_inventory': 'base_inventory.tab', 'player_inventory': 'inventory.tab', 'pal_editor': 'pal_editor.tab', 'players': 'deletion.search_players', 'guilds': 'deletion.search_guilds', 'bases': 'deletion.search_bases', 'exclusions': 'deletion.menu.exclusions', 'json_editor': 'json_editor.tab', 'breeding': 'breeding.tab', 'docs': 'docs.tab'}
         for btn_id, btn in self._buttons.items():

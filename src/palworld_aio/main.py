@@ -273,10 +273,11 @@ def run_aio():
         from PySide6.QtCore import QTimer
         QTimer.singleShot(5000, hide_popup)
         sys.exit(app.exec())
+    os.environ.setdefault('QT_ENABLE_HIGHDPI_SCALING', '1')
+    os.environ.setdefault('QT_SCALE_FACTOR_ROUNDING_POLICY', 'PassThrough')
     app = QApplication.instance()
     if app is None:
         app = QApplication(sys.argv)
-    sys.excepthook = lambda exc_type, exc_value, exc_traceback: show_error_screen(''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)))
     app.setStyle('Fusion')
     app.setStyleSheet(
         'QToolTip { color: #e2e8f0; background: #1e2128; border: 1px solid #3B8ED0; '
