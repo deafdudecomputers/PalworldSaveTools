@@ -232,7 +232,8 @@ if _MAPPAL_AVAILABLE:
             self._load_count += 1
             logger.debug(f"_do_load #{self._load_count}: name={name}, data_len={len(json_str)}")
             escaped_name = json.dumps(name)
-            js = f"pstLoadBase({escaped_name}, {json_str})"
+            encoded = json.dumps(json_str)
+            js = f"pstLoadBase({escaped_name}, {encoded})"
             self._webview.page().runJavaScript(js)
             self._stack.setCurrentWidget(self._webview)
 
