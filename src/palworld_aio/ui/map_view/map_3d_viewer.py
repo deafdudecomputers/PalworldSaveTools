@@ -180,6 +180,9 @@ if _MAPPAL_AVAILABLE:
                 return
             logger.debug(f"load_base: name={name}, data_len={len(json_str)}, ready={self._page_ready}")
             if self._page_ready:
+                self._stack.setCurrentWidget(self._loading_label)
+                self._loading_label.setText("Loading 3D view...")
+                self._webview.page().runJavaScript("pstLoadBase('clear', '{}')")
                 self._do_load(name, json_str)
             else:
                 self._pending_data = (name, json_str)
