@@ -10,7 +10,7 @@ license = "MIT"
 authors = [{ name = "Pylar" }]
 requires-python = ">=3.11"
 dependencies = [
-    "pyside6-essentials",
+    "pyside6",
     "Pillow",
     "cx-freeze>=8.3.0",
     "nerdfont",

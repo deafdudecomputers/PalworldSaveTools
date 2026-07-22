@@ -21,6 +21,7 @@ from ..map_view.map_markers import BaseMarker, PlayerMarker
 from ..map_view.map_effects import ImportEffect, CalibrationEffect
 from ..map_view.map_items import ExclusionZoneItem, PolygonExclusionZoneItem, BaseRadiusRing, ZonePreviewItem
 from ..map_view.map_view import MapGraphicsView
+from ..map_view.map_3d_viewer import Map3DViewer
 _SORT_ROLE = Qt.UserRole + 1
 class _SortableItem(QTreeWidgetItem):
     def __lt__(self, other):
@@ -55,6 +56,7 @@ class MapTab(QWidget):
         self._zone_shape_type = 'rect'
         self._zone_count = 0
         self._load_config()
+        self._3d_dismissed = False
         self.current_map = 'world'
         self.map_width = 2048
         self.map_height = 2048
@@ -167,6 +169,14 @@ class MapTab(QWidget):
         map_layout = QVBoxLayout(self._map_widget)
         map_layout.setContentsMargins(0, 0, 0, 0)
         map_layout.setSpacing(0)
+
+        self._map_stack = QStackedWidget()
+
+        self._map_container_2d = QWidget()
+        _2d_layout = QVBoxLayout(self._map_container_2d)
+        _2d_layout.setContentsMargins(0, 0, 0, 0)
+        _2d_layout.setSpacing(0)
+
         self.view = MapGraphicsView(self.config)
         self.view.setBackgroundBrush(QColor(14, 16, 20))
         self.view.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
@@ -190,7 +200,17 @@ class MapTab(QWidget):
         self.view.marker_hover_entered.connect(self._on_marker_hover_enter)
         self.view.marker_hover_left.connect(self._on_marker_hover_leave)
         self._load_map()
-        map_layout.addWidget(self.view)
+        _2d_layout.addWidget(self.view)
+
+        self._3d_viewer = Map3DViewer()
+        self._3d_viewer.close_clicked.connect(self._on_3d_closed)
+
+        self._map_stack.addWidget(self._map_container_2d)
+        self._map_stack.addWidget(self._3d_viewer)
+        self._map_stack.setCurrentIndex(0)
+        map_layout.addWidget(self._map_stack)
+
+
         self.map_overlay = QWidget(self.view)
         self.map_overlay.setStyleSheet('background: transparent;')
         self.map_overlay.setAttribute(Qt.WA_TransparentForMouseEvents, False)
@@ -1238,12 +1258,76 @@ class MapTab(QWidget):
         else:
             self._update_info(data)
             self._highlight_base(data)
+            if isinstance(marker, BaseMarker):
+                self.selected_base_marker = marker
+            self._3d_dismissed = False
+            self._show_base_3d(data)
+
+    _3d_cache = {}
+
+    def _get_3d_json(self, base_id_s):
+        from loguru import logger
+        cache_key = str(base_id_s)
+        if cache_key in self._3d_cache:
+            logger.debug(f"_get_3d_json cache hit: {cache_key}")
+            return self._3d_cache[cache_key]
+        logger.debug(f"_get_3d_json cache miss: {cache_key}")
+        from palworld_aio.managers.base_manager import export_base_json
+        from palworld_aio import constants
+        exp = export_base_json(constants.loaded_level_json, base_id_s)
+        if not exp:
+            logger.warning(f"export_base_json returned None for {cache_key}")
+            return None
+        keys = list(exp.keys())
+        logger.debug(f"export_base_json keys: {keys}, map_objects count: {len(exp.get('map_objects', []))}")
+        import io
+        buf = io.BytesIO()
+        json_tools.dump(exp, buf, minify=True)
+        result = buf.getvalue().decode('utf-8')
+        logger.debug(f"JSON serialized: {len(result)} chars")
+        self._3d_cache[cache_key] = result
+        return result
+
+    def _show_base_3d(self, base_data):
+        self._3d_dismissed = False
+        from loguru import logger
+        logger.debug(f"_show_base_3d called")
+        if not hasattr(self, '_3d_viewer'):
+            logger.warning("_3d_viewer not initialized")
+            return
+        raw_id = base_data.get('base_id', '')
+        guild_name = base_data.get('guild_name', 'base')
+        logger.debug(f"base_id type={type(raw_id).__name__}, guild={guild_name}")
+        try:
+            json_str = self._get_3d_json(raw_id)
+            if json_str is None:
+                show_information(self, "3D Viewer", "Could not export base data.")
+                return
+            base_id_str = str(raw_id).replace('-', '')[:8]
+            logger.debug(f"Sending to 3D viewer: {guild_name}_{base_id_str}.json ({len(json_str)} chars)")
+            self._3d_viewer.load_base(f"{guild_name}_{base_id_str}.json", json_str)
+            self._map_stack.setCurrentIndex(1)
+            self._3d_viewer.setVisible(True)
+            logger.debug("3D viewer visible, stack switched")
+        except Exception as ex:
+            logger.error(f"_show_base_3d failed: {ex}")
+            show_information(self, "3D Viewer", f"Could not load base: {ex}")
+
+    def _on_3d_closed(self):
+        self._3d_dismissed = True
+        self._map_stack.setCurrentIndex(0)
+
     def _on_zoom_changed(self, zoom_level):
         for marker in self.base_markers:
             marker.scale_to_zoom(zoom_level)
         for marker in self.player_markers:
             marker.scale_to_zoom(zoom_level)
         self._update_radius_rings_visibility()
+        if hasattr(self, '_3d_viewer') and self._map_stack.currentIndex() == 1:
+            if zoom_level < 5.0:
+                self._on_3d_closed()
+                self._map_stack.setCurrentIndex(1)
+                self._3d_viewer.setVisible(True)
     def _update_radius_rings_visibility(self):
         if self.current_map != 'world':
             return
@@ -1305,6 +1389,7 @@ class MapTab(QWidget):
             export_action = menu.addAction(t('button.export') if t else 'Export Base')
             clone_action = menu.addAction(t('clone.base') if t else 'Clone Base')
             radius_action = menu.addAction(t('base.radius.menu') if t else 'Adjust Radius')
+            view_3d_action = menu.addAction('View in 3D')
             move_coords_action = menu.addAction(t('base.move_coords') if t else 'Change Coordinates')
             nudge_action = menu.addAction(t('base.nudge') if t else 'Nudge Base')
             menu.addSeparator()
@@ -1321,6 +1406,8 @@ class MapTab(QWidget):
                 self._clone_base(data)
             elif action == radius_action:
                 self._adjust_base_radius(data)
+            elif action == view_3d_action:
+                self._show_base_3d(data)
             elif action == move_coords_action:
                 self._move_base_coords(data)
             elif action == nudge_action:
