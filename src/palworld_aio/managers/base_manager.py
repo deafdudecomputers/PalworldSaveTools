@@ -1,5 +1,6 @@
 import os
 import json
+import re
 import uuid
 import copy
 import math
@@ -164,6 +165,23 @@ def export_base_json(loaded_level_json, source_base_id):
         if wr and _s(wr.get('base_camp_id_belong_to', '')) == src_id_str:
             export_data['works'].append(_deep(we))
     return export_data
+def _build_structure_lookup():
+    try:
+        from palworld_aio.inventory.base_inventory_manager import load_structure_data
+        sd = load_structure_data()
+        lookup = {}
+        for s in sd.get('structures', []):
+            asset = s.get('asset', '')
+            if not asset:
+                continue
+            name = s.get('name', '')
+            icon = s.get('icon', '')
+            hp = s.get('hp')
+            lookup[asset.lower()] = {'name': name, 'icon': icon, 'hp': hp}
+        return lookup
+    except Exception:
+        return {}
+
 def export_base_light(loaded_level_json, source_base_id):
     raw_prop = loaded_level_json['properties']['worldSaveData']['value']
     data = raw_prop if isinstance(raw_prop, dict) else {}
@@ -175,6 +193,24 @@ def export_base_light(loaded_level_json, source_base_id):
         return None
     src_raw = src_base_entry['value']['RawData']['value']
     base_camp_light = {'value': {'RawData': {'value': {'transform': {'translation': src_raw['transform']['translation']}, 'area_range': src_raw.get('area_range', 3500.0)}}}}
+
+    _prefixes = sorted(['JapaneseStyle_', 'DefenseWall_', 'Wooden_', 'Wood_', 'Stone_', 'Metal_', 'Iron_', 'Glass_', 'SF_', 'Ancient_', 'Wire_'], key=len, reverse=True)
+    _family_norms = {'pillars': 'pillar', 'foundations': 'foundation', 'roofs': 'roof', 'stairs': 'stair', 'fences': 'fence', 'walls': 'wall', 'gates': 'gate', 'doors': 'door', 'ladders': 'ladder'}
+    def _parse_asset(asset):
+        al = asset.lower()
+        if al == 'defensewall':
+            return ('stone', 'defensewall')
+        if al.startswith('defensewall_'):
+            return (asset.split('_', 1)[1].lower(), 'defensewall')
+        for p in _prefixes:
+            if al.startswith(p.lower()):
+                fam = re.sub(r'_\d+$', '', asset[len(p):]).lower()
+                fam = _family_norms.get(fam, fam)
+                return (p.rstrip('_').lower(), fam)
+        return ('', '')
+
+    sl = _build_structure_lookup()
+
     map_objects_light = []
     for obj in map_objs:
         mr = _get_model_raw(obj)
@@ -187,7 +223,9 @@ def export_base_light(loaded_level_json, source_base_id):
             continue
         itc = mr.get('initital_transform_cache', {})
         hp = mr.get('hp', {})
-        map_objects_light.append({'MapObjectId': {'value': oid}, 'Model': {'value': {'RawData': {'value': {'instance_id': str(mr.get('instance_id', '')), 'initital_transform_cache': {'translation': itc.get('translation', {'x': 0, 'y': 0, 'z': 0}), 'rotation': itc.get('rotation', {'x': 0, 'y': 0, 'z': 0, 'w': 1}), 'scale3d': itc.get('scale3d', {'x': 1, 'y': 1, 'z': 1})}, 'hp': {'current': hp.get('current', 20000), 'max': hp.get('max', 20000)}}}}}})
+        element, family = _parse_asset(oid)
+        entry = sl.get(oid.lower(), {})
+        map_objects_light.append({'MapObjectId': {'value': oid}, 'Model': {'value': {'RawData': {'value': {'instance_id': str(mr.get('instance_id', '')), 'initital_transform_cache': {'translation': itc.get('translation', {'x': 0, 'y': 0, 'z': 0}), 'rotation': itc.get('rotation', {'x': 0, 'y': 0, 'z': 0, 'w': 1}), 'scale3d': itc.get('scale3d', {'x': 1, 'y': 1, 'z': 1})}, 'hp': {'current': hp.get('current', 20000), 'max': hp.get('max', 20000)}}}}}, 'name': entry.get('name', ''), 'element': element, 'family': family, 'icon': entry.get('icon', '')})
     return {'base_camp': base_camp_light, 'base_camp_level': 1, 'map_objects': map_objects_light, 'characters': [], 'item_containers': [], 'char_containers': [], 'works': [], 'dynamic_items': []}
 def import_base_json(loaded_level_json, exported_data, target_guild_id, offset=(8000, 0, 0), collision_threshold=5000):
     success, msg = validate_blueprint_version(exported_data)
