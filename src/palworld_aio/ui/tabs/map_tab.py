@@ -1263,29 +1263,31 @@ class MapTab(QWidget):
             self._3d_dismissed = False
             self._show_base_3d(data)
 
-    _3d_cache = {}
-
     def _get_3d_json(self, base_id_s):
         from loguru import logger
+        from collections import OrderedDict
+        if not hasattr(self, '_3d_cache'):
+            self._3d_cache = OrderedDict()
         cache_key = str(base_id_s)
         if cache_key in self._3d_cache:
+            self._3d_cache.move_to_end(cache_key)
             logger.debug(f"_get_3d_json cache hit: {cache_key}")
             return self._3d_cache[cache_key]
         logger.debug(f"_get_3d_json cache miss: {cache_key}")
-        from palworld_aio.managers.base_manager import export_base_json
+        from palworld_aio.managers.base_manager import export_base_light
         from palworld_aio import constants
-        exp = export_base_json(constants.loaded_level_json, base_id_s)
+        exp = export_base_light(constants.loaded_level_json, base_id_s)
         if not exp:
-            logger.warning(f"export_base_json returned None for {cache_key}")
+            logger.warning(f"export_base_light returned None for {cache_key}")
             return None
-        keys = list(exp.keys())
-        logger.debug(f"export_base_json keys: {keys}, map_objects count: {len(exp.get('map_objects', []))}")
         import io
         buf = io.BytesIO()
         json_tools.dump(exp, buf, minify=True)
         result = buf.getvalue().decode('utf-8')
-        logger.debug(f"JSON serialized: {len(result)} chars")
+        logger.debug(f"light JSON: {len(result)} chars, {len(exp.get('map_objects', []))} objects")
         self._3d_cache[cache_key] = result
+        if len(self._3d_cache) > 30:
+            self._3d_cache.popitem(last=False)
         return result
 
     def _show_base_3d(self, base_data):

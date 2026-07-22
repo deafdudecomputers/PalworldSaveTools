@@ -164,6 +164,31 @@ def export_base_json(loaded_level_json, source_base_id):
         if wr and _s(wr.get('base_camp_id_belong_to', '')) == src_id_str:
             export_data['works'].append(_deep(we))
     return export_data
+def export_base_light(loaded_level_json, source_base_id):
+    raw_prop = loaded_level_json['properties']['worldSaveData']['value']
+    data = raw_prop if isinstance(raw_prop, dict) else {}
+    base_camp_data = data.get('BaseCampSaveData', {}).get('value', [])
+    map_objs = data.get('MapObjectSaveData', {}).get('value', {}).get('values', [])
+    src_id_str = _s(source_base_id)
+    src_base_entry = next((b for b in base_camp_data if _s(b.get('key')) == src_id_str), None)
+    if not src_base_entry:
+        return None
+    src_raw = src_base_entry['value']['RawData']['value']
+    base_camp_light = {'value': {'RawData': {'value': {'transform': {'translation': src_raw['transform']['translation']}, 'area_range': src_raw.get('area_range', 3500.0)}}}}
+    map_objects_light = []
+    for obj in map_objs:
+        mr = _get_model_raw(obj)
+        if not isinstance(mr, dict):
+            continue
+        if _s(mr.get('base_camp_id_belong_to', '')) != src_id_str:
+            continue
+        oid = str(obj.get('MapObjectId', {}).get('value', ''))
+        if oid in ('PalBooth', 'ItemBooth') or (oid.startswith('PalEgg') and 'Hatching' not in oid and 'Incubator' not in oid):
+            continue
+        itc = mr.get('initital_transform_cache', {})
+        hp = mr.get('hp', {})
+        map_objects_light.append({'MapObjectId': {'value': oid}, 'Model': {'value': {'RawData': {'value': {'instance_id': str(mr.get('instance_id', '')), 'initital_transform_cache': {'translation': itc.get('translation', {'x': 0, 'y': 0, 'z': 0}), 'rotation': itc.get('rotation', {'x': 0, 'y': 0, 'z': 0, 'w': 1}), 'scale3d': itc.get('scale3d', {'x': 1, 'y': 1, 'z': 1})}, 'hp': {'current': hp.get('current', 20000), 'max': hp.get('max', 20000)}}}}}})
+    return {'base_camp': base_camp_light, 'base_camp_level': 1, 'map_objects': map_objects_light, 'characters': [], 'item_containers': [], 'char_containers': [], 'works': [], 'dynamic_items': []}
 def import_base_json(loaded_level_json, exported_data, target_guild_id, offset=(8000, 0, 0), collision_threshold=5000):
     success, msg = validate_blueprint_version(exported_data)
     if not success:

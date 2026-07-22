@@ -1,5 +1,7 @@
 import json
 import os
+import re
+import socket
 import threading
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from loguru import logger
@@ -7,12 +9,13 @@ from loguru import logger
 _MAPPAL_AVAILABLE = False
 try:
     from PySide6.QtWebEngineWidgets import QWebEngineView
-    from PySide6.QtWebEngineCore import QWebEnginePage, QWebEngineSettings
+    from PySide6.QtWebEngineCore import QWebEnginePage, QWebEngineSettings, QWebEngineProfile
     _MAPPAL_AVAILABLE = True
 except ImportError:
     QWebEngineView = None
     QWebEnginePage = None
     QWebEngineSettings = None
+    QWebEngineProfile = None
 
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
                                 QLabel, QSizePolicy, QStackedWidget)
@@ -55,11 +58,26 @@ def _start_server():
     class _Handler(SimpleHTTPRequestHandler):
         def __init__(self, *args, **kwargs):
             super().__init__(*args, directory=mappal_dir, **kwargs)
-        def log_message(self, format, *args):
+
+        def end_headers(self):
+            p = self.path
+            if re.search(r'[.-][a-f0-9]{8,}\.(js|css|png|webp)$', p):
+                self.send_header('Cache-Control', 'public, max-age=31536000, immutable')
+            elif p.endswith('.html'):
+                self.send_header('Cache-Control', 'no-cache')
+            else:
+                self.send_header('Cache-Control', 'public, max-age=86400')
+            super().end_headers()
+
+        def log_message(self, fmt, *args):
             pass
 
     for port in range(18200, 18300):
         try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            s.bind(("127.0.0.1", port))
+            s.close()
             _MAPPAL_SERVER = ThreadingHTTPServer(("127.0.0.1", port), _Handler)
             _MAPPAL_SERVER_PORT = port
             t = threading.Thread(target=_MAPPAL_SERVER.serve_forever, daemon=True)
@@ -70,6 +88,17 @@ def _start_server():
             continue
     logger.error("could not find free port for mappal server")
     return None
+
+
+def _setup_web_profile():
+    try:
+        profile = QWebEngineProfile.defaultProfile()
+        profile.setHttpCacheType(QWebEngineProfile.DiskHttpCache)
+        profile.setHttpCacheMaximumSize(100 * 1024 * 1024)
+        cache_dir = os.path.join(os.path.expanduser("~"), ".cache", "pst", "webcache")
+        profile.setCachePath(cache_dir)
+    except Exception as e:
+        logger.warning(f"could not setup web cache: {e}")
 
 
 def is_mappal_available():
@@ -89,6 +118,8 @@ if _MAPPAL_AVAILABLE:
 
             self.setVisible(False)
             self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+            _setup_web_profile()
 
             QShortcut(QKeySequence(Qt.Key_Escape), self, self._on_close)
 
@@ -126,9 +157,17 @@ if _MAPPAL_AVAILABLE:
             settings.setAttribute(QWebEngineSettings.JavascriptCanOpenWindows, False)
             settings.setAttribute(QWebEngineSettings.LocalStorageEnabled, False)
             settings.setAttribute(QWebEngineSettings.FocusOnNavigationEnabled, False)
+            settings.setAttribute(QWebEngineSettings.PluginsEnabled, False)
+            settings.setAttribute(QWebEngineSettings.FullScreenSupportEnabled, False)
+            settings.setAttribute(QWebEngineSettings.ScreenCaptureEnabled, False)
+            settings.setAttribute(QWebEngineSettings.PdfViewerEnabled, False)
+            settings.setAttribute(QWebEngineSettings.ScrollAnimatorEnabled, False)
+            settings.setAttribute(QWebEngineSettings.HyperlinkAuditingEnabled, False)
+            settings.setAttribute(QWebEngineSettings.DnsPrefetchEnabled, True)
+            settings.setAttribute(QWebEngineSettings.WebGLEnabled, True)
+            settings.setAttribute(QWebEngineSettings.LocalContentCanAccessFileUrls, True)
 
             self._webview.loadFinished.connect(self._on_page_loaded)
-            self._webview.setVisible(False)
 
             port = _start_server()
             if port:
@@ -182,7 +221,7 @@ if _MAPPAL_AVAILABLE:
             if self._page_ready:
                 self._stack.setCurrentWidget(self._loading_label)
                 self._loading_label.setText("Loading 3D view...")
-                self._webview.page().runJavaScript("pstLoadBase('clear', '{}')")
+                self._webview.page().runJavaScript("window.pstLoadBase && pstLoadBase('clear', '{}')")
                 self._do_load(name, json_str)
             else:
                 self._pending_data = (name, json_str)
@@ -193,8 +232,7 @@ if _MAPPAL_AVAILABLE:
             self._load_count += 1
             logger.debug(f"_do_load #{self._load_count}: name={name}, data_len={len(json_str)}")
             escaped_name = json.dumps(name)
-            encoded = json.dumps(json_str)
-            js = f"pstLoadBase({escaped_name}, {encoded})"
+            js = f"pstLoadBase({escaped_name}, {json_str})"
             self._webview.page().runJavaScript(js)
             self._stack.setCurrentWidget(self._webview)
 
