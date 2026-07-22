@@ -1264,8 +1264,9 @@ class MapTab(QWidget):
             self._show_base_3d(data)
 
     def _get_3d_json(self, base_id_s):
-        from loguru import logger
+        import logging
         from collections import OrderedDict
+        logger = logging.getLogger(__name__)
         if not hasattr(self, '_3d_cache'):
             self._3d_cache = OrderedDict()
         cache_key = str(base_id_s)
@@ -1292,7 +1293,8 @@ class MapTab(QWidget):
 
     def _show_base_3d(self, base_data):
         self._3d_dismissed = False
-        from loguru import logger
+        import logging
+        logger = logging.getLogger(__name__)
         logger.debug(f"_show_base_3d called")
         if not hasattr(self, '_3d_viewer'):
             logger.warning("_3d_viewer not initialized")

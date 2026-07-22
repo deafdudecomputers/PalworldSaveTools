@@ -3,8 +3,10 @@ import os
 import re
 import socket
 import threading
+import logging
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
-from loguru import logger
+
+logger = logging.getLogger(__name__)
 
 _MAPPAL_AVAILABLE = False
 try:

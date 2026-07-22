@@ -1,4 +1,4 @@
-pyside6-essentials
+pyside6
 cx-freeze>=8.3.0
 nerdfont
 py7zr

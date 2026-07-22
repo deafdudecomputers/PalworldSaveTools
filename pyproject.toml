@@ -23,7 +23,6 @@ dependencies = [
     "orjson",
     "py7zr",
     "nuitka>=4.1.2",
-    "loguru>=0.7.3",
 ]
 
 [tool.uv.sources]
