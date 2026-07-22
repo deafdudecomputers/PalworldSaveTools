@@ -55,9 +55,25 @@ def _start_server():
     if not mappal_dir:
         return None
 
+    _GAME_DATA_ICONS = None
+    try:
+        from palworld_aio.constants import get_base_path
+        _g = get_base_path()
+        _GAME_DATA_ICONS = os.path.normpath(os.path.join(_g, "resources", "game_data", "icons"))
+    except Exception:
+        pass
+
     class _Handler(SimpleHTTPRequestHandler):
         def __init__(self, *args, **kwargs):
             super().__init__(*args, directory=mappal_dir, **kwargs)
+
+        def translate_path(self, path):
+            if _GAME_DATA_ICONS and path.startswith('/icons/'):
+                rel = path.lstrip('/').replace('/', os.sep)
+                result = os.path.normpath(os.path.join(_GAME_DATA_ICONS, rel[len('icons/'):] if rel.startswith('icons/') else rel))
+                if result.startswith(_GAME_DATA_ICONS) and os.path.exists(result):
+                    return result
+            return super().translate_path(path)
 
         def end_headers(self):
             p = self.path
