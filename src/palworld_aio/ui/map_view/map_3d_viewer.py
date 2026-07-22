@@ -55,7 +55,7 @@ def _start_server():
     if not mappal_dir:
         return None
 
-    _GAME_DATA_ICONS = None
+    _GAME_DATA_ICONS = ""
     try:
         from palworld_aio.constants import get_base_path
         _g = get_base_path()
@@ -69,9 +69,9 @@ def _start_server():
 
         def translate_path(self, path):
             if _GAME_DATA_ICONS and path.startswith('/icons/'):
-                rel = path.lstrip('/').replace('/', os.sep)
-                result = os.path.normpath(os.path.join(_GAME_DATA_ICONS, rel[len('icons/'):] if rel.startswith('icons/') else rel))
-                if result.startswith(_GAME_DATA_ICONS) and os.path.exists(result):
+                rel = path[len('/icons/'):]
+                result = os.path.normpath(os.path.join(_GAME_DATA_ICONS, rel))
+                if os.path.exists(result):
                     return result
             return super().translate_path(path)
 
