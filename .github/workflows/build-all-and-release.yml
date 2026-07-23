@@ -247,7 +247,7 @@ jobs:
           cat release_notes.md
       - name: Create release (with notes)
         if: ${{ github.event.inputs.append_only != 'true' }}
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228  # v3
         with:
           tag_name: v${{ steps.env.outputs.version }}
           name: v${{ steps.env.outputs.version }}
