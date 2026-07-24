@@ -1,3 +1,8 @@
+#2.2.2
+- **Pal unique ID in pal info panel** — the detailed pal editor now shows each pal's instance GUID in the header row (left-aligned, click to copy). Buff/debuff icons sit on the same row (right-aligned). No more digging through JSON or the save file to find a pal's internal ID.
+- **New/cloned pal UUIDs now match game format** — `_generate_pal_save_param` was producing uppercase hex UUIDs for new pals, while the game uses lowercase. All pal InstanceId generation now uses `str(uuid.uuid4())` (lowercase with hyphens) across Add New Pal, base worker creation, DPS cloning, character transfer, and guild redistribution.
+- Bumped version to 2.2.2
+
 #2.2.1
 - **Map generator now shows all bases** — the world map renderer was using `sav_to_map_by_z()` with a z-threshold of 5000, silently dropping island/tree-map bases from the generated image. Now uses `sav_to_map(x, y, new=True)` directly (matching the interactive map viewer) and removes the z-threshold filter so every base camp appears regardless of elevation.
 - **Base radius ring scaling fixed** — ring size was using an additive `+5` pixel offset in the scene-space formula, breaking proportionality. At 200% the ring was only 42% larger instead of 100% larger. Replaced with a purely linear formula so doubling the radius value doubles the displayed ring.

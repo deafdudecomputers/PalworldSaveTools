@@ -632,7 +632,6 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
             sp.update(raw)
             inst = arr[abs_idx].get('InstanceId', {}).get('value', {})
             uid_val = str(self.player_uid).replace('-', '').upper() if self.player_uid else '00000000000000000000000000000000'
-            inst_id_val = str(uuid.uuid4()).upper().replace('-', '')
             inst['PlayerUId'] = {'struct_type': 'Guid', 'struct_id': '00000000-0000-0000-0000-000000000000', 'id': None, 'value': str(self.player_uid) if self.player_uid else '00000000-0000-0000-0000-000000000000', 'type': 'StructProperty'}
             inst['InstanceId'] = {'struct_type': 'Guid', 'struct_id': '00000000-0000-0000-0000-000000000000', 'id': None, 'value': str(uuid.uuid4()), 'type': 'StructProperty'}
             inst['DebugName'] = {'id': None, 'type': 'StrProperty', 'value': ''}

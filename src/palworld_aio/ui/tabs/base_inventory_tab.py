@@ -2023,10 +2023,9 @@ class BasePalsContentWidget(QFrame):
             else:
                 container_id = '00000000-0000-0000-0000-000000000000'
             import uuid
-            instance_id = str(uuid.uuid4()).upper()
             slot_idx = next((i for i, p in enumerate(self._pals) if p is None), len(self._pals))
             entry = _generate_pal_save_param(cid, nick, '00000000-0000-0000-0000-000000000000', container_id, slot_idx)
-            instance_id = entry.get('key', {}).get('InstanceId', {}).get('value', instance_id)
+            instance_id = entry.get('key', {}).get('InstanceId', {}).get('value', '')
             guild_id = None
             parent = self.parent()
             while parent:
@@ -2090,10 +2089,9 @@ class BasePalsContentWidget(QFrame):
             else:
                 container_id = '00000000-0000-0000-0000-000000000000'
             import uuid
-            instance_id = str(uuid.uuid4()).upper()
             slot_idx = next((i for i, p in enumerate(self._pals) if p is None), len(self._pals))
             entry = _generate_pal_save_param(cid, nick, '00000000-0000-0000-0000-000000000000', container_id, slot_idx)
-            instance_id = entry.get('key', {}).get('InstanceId', {}).get('value', instance_id)
+            instance_id = entry.get('key', {}).get('InstanceId', {}).get('value', '')
             new_raw = _get_raw_from_item(entry)
             if new_raw:
                 for field in imported_raw:

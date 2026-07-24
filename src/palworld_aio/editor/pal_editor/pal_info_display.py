@@ -562,6 +562,13 @@ class PalInfoDisplayMixin:
                 self.partner_desc_lbl.setText(html)
             else:
                 self.partner_desc_lbl.setText(f'Partner skill for {pal_name}. Effects scale with level.')
+            instance_id = ''
+            if 'key' in pal_data:
+                instance_id = safe_nested_get(pal_data, ['key', 'InstanceId', 'value'], '')
+            if instance_id:
+                self.instance_id_lbl.setText(f'ID: {instance_id}')
+            else:
+                self.instance_id_lbl.setText('')
             QTimer.singleShot(0, self._fit_labels)
         except Exception:
             import traceback

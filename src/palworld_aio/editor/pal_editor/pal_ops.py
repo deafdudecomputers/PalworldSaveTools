@@ -314,8 +314,8 @@ def _guid(value):
 
 def _generate_pal_save_param(character_id, nickname, owner_uid, container_id, slot_index, group_id=None):
     if group_id is None:
-        group_id = str(uuid.uuid4()).upper()
-    instance_id = str(uuid.uuid4()).upper()
+        group_id = str(uuid.uuid4())
+    instance_id = str(uuid.uuid4())
     empty_uuid = '00000000-0000-0000-0000-000000000000'
     time_val = 638486453957560000
     base = _data.get_pal_base_data(character_id)
