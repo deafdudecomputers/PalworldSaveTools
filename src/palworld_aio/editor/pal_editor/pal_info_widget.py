@@ -353,7 +353,7 @@ class PalInfoWidget(PalInfoDisplayMixin, PalInfoHandlerMixin, QFrame):
         buff_row.setSpacing(2)
         self.instance_id_lbl = NerdBtn('')
         self.instance_id_lbl.setFlat(True)
-        self.instance_id_lbl.setStyleSheet('QPushButton { font-size: 10px; font-weight: 500; color: rgba(255,255,255,0.4); background: transparent; border: none; text-align: left; padding: 0; } QPushButton:hover { color: rgba(255,255,255,0.7); } QToolTip { background: rgba(18,20,24,0.98); color: #E2E8F0; border: 1px solid rgba(125,211,252,0.25); border-radius: 6px; padding: 6px 10px; font-size: 11px; }')
+        self.instance_id_lbl.setStyleSheet('QPushButton { font-size: 11px; font-weight: 700; color: #FFFFFF; background: transparent; border: none; text-align: left; padding: 0; } QPushButton:hover { color: #7DD3FC; } QToolTip { background: rgba(18,20,24,0.98); color: #E2E8F0; border: 1px solid rgba(125,211,252,0.25); border-radius: 6px; padding: 6px 10px; font-size: 11px; }')
         self.instance_id_lbl.setCursor(Qt.PointingHandCursor)
         self.instance_id_lbl.setToolTip(t('pal_editor.click_copy_id') if t else 'Click to copy ID')
         self.instance_id_lbl.clicked.connect(lambda: (QApplication.clipboard().setText(self.instance_id_lbl.text().replace('ID: ', '')), None))
