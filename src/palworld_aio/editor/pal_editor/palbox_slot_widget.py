@@ -358,7 +358,8 @@ class PalboxSlotWidget(QFrame):
 
         level_lbl.setStyleSheet('color: #7DD3FC; font-size: 8px; font-weight: bold; background: rgba(0,0,0,0.7); border: 1px solid rgba(125,211,252,0.25); border-radius: 3px; padding: 0 3px;')
 
-        level_lbl.setFixedSize(18, 11)
+        level_lbl.adjustSize()
+        level_lbl.setFixedHeight(11)
 
         level_lbl.setAttribute(Qt.WA_TransparentForMouseEvents)
 
