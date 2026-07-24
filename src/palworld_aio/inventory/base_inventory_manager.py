@@ -688,17 +688,15 @@ class BaseInventoryManager:
                 slots = cont['value'].get('Slots', {}).get('value', {}).get('values', [])
                 current_slot_count = len(slots)
                 if new_slot_count > current_slot_count:
-                    if slots:
-                        import copy
-                        template = copy.deepcopy(slots[0])
-                        template['RawData']['value']['item']['static_id'] = ''
-                        template['RawData']['value']['item']['dynamic_id']['created_world_id'] = '00000000-0000-0000-0000-000000000000'
-                        template['RawData']['value']['item']['dynamic_id']['local_id'] = '00000000-0000-0000-0000-000000000000'
-                        template['RawData']['value']['count'] = 0
-                        while len(slots) < new_slot_count:
-                            slots.append(copy.deepcopy(template))
-                    else:
-                        pass
+                    import copy
+                    zero_uuid = '00000000-0000-0000-0000-000000000000'
+                    empty_slot = {'RawData': {'type': 'StructProperty', 'struct_type': 'PalItemSlotSaveData', 'struct_id': zero_uuid, 'value': {'slot_index': 0, 'count': 0, 'item': {'static_id': '', 'dynamic_id': {'created_world_id': {'struct_type': 'FGuid', 'value': zero_uuid}, 'local_id_in_created_world': zero_uuid}}}}}
+                    if slots and 'RawData' in slots[0]:
+                        initial = slots[0]
+                        if 'CustomVersionData' in initial:
+                            empty_slot['CustomVersionData'] = copy.deepcopy(initial['CustomVersionData'])
+                    while len(slots) < new_slot_count:
+                        slots.append(copy.deepcopy(empty_slot))
                 cont['value']['SlotNum']['value'] = new_slot_count
                 if self.current_container and self.current_container['id'] == container_id:
                     self.current_container['slot_count'] = new_slot_count
