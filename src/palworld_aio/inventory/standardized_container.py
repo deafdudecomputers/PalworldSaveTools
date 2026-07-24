@@ -34,7 +34,7 @@ class ContainerSlot:
                     self.dynamic_id = None
             else:
                 self.dynamic_id = None
-            self.raw_data = self._create_raw_data()
+            self.raw_data = raw_data
         except Exception as e:
             import traceback
             traceback.print_exc()

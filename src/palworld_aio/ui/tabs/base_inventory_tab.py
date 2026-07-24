@@ -4159,4 +4159,4 @@ class BaseInventoryTab(QWidget):
                     if base_id:
                         self._load_containers_for_base(base_id)
                         self._restore_container_selection(current_container_id)
-            self._trigger_save()
+            self._trigger_auto_save()
