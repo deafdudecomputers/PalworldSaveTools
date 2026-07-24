@@ -838,7 +838,6 @@ class StatsPanelWidget(QFrame):
         self._ability_status.setText('')
 class MissionPanelWidget(QFrame):
     missions_changed = Signal()
-    GROUP_KEYS = ['not_started', 'active', 'completed']
     def __init__(self, parent=None):
         super().__init__(parent)
         self._all_quest_ids = []
@@ -846,8 +845,7 @@ class MissionPanelWidget(QFrame):
         self._completed_set = set()
         self._active_set = set()
         self._player_uid = None
-        self._quest_rows = {}
-        self._group_headers = {}
+        self._quest_rows = []
         self._setup_ui()
         self._load_quest_data()
     def _load_quest_data(self):
@@ -917,43 +915,6 @@ class MissionPanelWidget(QFrame):
         self._scroll_layout.setContentsMargins(0, 0, 0, 0); self._scroll_layout.setSpacing(2)
         scroll.setWidget(scroll_content)
         layout.addWidget(scroll, 1)
-    def _build_quest_row_widget(self, qid):
-        row = QFrame(); row.setFixedHeight(24)
-        row.setObjectName(f'questRow_{qid}')
-        row.setStyleSheet('QFrame:hover { background: rgba(255,255,255,0.03); }')
-        rl = QHBoxLayout(row); rl.setContentsMargins(4, 0, 4, 0); rl.setSpacing(4)
-        cb = ToggleCheckBtn('')
-        cb.setObjectName(f'questCb_{qid}')
-        rl.addWidget(cb)
-        qtype = self._derive_type(qid)
-        type_colors = {'Main': '#fbbf24', 'Sub': '#7dd3fc', 'Hidden': '#a78bfa'}
-        tc = type_colors.get(qtype, '#888')
-        type_lbl = QLabel(qtype); type_lbl.setFixedWidth(45)
-        type_lbl.setStyleSheet(f'font-size: 8px; font-weight: bold; color: {tc};')
-        rl.addWidget(type_lbl)
-        name = self._derive_name(qid)
-        name_lbl = QLabel(name)
-        name_lbl.setStyleSheet('font-size: 10px; color: #e2e8f0;')
-        rl.addWidget(name_lbl, 1)
-        id_lbl = QLabel(qid); id_lbl.setStyleSheet('font-size: 8px; color: #555;')
-        rl.addWidget(id_lbl)
-        row.setVisible(False)
-        self._scroll_layout.addWidget(row)
-        self._quest_rows[qid] = {'row': row, 'qid': qid, 'cb': cb}
-        return row
-    def _ensure_quest_row(self, qid):
-        if qid not in self._quest_rows:
-            self._build_quest_row_widget(qid)
-        return self._quest_rows[qid]
-    def _ensure_group_header(self, status_key, label_text, color):
-        key = f'header_{status_key}'
-        if key not in self._group_headers:
-            lbl = QLabel(label_text)
-            lbl.setObjectName(key)
-            lbl.setStyleSheet(f'font-size: 10px; font-weight: bold; color: {color}; padding: 4px 0;')
-            self._group_headers[key] = lbl
-            self._scroll_layout.addWidget(lbl)
-        return self._group_headers[key]
     def refresh_labels(self):
         self._missions_title.setText(t('inventory.missions', default='Missions'))
         self._sel_all.setText(t('player_item.select_all', default='All'))
@@ -997,10 +958,10 @@ class MissionPanelWidget(QFrame):
             return 'active'
         return 'not_started'
     def _rebuild_list(self):
-        for header in self._group_headers.values():
-            header.setVisible(False)
-        for entry in self._quest_rows.values():
-            entry['row'].setVisible(False)
+        for i in reversed(range(self._scroll_layout.count())):
+            w = self._scroll_layout.itemAt(i).widget()
+            if w: w.deleteLater()
+        self._quest_rows = []
         groups = [('not_started', t('inventory.missions_not_started', default='Not Started'), '#888'),
                   ('active', t('inventory.missions_active', default='Active'), '#4ade80'),
                   ('completed', t('inventory.missions_completed', default='Completed'), '#555')]
@@ -1008,18 +969,37 @@ class MissionPanelWidget(QFrame):
             items = [qid for qid in self._all_quest_ids if self._status(qid) == status_key]
             if not items:
                 continue
-            header = self._ensure_group_header(status_key, label_text, color)
-            header.setVisible(True)
-            header.setText(label_text)
-            header.setStyleSheet(f'font-size: 10px; font-weight: bold; color: {color}; padding: 4px 0;')
+            lbl = QLabel(label_text)
+            lbl.setStyleSheet(f'font-size: 10px; font-weight: bold; color: {color}; padding: 4px 0;')
+            self._scroll_layout.addWidget(lbl)
             for qid in items:
-                entry = self._ensure_quest_row(qid)
-                entry['row'].setVisible(True)
+                self._scroll_layout.addWidget(self._make_quest_row(qid))
+        self._scroll_layout.addStretch()
+    def _make_quest_row(self, qid):
+        row = QFrame(); row.setFixedHeight(24)
+        row.setStyleSheet('QFrame:hover { background: rgba(255,255,255,0.03); }')
+        rl = QHBoxLayout(row); rl.setContentsMargins(4, 0, 4, 0); rl.setSpacing(4)
+        cb = ToggleCheckBtn('')
+        rl.addWidget(cb)
+        qtype = self._derive_type(qid)
+        type_colors = {'Main': '#fbbf24', 'Sub': '#7dd3fc', 'Hidden': '#a78bfa'}
+        tc = type_colors.get(qtype, '#888')
+        type_lbl = QLabel(qtype); type_lbl.setFixedWidth(45)
+        type_lbl.setStyleSheet(f'font-size: 8px; font-weight: bold; color: {tc};')
+        rl.addWidget(type_lbl)
+        name = self._derive_name(qid)
+        name_lbl = QLabel(name)
+        name_lbl.setStyleSheet('font-size: 10px; color: #e2e8f0;')
+        rl.addWidget(name_lbl, 1)
+        id_lbl = QLabel(qid); id_lbl.setStyleSheet('font-size: 8px; color: #555;')
+        rl.addWidget(id_lbl)
+        self._quest_rows.append({'row': row, 'qid': qid, 'cb': cb})
+        return row
     def _toggle_all(self, checked):
-        for entry in self._quest_rows.values():
+        for entry in self._quest_rows:
             entry['cb'].setChecked(checked)
     def _get_selected_qids(self):
-        return [entry['qid'] for entry in self._quest_rows.values() if entry['cb'].isChecked()]
+        return [entry['qid'] for entry in self._quest_rows if entry['cb'].isChecked()]
     def _gvas_for_player(self):
         from palworld_aio.utils import sav_to_gvasfile
         save_path = os.path.join(constants.current_save_path, 'Players', f'{self._uid_filename(self._player_uid)}.sav')
