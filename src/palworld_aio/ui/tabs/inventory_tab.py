@@ -2382,6 +2382,12 @@ class PlayerInventoryTab(QWidget):
                 _consolidate_container_slots(key_c, 'key', SINGLETON_TYPE_A)
                 self._update_raw_save_data('key', key_c)
             self.inventory.save()
+            main_c = self.inventory.get_container('main')
+            if main_c:
+                self.main_grid.load_items(main_c.slots)
+            key_c = self.inventory.get_container('key')
+            if key_c:
+                self.key_grid.load_items(key_c.slots)
         dlg = InventoryLoadoutDialog(self, _get_items, _apply_items, loadouts_path=_INV_LOADOUTS_PATH)
         dlg.exec()
         self._refresh_display()
@@ -2464,6 +2470,18 @@ class PlayerInventoryTab(QWidget):
                 container.update_slots([s for s in container.slots if s.get('slot_index') != slot_idx])
                 container._standardized_container.add_item(equip_item['id'], equip_item.get('qty', 1), slot_index=slot_idx)
             self.inventory.save()
+            main_c = self.inventory.get_container('main')
+            if main_c:
+                self.main_grid.load_items(main_c.slots)
+            key_c = self.inventory.get_container('key')
+            if key_c:
+                self.key_grid.load_items(key_c.slots)
+            equipment = self.inventory.get_equipment()
+            for slot_name, item in equipment.items():
+                if slot_name in self.equip_slots:
+                    sw = self.equip_slots[slot_name]
+                    if not sw.is_locked():
+                        sw.set_item(item)
         dlg = InventoryLoadoutDialog(self, _get_equipment, _apply_equipment, title=t('inventory.equip_loadouts_title', default='Equipment Loadouts'), loadouts_path=_EQ_LOADOUTS_PATH, key_prefix='inventory.equip')
         dlg.exec()
         self._refresh_display()

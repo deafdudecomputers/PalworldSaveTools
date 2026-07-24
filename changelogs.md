@@ -3,6 +3,7 @@
 - **New/cloned pal UUIDs now match game format** — `_generate_pal_save_param` was producing uppercase hex UUIDs for new pals, while the game uses lowercase. All pal InstanceId generation now uses `str(uuid.uuid4())` (lowercase with hyphens) across Add New Pal, base worker creation, DPS cloning, character transfer, and guild redistribution.
 - **Max All Stats no longer freezes the app** — previously called `refresh_all()` which rebuilt every single tab (players, guilds, bases, map, exclusions, inventory, base inventory, pal editor, tools, JSON editor, breeding) after changing stat values. Now only updates the player list and stats results panel, making Max All Stats instant.
 - **Tab spam protection in Player Inventory** — rapidly clicking between Missions, Technology, and Stats sub-tabs no longer triggers multiple redundant `.sav` file reads. Tab switching is signal-blocked during load, stale widget deletions are flushed via `processEvents()` before/after, and already-loaded tabs are cached so clicking the same tab again does nothing.
+- **Loadout apply now shows items immediately** — applying inventory or equipment loadouts inside the Loadout dialog previously required closing the dialog to see the items appear in the grid. Now the grid and equipment slots refresh inline (without `set_max_slots`/`deleteLater()`) so changes are visible while the dialog is still open.
 - Bumped version to 2.2.2
 
 #2.2.1
