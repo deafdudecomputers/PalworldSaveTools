@@ -1,6 +1,8 @@
 #2.2.2
 - **Pal unique ID in pal info panel** — the detailed pal editor now shows each pal's instance GUID in the header row (left-aligned, click to copy). Buff/debuff icons sit on the same row (right-aligned). No more digging through JSON or the save file to find a pal's internal ID.
 - **New/cloned pal UUIDs now match game format** — `_generate_pal_save_param` was producing uppercase hex UUIDs for new pals, while the game uses lowercase. All pal InstanceId generation now uses `str(uuid.uuid4())` (lowercase with hyphens) across Add New Pal, base worker creation, DPS cloning, character transfer, and guild redistribution.
+- **Max All Stats no longer freezes the app** — previously called `refresh_all()` which rebuilt every single tab (players, guilds, bases, map, exclusions, inventory, base inventory, pal editor, tools, JSON editor, breeding) after changing stat values. Now only updates the player list and stats results panel, making Max All Stats instant.
+- **Tab spam protection in Player Inventory** — rapidly clicking between Missions, Technology, and Stats sub-tabs no longer triggers multiple redundant `.sav` file reads. Tab switching is signal-blocked during load, stale widget deletions are flushed via `processEvents()` before/after, and already-loaded tabs are cached so clicking the same tab again does nothing.
 - Bumped version to 2.2.2
 
 #2.2.1

@@ -1760,6 +1760,7 @@ class PlayerInventoryTab(QWidget):
         self.current_player_uid = None
         self.current_player_name = None
         self._player_list = []
+        self._tab_loaded_for = {}
         self._syncing = False
         self.equip_headers = {}
         self._context_container_type = 'main'
@@ -2019,8 +2020,11 @@ class PlayerInventoryTab(QWidget):
             return
         self._save_stats_to_raw_data()
         self._update_player_dropdown_level()
-        if hasattr(self.parent_window, 'refresh_all'):
-            self.parent_window.refresh_all()
+        pw = self.parent_window
+        if hasattr(pw, '_refresh_players'):
+            pw._refresh_players()
+        if hasattr(pw, '_refresh_stats'):
+            pw._refresh_stats()
     def _on_missions_changed(self):
         if not self.current_player_uid:
             return
@@ -2031,11 +2035,22 @@ class PlayerInventoryTab(QWidget):
     def _on_tab_changed(self, idx):
         if not self.current_player_uid:
             return
+        if idx not in (3, 4):
+            return
         uid = self.current_player_uid
-        if idx == 3:
-            self.missions_panel.load_player(uid)
-        elif idx == 4:
-            self.tech_panel.load_player(uid)
+        if self._tab_loaded_for.get(idx) == uid:
+            return
+        QApplication.processEvents()
+        self.inv_tabs.blockSignals(True)
+        try:
+            if idx == 3:
+                self.missions_panel.load_player(uid)
+            elif idx == 4:
+                self.tech_panel.load_player(uid)
+            self._tab_loaded_for[idx] = uid
+        finally:
+            QApplication.processEvents()
+            self.inv_tabs.blockSignals(False)
     def refresh_players(self):
         self._player_list = []
         self.current_player_uid = None
