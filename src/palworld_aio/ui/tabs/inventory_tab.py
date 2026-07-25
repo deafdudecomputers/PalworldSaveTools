@@ -1490,15 +1490,18 @@ class InventoryGridWidget(QWidget):
         self.grid_layout.setHorizontalSpacing(2)
         self.grid_layout.setVerticalSpacing(4)
         self.grid_layout.setContentsMargins(0, 0, 0, 0)
+        for c in range(GRID_COLS):
+            self.grid_layout.setColumnStretch(c, 1)
         scroll.setWidget(self.grid_widget)
         main_layout.addWidget(scroll)
     def set_max_slots(self, max_slots: int):
-        if max_slots == self.max_visible_slots and self.slots:
+        display_slots = max(max_slots, 42)
+        if display_slots == self.max_visible_slots and self.slots:
             return
-        self.max_visible_slots = max_slots
-        self._ensure_slots_up_to(max_slots)
+        self.max_visible_slots = display_slots
+        self._ensure_slots_up_to(display_slots)
         for i, slot in self.slots.items():
-            slot.setVisible(i < max_slots)
+            slot.setVisible(i < display_slots)
     def load_items(self, items: list, max_slots: int=None):
         if max_slots is not None:
             self.set_max_slots(max_slots)

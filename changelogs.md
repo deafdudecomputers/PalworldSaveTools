@@ -6,6 +6,7 @@
 - **Loadout apply now shows items immediately** — applying inventory or equipment loadouts inside the Loadout dialog previously required closing the dialog to see the items appear in the grid. Now the grid and equipment slots refresh inline (without `set_max_slots`/`deleteLater()`) so changes are visible while the dialog is still open.
 - **Modify Container Slots no longer empties the first slot** — expanding a container's capacity was appending new empty slots with index 0, overwriting the first item during display re-parse. New slots now use correct sequential indices, and writeback preserves the full slot structure so no data is lost on save.
 - **Container ID copy in Base Inventory** — the container ID displayed in the info panel (below the name and slot count) is now clickable. Hover turns blue, click copies the full ID to clipboard. Works for regular containers, guild chests, and booth containers.
+- **Base inventory grid always shows a full slot frame** — containers with fewer than 42 slots no longer render an awkward 1-wide grid. The inventory grid now enforces a minimum 6×7 (42-slot) layout with column stretch, so empty slots fill the space evenly. Matches the player inventory grid behavior.
 - Bumped version to 2.2.2
 
 #2.2.1
