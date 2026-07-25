@@ -582,7 +582,7 @@ uv run python build/nuitka/build_nuitka.py --onedir
 
 ### cx_Freeze (Windows インストーラー)
 
-ローカル Windows `.7z` パッケージの場合:
+ローカル Windows `.zip` パッケージの場合:
 
 ```
 scripts\build_cx.cmd

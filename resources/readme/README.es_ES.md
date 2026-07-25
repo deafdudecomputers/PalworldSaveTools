@@ -589,7 +589,7 @@ Las salidas van a `dist/`:
 
 ### cx_Freeze (instalador de Windows)
 
-Para un paquete local de Windows `.7z`:
+Para un paquete local de Windows `.zip`:
 
 ```
 scripts\build_cx.cmd

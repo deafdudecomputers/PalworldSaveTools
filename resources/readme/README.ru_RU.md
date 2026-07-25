@@ -582,7 +582,7 @@ uv run python build/nuitka/build_nuitka.py --onedir
 
 ### cx_Freeze (установщик Windows)
 
-Для локального пакета Windows `.7z`:
+Для локального пакета Windows `.zip`:
 
 ```
 scripts\build_cx.cmd

@@ -582,7 +582,7 @@ uv run python build/nuitka/build_nuitka.py --onedir
 
 ### cx_Freeze（Windows 安装程序）
 
-对于本地 Windows `.7z` 包：
+对于本地 Windows `.zip` 包：
 
 ```
 scripts\build_cx.cmd
