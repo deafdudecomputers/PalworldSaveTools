@@ -419,10 +419,11 @@ class MapTab(QWidget):
         self.info_label = QLabel(t('map.info.select_base') if t else 'Click on a base marker or list item to view details')
         self.info_label.setWordWrap(True)
         self.info_label.setObjectName('sectionHeader')
-        self.info_label.setStyleSheet('QLabel#sectionHeader { margin: 0px; padding: 8px 10px; }')
+        self.info_label.setStyleSheet('QLabel#sectionHeader { margin: 0px; padding: 8px 10px; } QLabel a { color: #e0e0e0; text-decoration: none; } QLabel a:hover { color: #7DD3FC; }')
         self.info_label.setAlignment(Qt.AlignCenter)
-        self.info_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.info_label.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.LinksAccessibleByMouse)
         self.info_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.info_label.linkActivated.connect(self._on_info_link_clicked)
         sidebar_layout.addWidget(self.info_label)
         body_layout = QHBoxLayout()
         body_layout.setContentsMargins(0, 0, 0, 0)
@@ -1220,8 +1221,11 @@ class MapTab(QWidget):
         base_id = str(base_data.get('base_id', ''))
         pal_count = base_data.get('pal_count', 0)
         coords = base_data.get('coords', (0, 0))
-        info = f"\n        <b>{guild_name}</b><br>\n        {(t('map.info.level') if t else 'Level')}: {guild_level}<br>\n        {(t('map.info.admin') if t else 'Admin:')} {leader_name}<br>\n        {(t('map.info.members') if t else 'Members:')} {member_count}<br>\n        {(t('map.info.base_camps') if t else 'Base Camps:')} {base_position}/{total_bases}<br>\n        {(t('map.info.base_id') if t else 'Base ID:')} {base_id}<br>\n        {(t('map.info.base_pals') if t else 'Base Pals:')} {pal_count}<br>\n        {(t('map.info.location') if t else 'Location:')} X:{int(coords[0])},Y:{int(coords[1])}\n        "
+        info = f"\n        <b>{guild_name}</b><br>\n        {(t('map.info.level') if t else 'Level')}: {guild_level}<br>\n        {(t('map.info.admin') if t else 'Admin:')} {leader_name}<br>\n        {(t('map.info.members') if t else 'Members:')} {member_count}<br>\n        {(t('map.info.base_camps') if t else 'Base Camps:')} {base_position}/{total_bases}<br>\n        {(t('map.info.base_id') if t else 'Base ID:')} <a href=\"copy://{base_id}\" style=\"color: #e0e0e0; text-decoration: none;\">{base_id}</a><br>\n        {(t('map.info.base_pals') if t else 'Base Pals:')} {pal_count}<br>\n        {(t('map.info.location') if t else 'Location:')} X:{int(coords[0])},Y:{int(coords[1])}\n        "
         self.info_label.setText(info.strip())
+    def _on_info_link_clicked(self, url):
+        if url.startswith('copy://'):
+            QApplication.clipboard().setText(url[7:])
     def _on_marker_clicked(self, data, marker=None):
         if 'player_uid' in data:
             self._update_player_info(data)

@@ -3546,7 +3546,7 @@ class BaseInventoryTab(QWidget):
                     self._clear_pal_booth_slots(container_info)
             if self.manager.clear_container(container_id):
                 self._on_container_selected(container_id)
-                self._show_info(t('base_inventory.container_cleared') if t else 'Container cleared successfully')
+                QTimer.singleShot(0, lambda: self._show_info(t('base_inventory.container_cleared') if t else 'Container cleared successfully'))
             else:
                 self._show_warning(t('base_inventory.failed_to_clear_container') if t else 'Failed to clear container')
     def _clear_pal_booth_slots(self, container_info):
