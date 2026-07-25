@@ -9,6 +9,22 @@ from functools import partial
 import logging
 from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QFrame, QMenuBar, QMenu, QStatusBar, QSplitter, QMessageBox, QFileDialog, QInputDialog, QDialog, QComboBox, QApplication, QStackedWidget, QTextEdit, QLineEdit
 from PySide6.QtCore import Qt, QTimer, Signal, QObject, QPoint, QPropertyAnimation, QEasingCurve, QByteArray, QThread
+
+_keep_dialogs = []
+_original_exec = QDialog.exec
+_original_exec_ = QDialog.exec_
+
+def _safe_exec(self, *args, **kwargs):
+    _keep_dialogs.append(self)
+    return _original_exec(self, *args, **kwargs)
+
+def _safe_exec_(self, *args, **kwargs):
+    _keep_dialogs.append(self)
+    return _original_exec_(self, *args, **kwargs)
+
+QDialog.exec = _safe_exec
+QDialog.exec_ = _safe_exec_
+
 from PySide6.QtGui import QIcon, QFont, QAction, QPixmap, QCloseEvent, QTextCursor
 from i18n import t, set_language, load_resources, get_native_lang_name
 from common import get_versions, get_current_version, get_display_version, is_standalone

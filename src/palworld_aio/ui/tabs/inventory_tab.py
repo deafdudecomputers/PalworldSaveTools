@@ -2154,6 +2154,8 @@ class PlayerInventoryTab(QWidget):
         def on_finished(inv):
             self.inventory = inv
             self.player_select_btn.setText(display)
+            self.inv_tabs.setCurrentIndex(0)
+            self._tab_loaded_for.clear()
             self._show_inventory()
             self._refresh_display()
         run_with_loading(on_finished, task)
@@ -2201,6 +2203,8 @@ class PlayerInventoryTab(QWidget):
                 self._syncing = True
                 self.parent_window.pal_editor_tab._select_player_ref_only(uid, name, display)
                 self._syncing = False
+            self.inv_tabs.setCurrentIndex(0)
+            self._tab_loaded_for.clear()
             if is_loading_active():
                 def task():
                     return get_player_inventory(uid)
@@ -3239,6 +3243,8 @@ class PlayerInventoryTab(QWidget):
                 display = player['display']
                 self.player_select_btn.setText(display)
                 break
+        self.inv_tabs.setCurrentIndex(0)
+        self._tab_loaded_for.clear()
         self._show_inventory()
         self.modified = False
         self.inventory = get_player_inventory(self.current_player_uid)
