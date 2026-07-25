@@ -1942,5 +1942,6 @@
     "inventory.missions_not_started": "Non démarré",
     "edit_pals.add_active_skill": "Ajouter une compétence active",
     "inventory.technology": "Technologie",
-    "player_technology.applied": "Application de la ou des technologies {count} au(x) joueur(s) {players}."
+    "player_technology.applied": "Application de la ou des technologies {count} au(x) joueur(s) {players}.",
+    "base_inventory.click_copy_container_id": "Cliquez pour copier l'ID du conteneur"
 }

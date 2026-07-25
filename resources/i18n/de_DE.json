@@ -1984,5 +1984,6 @@
     "inventory.missions_not_started": "Nicht gestartet",
     "edit_pals.add_active_skill": "Aktiven Skill hinzufügen",
     "inventory.technology": "Technologie",
-    "player_technology.applied": "{count} Technologie(n) auf {players} Spieler angewendet."
+    "player_technology.applied": "{count} Technologie(n) auf {players} Spieler angewendet.",
+    "base_inventory.click_copy_container_id": "Klicken Sie, um die Container-ID zu kopieren"
 }

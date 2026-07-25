@@ -1958,5 +1958,6 @@
     "inventory.missions_not_started": "Не запущено",
     "edit_pals.add_active_skill": "Добавить активный навык",
     "inventory.technology": "Технология",
-    "player_technology.applied": "Применены технологии {count} к игрокам {players}."
+    "player_technology.applied": "Применены технологии {count} к игрокам {players}.",
+    "base_inventory.click_copy_container_id": "Нажмите, чтобы скопировать идентификатор контейнера"
 }

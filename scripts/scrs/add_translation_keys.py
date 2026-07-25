@@ -13,6 +13,7 @@ except ImportError:
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 LANGUAGES = {'zh_CN': {'name': 'Simplified Chinese', 'code': 'zh-CN'}, 'de_DE': {'name': 'German', 'code': 'de'}, 'es_ES': {'name': 'Spanish', 'code': 'es'}, 'fr_FR': {'name': 'French', 'code': 'fr'}, 'ru_RU': {'name': 'Russian', 'code': 'ru'}, 'ja_JP': {'name': 'Japanese', 'code': 'ja'}, 'ko_KR': {'name': 'Korean', 'code': 'ko'}, 'pt_BR': {'name': 'Portuguese (Brazil)', 'code': 'pt'}}
 NEW_TRANSLATIONS = {
+    'base_inventory.click_copy_container_id': 'Click to copy Container ID',
     'inventory.missions': 'Missions',
     'inventory.missions_complete': 'Complete Selected',
     'inventory.missions_reset': 'Reset Selected',

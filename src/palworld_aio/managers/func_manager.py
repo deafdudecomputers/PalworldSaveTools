@@ -1548,7 +1548,9 @@ def modify_container_slots(new_slot_num, parent=None, container_id=None):
                             template['RawData']['value']['item']['dynamic_id']['local_id'] = '00000000-0000-0000-0000-000000000000'
                             template['RawData']['value']['count'] = 0
                             while len(slots) < new_slot_num:
-                                slots.append(copy.deepcopy(template))
+                                new_slot = copy.deepcopy(template)
+                                new_slot['RawData']['value']['slot_index'] = len(slots)
+                                slots.append(new_slot)
                         else:
                             pass
                     elif len(slots) > new_slot_num:
@@ -1585,7 +1587,9 @@ def modify_container_slots(new_slot_num, parent=None, container_id=None):
                             template['RawData']['value']['item']['dynamic_id']['local_id'] = '00000000-0000-0000-0000-000000000000'
                             template['RawData']['value']['count'] = 0
                             while len(slots) < new_slot_num:
-                                slots.append(copy.deepcopy(template))
+                                new_slot = copy.deepcopy(template)
+                                new_slot['RawData']['value']['slot_index'] = len(slots)
+                                slots.append(new_slot)
                         else:
                             pass
                     elif len(slots) > new_slot_num:

@@ -2247,5 +2247,6 @@
     "inventory.missions_not_started": "Não iniciado",
     "edit_pals.add_active_skill": "Adicionar habilidade ativa",
     "inventory.technology": "Tecnologia",
-    "player_technology.applied": "Aplicou tecnologia(s) {count} ao(s) jogador(es) {players}."
+    "player_technology.applied": "Aplicou tecnologia(s) {count} ao(s) jogador(es) {players}.",
+    "base_inventory.click_copy_container_id": "Clique para copiar o ID do contêiner"
 }

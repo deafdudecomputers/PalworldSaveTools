@@ -15,8 +15,9 @@ class ContainerSlot:
         from palworld_aio.utils import as_uuid
         zero_uuid = '00000000-0000-0000-0000-000000000000'
         return {'RawData': {'array_type': 'ByteProperty', 'id': None, 'value': {'slot_index': self.slot_index, 'count': self.count, 'item': {'static_id': self.item_id, 'dynamic_id': {'created_world_id': zero_uuid, 'local_id_in_created_world': str(self.dynamic_id) if self.dynamic_id else zero_uuid, 'static_id': self.item_id}}, 'trailing_bytes': [0] * 16}, 'type': 'ArrayProperty', 'custom_type': '.worldSaveData.ItemContainerSaveData.Value.Slots.Slots.RawData'}, 'CustomVersionData': {'array_type': 'ByteProperty', 'id': None, 'value': {'values': [1, 0, 0, 0, 126, 180, 234, 18, 154, 27, 90, 255, 113, 170, 113, 188, 223, 51, 214, 14, 1, 0, 0, 0]}, 'type': 'ArrayProperty'}}
-    def update_from_raw_data(self, raw_data: Dict[str, Any]) -> None:
+    def update_from_raw_data(self, slot_data: Dict[str, Any]) -> None:
         try:
+            raw_data = slot_data.get('RawData', {})
             value = raw_data.get('value', {})
             self.count = value.get('count', self.count)
             self.item_id = value.get('item', {}).get('static_id', self.item_id)
@@ -34,7 +35,7 @@ class ContainerSlot:
                     self.dynamic_id = None
             else:
                 self.dynamic_id = None
-            self.raw_data = raw_data
+            self.raw_data = slot_data
         except Exception as e:
             import traceback
             traceback.print_exc()
@@ -74,7 +75,7 @@ class StandardizedContainer:
                         raw_slot_index = raw_value.get('slot_index', 0)
                     slot = ContainerSlot(slot_index=raw_slot_index)
                     if slot_data.get('RawData'):
-                        slot.update_from_raw_data(slot_data['RawData'])
+                        slot.update_from_raw_data(slot_data)
                     while len(self.slots) <= raw_slot_index:
                         gap_index = len(self.slots)
                         if gap_index != raw_slot_index:

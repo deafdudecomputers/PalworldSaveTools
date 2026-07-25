@@ -1960,5 +1960,6 @@
     "inventory.missions_not_started": "未開始",
     "edit_pals.add_active_skill": "アクティブスキルの追加",
     "inventory.technology": "テクノロジー",
-    "player_technology.applied": "{count} 技術を {players} プレイヤーに適用しました。"
+    "player_technology.applied": "{count} 技術を {players} プレーヤーに適用しました。",
+    "base_inventory.click_copy_container_id": "クリックしてコンテナIDをコピーします"
 }
