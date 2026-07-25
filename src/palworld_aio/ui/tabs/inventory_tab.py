@@ -1117,7 +1117,7 @@ class TechnologyPanelWidget(QFrame):
             sd = gvas.properties.get('SaveData', {}).get('value', {})
             uv = sd.get('UnlockedRecipeTechnologyNames', {}).get('value', {}).get('values', [])
             if isinstance(uv, list):
-                self._unlocked = {str(v) for v in uv}
+                self._unlocked = {str(v).lower() for v in uv}
             self._tp_value = int(sd.get('TechnologyPoint', {}).get('value', 0))
             self._atp_value = int(sd.get('bossTechnologyPoint', {}).get('value', 0))
         except Exception:
@@ -1251,7 +1251,7 @@ class TechnologyPanelWidget(QFrame):
             rl.addStretch()
             self._scroll_layout.insertWidget(self._scroll_layout.count() - 1, row_w)
     def _apply_tech_style(self, frame, asset):
-        unlocked = asset in self._unlocked
+        unlocked = asset.lower() in self._unlocked
         fg = '#e2e8f0' if unlocked else '#555'
         bg = 'rgba(125,211,252,0.08)' if unlocked else 'rgba(255,255,255,0.03)'
         bd = '1px solid rgba(125,211,252,0.3)' if unlocked else '1px solid rgba(255,255,255,0.06)'
@@ -1311,10 +1311,11 @@ class TechnologyPanelWidget(QFrame):
         self._tech_buttons[asset] = frame
         return frame
     def _toggle_tech(self, asset):
-        if asset in self._unlocked:
-            self._unlocked.discard(asset)
+        key = asset.lower()
+        if key in self._unlocked:
+            self._unlocked.discard(key)
         else:
-            self._unlocked.add(asset)
+            self._unlocked.add(key)
         frame = self._tech_buttons.get(asset)
         if frame:
             self._apply_tech_style(frame, asset)
@@ -1327,7 +1328,7 @@ class TechnologyPanelWidget(QFrame):
         from palworld_aio.managers.player_manager import set_player_boss_tech_points
         set_player_boss_tech_points(self._player_uid, val)
     def _select_all(self):
-        self._unlocked = {t.get('asset', '') for t in self._tech_data if t.get('asset')}
+        self._unlocked = {t.get('asset', '').lower() for t in self._tech_data if t.get('asset')}
         for asset, frame in self._tech_buttons.items():
             self._apply_tech_style(frame, asset)
     def _deselect_all(self):
