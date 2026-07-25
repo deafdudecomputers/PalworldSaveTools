@@ -2777,7 +2777,7 @@ class PlayerInventoryTab(QWidget):
     def _on_empty_slot_double_clicked(self, container_type: str, slot_index: int):
         self._context_container_type = container_type
         self._context_slot_index = slot_index
-        self._show_add_item_dialog()
+        QTimer.singleShot(0, self._show_add_item_dialog)
     def _delete_item_direct(self, slot_data: dict):
         if not self.inventory or not slot_data:
             return
@@ -2892,9 +2892,16 @@ class PlayerInventoryTab(QWidget):
                     if s.get('slot_index') in accessory_indices:
                         exclude_assets.add(s.get('item_id', ''))
         dialog = ItemPickerDialog(self, filter_type_a=slot_filter.get('type_a'), filter_type_b=slot_filter.get('type_b'), hide_quantity=slot_type not in ('food', 'weapon'), exclude_assets=exclude_assets)
-        dialog.item_selected.connect(lambda item_id, qty: self._do_add_to_equip_slot(slot_name, container_type, item_id, qty))
+        if not hasattr(self, '_keep_equip_dialogs'):
+            self._keep_equip_dialogs = []
+        self._keep_equip_dialogs.append(dialog)
+        self._pending_equip_add = None
+        dialog.item_selected.connect(lambda i, q: setattr(self, '_pending_equip_add', (slot_name, container_type, i, q)))
         dialog.exec()
-        self._refresh_display()
+        if self._pending_equip_add:
+            self._do_add_to_equip_slot(*self._pending_equip_add)
+            self._pending_equip_add = None
+        QTimer.singleShot(0, self._refresh_display)
     def _do_add_to_equip_slot(self, slot_name: str, container_type: str, item_id: str, quantity: int):
         if not self.inventory:
             return
@@ -2964,10 +2971,17 @@ class PlayerInventoryTab(QWidget):
             dialog = ItemPickerDialog(self, filter_type_a='EPalItemTypeA::Essential', exclude_assets=exclude)
         else:
             dialog = ItemPickerDialog(self, filter_exclude_type_a='EPalItemTypeA::Essential')
-        dialog.item_selected.connect(self._add_item_to_inventory)
+        if not hasattr(self, '_keep_dialogs'):
+            self._keep_dialogs = []
+        self._keep_dialogs.append(dialog)
+        self._pending_add = None
+        dialog.item_selected.connect(lambda i, q: setattr(self, '_pending_add', (i, q)))
         dialog.exec()
-        self._refresh_display()
-    def _add_item_to_inventory(self, item_id: str, quantity: int):
+        if self._pending_add:
+            self._do_add_item(*self._pending_add)
+            self._pending_add = None
+        QTimer.singleShot(0, self._refresh_display)
+    def _do_add_item(self, item_id: str, quantity: int):
         if not self.inventory:
             return
         actual_container_type = ItemData.get_target_container(item_id)

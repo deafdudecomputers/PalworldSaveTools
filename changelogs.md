@@ -7,6 +7,7 @@
 - **Modify Container Slots no longer empties the first slot** — expanding a container's capacity was appending new empty slots with index 0, overwriting the first item during display re-parse. New slots now use correct sequential indices, and writeback preserves the full slot structure so no data is lost on save.
 - **Container ID copy in Base Inventory** — the container ID displayed in the info panel (below the name and slot count) is now clickable. Hover turns blue, click copies the full ID to clipboard. Works for regular containers, guild chests, and booth containers.
 - **Base inventory grid always shows a full slot frame** — containers with fewer than 42 slots no longer render an awkward 1-wide grid. The inventory grid now enforces a minimum 6×7 (42-slot) layout with column stretch, so empty slots fill the space evenly. Matches the player inventory grid behavior.
+- **Fixed hard segfault when adding items via the item picker** — the ItemPickerDialog, populated with 840+ items, caused a use-after-free crash when its C++ widget tree was destroyed by Python reference counting immediately after `dialog.exec()` returned, while Qt still had pending paint events. The dialog is now kept alive in a permanent reference list, and data mutation + widget refresh are deferred until after `dialog.exec()` returns. Same fix applied to player inventory, equipment slot, and base inventory add dialogs.
 - Bumped version to 2.2.2
 
 #2.2.1

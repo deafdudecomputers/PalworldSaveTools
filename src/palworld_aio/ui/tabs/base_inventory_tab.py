@@ -3947,20 +3947,24 @@ class BaseInventoryTab(QWidget):
             self._show_warning(t('base_inventory.select_container_first') if t else 'Please select a container first')
             return
         dialog = ItemPickerDialog(self, filter_exclude_type_a='EPalItemTypeA::Essential')
-        dialog.item_selected.connect(lambda item_id, qty: self._do_add_item_to_slot(slot_index, item_id, qty))
+        if not hasattr(self, '_keep_base_dialogs'):
+            self._keep_base_dialogs = []
+        self._keep_base_dialogs.append(dialog)
+        self._pending_base_add = None
+        dialog.item_selected.connect(lambda i, q: setattr(self, '_pending_base_add', (slot_index, i, q)))
         dialog.exec()
-    def _do_add_item_to_slot(self, slot_index: int, item_id: str, count: int):
-        if item_id and count > 0:
-            if self.manager.add_item_to_slot(slot_index, item_id, count):
-                inventory_container = self.manager.select_container(self.manager.current_container['id'])
-                if inventory_container:
-                    items = inventory_container.get_items()
-                    max_slots = inventory_container.get_max_slots()
-                    self.inventory_grid.load_items(items, max_slots=max_slots)
-                self._update_container_stats()
+        if self._pending_base_add:
+            si, iid, qty = self._pending_base_add
+            self._pending_base_add = None
+            if iid and qty > 0 and self.manager.add_item_to_slot(si, iid, qty):
+                QTimer.singleShot(0, self._refresh_after_base_add)
                 self._trigger_auto_save()
-            else:
-                self._show_warning(t('base_inventory.failed_to_add_item') if t else 'Failed to add item')
+    def _refresh_after_base_add(self):
+        if self.manager.current_container:
+            inv = self.manager.select_container(self.manager.current_container['id'])
+            if inv:
+                self.inventory_grid.load_items(inv.get_items(), max_slots=inv.get_max_slots())
+            self._update_container_stats()
     def _trigger_auto_save(self):
         if self.manager.inventory_container:
             self._auto_save_timer.start()
