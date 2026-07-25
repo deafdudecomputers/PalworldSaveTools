@@ -588,7 +588,7 @@ uv run python build/nuitka/build_nuitka.py --onedir
 scripts\build_cx.cmd
 ```
 
-这将在项目根目录中创建 `PST_standalone_v{version}.7z` 。
+这将在项目根目录中创建 `PST_standalone_v{version}.zip` 。
 
 ### 交互式生成器
 

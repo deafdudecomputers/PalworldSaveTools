@@ -590,7 +590,7 @@ For a local Windows `.7z` package:
 scripts\build_cx.cmd
 ```
 
-This creates `PST_standalone_v{version}.7z` in the project root.
+This creates `PST_standalone_v{version}.zip` in the project root.
 
 ### Interactive Builder
 

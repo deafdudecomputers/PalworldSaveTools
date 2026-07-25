@@ -34,7 +34,7 @@ GITHUB_RAW_URL = 'https://raw.githubusercontent.com/deafdudecomputers/PalworldSa
 GIT_REPO_URL = 'https://github.com/deafdudecomputers/PalworldSaveTools.git'
 STABLE_BRANCH = 'main'
 STABLE_VERSION_URL = 'https://api.github.com/repos/deafdudecomputers/PalworldSaveTools/releases/latest'
-RELEASE_DOWNLOAD_URL = 'https://github.com/deafdudecomputers/PalworldSaveTools/releases/download/v{version}/PST_standalone_v{version}.7z'
+RELEASE_DOWNLOAD_URL = 'https://github.com/deafdudecomputers/PalworldSaveTools/releases/download/v{version}/PST_standalone_v{version}.zip'
 RELEASES_PAGE_URL = 'https://github.com/deafdudecomputers/PalworldSaveTools/releases/latest'
 def get_base_path():
     return get_base_dir()

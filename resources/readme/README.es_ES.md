@@ -595,7 +595,7 @@ Para un paquete local de Windows `.7z`:
 scripts\build_cx.cmd
 ```
 
-Esto crea `PST_standalone_v{version}.7z` en la raíz del proyecto.
+Esto crea `PST_standalone_v{version}.zip` en la raíz del proyecto.
 
 ### Constructor interactivo
 

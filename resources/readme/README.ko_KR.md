@@ -588,7 +588,7 @@ uv run python build/nuitka/build_nuitka.py --onedir
 scripts\build_cx.cmd
 ```
 
-그러면 프로젝트 루트에 `PST_standalone_v{version}.7z`이 생성됩니다.
+그러면 프로젝트 루트에 `PST_standalone_v{version}.zip`이 생성됩니다.
 
 ### 인터랙티브 빌더
 

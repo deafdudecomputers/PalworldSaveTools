@@ -588,7 +588,7 @@ uv run python build/nuitka/build_nuitka.py --onedir
 scripts\build_cx.cmd
 ```
 
-Это создаст `PST_standalone_v{version}.7z` в корне проекта.
+Это создаст `PST_standalone_v{version}.zip` в корне проекта.
 
 ### Интерактивный конструктор
 

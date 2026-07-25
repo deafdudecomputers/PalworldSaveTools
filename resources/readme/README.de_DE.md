@@ -588,7 +588,7 @@ Für ein lokales Windows `.7z`-Paket:
 scripts\build_cx.cmd
 ```
 
-Dadurch wird `PST_standalone_v{version}.7z` im Projektstamm erstellt.
+Dadurch wird `PST_standalone_v{version}.zip` im Projektstamm erstellt.
 
 ### Interaktiver Builder
 
