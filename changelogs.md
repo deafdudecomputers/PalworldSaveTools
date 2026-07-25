@@ -1,4 +1,6 @@
 #2.2.2
+- **Windows standalone now ships as .zip** — replaced the 7z archive with a standard ZIP file for broader compatibility. No need for third-party extraction tools.
+
 - **Pal unique ID in pal info panel** — the detailed pal editor now shows each pal's instance GUID in the header row (left-aligned, click to copy, hover turns blue). Buff/debuff icons sit on the same row (right-aligned). No more digging through JSON or the save file to find a pal's internal ID.
 - **New/cloned pal UUIDs now match game format** — `_generate_pal_save_param` was producing uppercase hex UUIDs for new pals, while the game uses lowercase. All pal InstanceId generation now uses `str(uuid.uuid4())` (lowercase with hyphens) across Add New Pal, base worker creation, DPS cloning, character transfer, and guild redistribution.
 - **Max All Stats no longer freezes the app** — previously called `refresh_all()` which rebuilt every single tab (players, guilds, bases, map, exclusions, inventory, base inventory, pal editor, tools, JSON editor, breeding) after changing stat values. Now only updates the player list and stats results panel, making Max All Stats instant.

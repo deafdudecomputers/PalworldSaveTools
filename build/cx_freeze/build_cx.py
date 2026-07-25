@@ -103,20 +103,21 @@ def cleanup_build_artifacts():
             print(f'Removed {p}')
 
 def create_release_archive():
+    import zipfile
     version = get_app_version()
     build_dir = 'PST_standalone'
     if not os.path.exists(build_dir):
         return
-    archive_name = f'PST_standalone_v{version}.7z'
+    archive_name = f'PST_standalone_v{version}.zip'
     if os.path.exists(archive_name):
         os.remove(archive_name)
-    print(f'Creating 7z archive: {archive_name}...')
-    old = os.getcwd()
-    os.chdir(build_dir)
-    items = os.listdir('.')
-    cmd = ['7z', 'a', '-t7z', '-m0=lzma2', '-mx=9', '-mfb=273', '-md=256m', '-ms=on', os.path.join('..', archive_name)] + items
-    subprocess.check_call(cmd)
-    os.chdir(old)
+    print(f'Creating ZIP archive: {archive_name}...')
+    with zipfile.ZipFile(archive_name, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
+        for root, dirs, files in os.walk(build_dir):
+            for file in files:
+                file_path = os.path.join(root, file)
+                arcname = os.path.relpath(file_path, build_dir)
+                zf.write(file_path, arcname)
 def print_logo():
     return
     print('=' * 40)

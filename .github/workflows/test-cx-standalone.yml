@@ -23,21 +23,6 @@ jobs:
         id: env
         uses: ./.github/actions/setup-build-env
 
-      - name: Add 7-Zip to PATH
-        shell: pwsh
-        run: |
-          $paths = @(
-            "C:\Program Files\7-Zip"
-            "C:\Program Files (x86)\7-Zip"
-          )
-          foreach ($p in $paths) {
-            if (Test-Path "$p\7z.exe") {
-              echo "Found 7z at: $p\7z.exe"
-              echo "$p" >> $env:GITHUB_PATH
-              break
-            }
-          }
-
       - name: Build cx_Freeze standalone
         run: uv run python build/cx_freeze/build_cx.py
 
@@ -45,7 +30,7 @@ jobs:
         shell: bash
         run: |
           echo "=== Root directory ==="
-          ls -la *.7z 2>/dev/null || echo "No .7z files found at root"
+          ls -la *.zip 2>/dev/null || echo "No .zip files found at root"
           echo "=== PST_standalone/ ==="
           if [ -d PST_standalone ]; then
             ls -la PST_standalone/
@@ -56,7 +41,7 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: cx-standalone-build-${{ steps.env.outputs.version }}
-          path: PST_standalone_v*.7z
+          path: PST_standalone_v*.zip
           if-no-files-found: warn
 
       - name: Extract changelog entry
@@ -98,6 +83,6 @@ jobs:
           body_path: release_notes.md
           draft: true
           prerelease: true
-          files: PST_standalone_v*.7z
+          files: PST_standalone_v*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

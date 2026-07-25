@@ -74,31 +74,17 @@ jobs:
       - name: Bootstrap environment
         id: env
         uses: ./.github/actions/setup-build-env
-      - name: Add 7-Zip to PATH
-        shell: pwsh
-        run: |
-          $paths = @(
-            "C:\Program Files\7-Zip"
-            "C:\Program Files (x86)\7-Zip"
-          )
-          foreach ($p in $paths) {
-            if (Test-Path "$p\7z.exe") {
-              echo "Found 7z at: $p\7z.exe"
-              echo "$p" >> $env:GITHUB_PATH
-              break
-            }
-          }
       - name: Build cx_Freeze standalone
         run: uv run python build/cx_freeze/build_cx.py
       - name: List standalone build output
         shell: bash
         run: |
-          echo "=== .7z archive ==="
-          ls -la *.7z 2>/dev/null || echo "No .7z files"
+          echo "=== .zip archive ==="
+          ls -la *.zip 2>/dev/null || echo "No .zip files"
       - uses: actions/upload-artifact@v7
         with:
           name: windows-standalone
-          path: PST_standalone_v*.7z
+          path: PST_standalone_v*.zip
           if-no-files-found: warn
 
   build-linux:
