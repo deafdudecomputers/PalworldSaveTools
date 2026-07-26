@@ -49,8 +49,12 @@ jobs:
             echo "title=${RELEASE_NAME:-${RELEASE_TAG}}" >> "$GITHUB_OUTPUT"
             echo "url=${RELEASE_URL}" >> "$GITHUB_OUTPUT"
             echo "is_mock=false" >> "$GITHUB_OUTPUT"
-            # Real releases always send.
-            echo "should_send=true" >> "$GITHUB_OUTPUT"
+            # Skip if prerelease — only announce stable releases.
+            if [ "${{ github.event.release.prerelease }}" = "true" ]; then
+              echo "should_send=false" >> "$GITHUB_OUTPUT"
+            else
+              echo "should_send=true" >> "$GITHUB_OUTPUT"
+            fi
           else
             echo "tag=${MOCK_VERSION}" >> "$GITHUB_OUTPUT"
             echo "title=[MOCK-UP] ${{ steps.env.outputs.app_name }} ${MOCK_VERSION}" >> "$GITHUB_OUTPUT"
