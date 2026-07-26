@@ -1128,6 +1128,22 @@ def _new_guid():
 def _set_player_groupid(targ_json, group_id):
     sd = targ_json['SaveData']['value']
     sd['GroupId'] = {'id': None, 'value': group_id, 'type': 'StructProperty', 'struct_type': 'Guid', 'struct_id': '00000000-0000-0000-0000-000000000000'}
+def _update_cspm_group_id(targ_lvl, targ_uid, group_id):
+    try:
+        cmap = targ_lvl.get('CharacterSaveParameterMap', {}).get('value', [])
+        targ_uid_str = str(targ_uid)
+        for entry in cmap:
+            try:
+                if str(entry.get('key', {}).get('PlayerUId', {}).get('value', '')) != targ_uid_str:
+                    continue
+                sp = entry['value']['RawData']['value']['object']['SaveParameter']['value']
+                if not sp.get('IsPlayer', {}).get('value', False):
+                    continue
+                entry['value']['RawData']['value']['group_id'] = group_id
+            except Exception:
+                continue
+    except Exception:
+        pass
 def transfer_guild(targ_lvl, targ_json, host_guid, targ_uid, source_guild_dict):
     global target_world_tick
     try:
@@ -1136,10 +1152,12 @@ def transfer_guild(targ_lvl, targ_json, host_guid, targ_uid, source_guild_dict):
         guilds = targ_lvl['GroupSaveDataMap']['value']
         if not source_guild_dict:
             return False
+        def _nu(x):
+            return str(x).replace('-', '').lower()
         target_guild = None
         for g in guilds:
             raw = g.get('value', {}).get('RawData', {}).get('value', {})
-            if any((str(p.get('player_uid')) == str(targ_uid) for p in raw.get('players', []))):
+            if any((_nu(p.get('player_uid', '')) == _nu(targ_uid) for p in raw.get('players', []))):
                 target_guild = g
                 break
         source_player = None
@@ -1147,7 +1165,7 @@ def transfer_guild(targ_lvl, targ_json, host_guid, targ_uid, source_guild_dict):
         for g in source_guild_dict.values():
             raw = g.get('value', {}).get('RawData', {}).get('value', {})
             for p in raw.get('players', []):
-                if str(p.get('player_uid')) == str(host_guid):
+                if _nu(p.get('player_uid', '')) == _nu(host_guid):
                     source_player = fast_deepcopy(p)
                     source_entry = g
                     break
@@ -1155,6 +1173,14 @@ def transfer_guild(targ_lvl, targ_json, host_guid, targ_uid, source_guild_dict):
                 break
         if source_entry is None:
             return False
+        if not target_guild:
+            source_gid_norm = _nu(source_entry.get('value', {}).get('RawData', {}).get('value', {}).get('group_id', ''))
+            if source_gid_norm:
+                for g in guilds:
+                    raw = g.get('value', {}).get('RawData', {}).get('value', {})
+                    if _nu(raw.get('group_id', '')) == source_gid_norm:
+                        target_guild = g
+                        break
         if source_player:
             source_player['player_uid'] = targ_uid
             if 'player_info' in source_player:
@@ -1166,20 +1192,25 @@ def transfer_guild(targ_lvl, targ_json, host_guid, targ_uid, source_guild_dict):
                 target_raw['players'].append(source_player)
             if str(target_raw.get('admin_player_uid')) == str(host_guid):
                 target_raw['admin_player_uid'] = targ_uid
-            _set_player_groupid(targ_json, target_raw.get('group_id'))
+            new_gid = target_raw.get('group_id')
+            _set_player_groupid(targ_json, new_gid)
+            _update_cspm_group_id(targ_lvl, targ_uid, new_gid)
             return True
         cloned = fast_deepcopy(source_entry)
         cloned['key'] = _new_guid()
         raw = cloned['value']['RawData']['value']
-        raw['group_id'] = _new_guid()
-        raw['group_name'] = 'Transferred Guild'
-        raw['guild_name'] = 'Transferred Guild'
+        new_gid = _new_guid()
+        raw['group_id'] = new_gid
         raw['players'] = [source_player] if source_player else [{'player_uid': targ_uid, 'role': 1, 'player_info': {'last_online_real_time': target_world_tick, 'player_name': 'Player'}}]
         raw['admin_player_uid'] = targ_uid
         player_inst_id = targ_json['SaveData']['value']['IndividualId']['value']['InstanceId']['value']
         raw['individual_character_handle_ids'] = [{'guid': PalUUID.from_str('00000000-0000-0000-0000-000000000000'), 'instance_id': player_inst_id}]
+        raw['base_ids'] = []
+        raw.pop('map_object_instance_ids_base_camp_points', None)
+        raw['guild_markers'] = []
         guilds.append(cloned)
-        _set_player_groupid(targ_json, raw['group_id'])
+        _set_player_groupid(targ_json, new_gid)
+        _update_cspm_group_id(targ_lvl, targ_uid, new_gid)
         return True
     except Exception as e:
         print(f'[GUILD ERROR] {e}')
