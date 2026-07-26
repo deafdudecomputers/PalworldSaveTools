@@ -2982,6 +2982,7 @@ class PlayerInventoryTab(QWidget):
         self._pending_add = None
         dialog.item_selected.connect(lambda i, q: setattr(self, '_pending_add', (i, q)))
         dialog.exec()
+        self._keep_dialogs.remove(dialog)
         if self._pending_add:
             self._do_add_item(*self._pending_add)
             self._pending_add = None
@@ -3110,7 +3111,8 @@ class PlayerInventoryTab(QWidget):
                 relic_type = slot_data.get('relic_type', '')
                 if relic_type:
                     self.inventory.set_effigy_count(relic_type, new_qty)
-                    self._refresh_display()
+                    QApplication.processEvents()
+                    QTimer.singleShot(0, self._refresh_display)
                 return
             if slot_data.get('is_bounty'):
                 item_id = slot_data.get('item_id', '')
@@ -3119,12 +3121,14 @@ class PlayerInventoryTab(QWidget):
                     for _ in range(new_qty - 1):
                         self.inventory._ensure_boss_defeat_flags([item_id])
                     self.inventory._save_player_sav()
-                    self._refresh_display()
+                    QApplication.processEvents()
+                    QTimer.singleShot(0, self._refresh_display)
                 return
             container_type = slot_data.get('container_type', 'main')
             slot_index = slot_data.get('slot_index', 0)
             if self.inventory.update_quantity(container_type, slot_index, new_qty):
-                self._refresh_display()
+                QApplication.processEvents()
+                QTimer.singleShot(0, self._refresh_display)
     def _update_player_dropdown_level(self):
         if not self.current_player_uid:
             return
