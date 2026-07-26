@@ -3888,12 +3888,7 @@ class BaseInventoryTab(QWidget):
             slot_index = slot_data.get('slot_index', 0)
             if self.manager.update_item_count(slot_index, new_count):
                 QApplication.processEvents()
-                inventory_container = self.manager.select_container(self.manager.current_container['id'])
-                if inventory_container:
-                    items = inventory_container.get_items()
-                    max_slots = inventory_container.get_max_slots()
-                    self.inventory_grid.load_items(items, max_slots=max_slots)
-                self._update_container_stats()
+                QTimer.singleShot(0, self._refresh_after_base_add)
             else:
                 self._show_warning(t('base_inventory.failed_to_update_quantity') if t else 'Failed to update quantity')
     def _remove_item_from_slot(self, slot_data):
