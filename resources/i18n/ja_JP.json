@@ -1,4 +1,4 @@
-﻿{
+{
     "1. Use LocalData.sav from the 'resources' folder": "1. 'resources' フォルダの LocalData.sav を使用",
     "2. Create backups of each existing LocalData.sav": "2. 既存の LocalData.sav のバックアップを作成",
     "3. Copy LocalData.sav to all other worlds/servers": "3. LocalData.sav を他のすべてのワールド/サーバーにコピー",
@@ -454,16 +454,16 @@
     "guild.leader_updated.title": "リーダー更新",
     "guild.level.maxed": "ギルドの拠点レベルが正常に35に設定されました。",
     "guild.marked_for_deletion": "ギルド {gid} と {count} 人のプレイヤーを削除予定としてマークしました（保存時に削除されます）",
-    "guild.assign.btn": "Assign to Guild",
-    "guild.assign.btn_open": "Guild Assignments",
-    "guild.assign.desc": "Select players on the left, choose a target guild on the right, then click Assign.",
-    "guild.assign.done": "Moved {count} player(s) to {guild}.",
-    "guild.assign.guild_label": "Target Guild",
-    "guild.assign.players_label": "Players",
-    "guild.assign.status_no_guild": "Select a target guild on the right.",
-    "guild.assign.status_no_players": "Select one or more players to move.",
-    "guild.assign.status_none": "Select players and a target guild.",
-    "guild.assign.title": "Guild Assignment",
+    "guild.assign.btn": "ギルドに割り当てる",
+    "guild.assign.btn_open": "ギルドの割り当て",
+    "guild.assign.desc": "左側でプレイヤーを選択し、右側でターゲットギルドを選択して、「割り当て」をクリックします。",
+    "guild.assign.done": "{count} プレイヤーを {guild} に移動しました。",
+    "guild.assign.guild_label": "対象ギルド",
+    "guild.assign.players_label": "選手",
+    "guild.assign.status_no_guild": "右側で対象のギルドを選択します。",
+    "guild.assign.status_no_players": "移動する 1 人以上のプレイヤーを選択します。",
+    "guild.assign.status_none": "プレイヤーとターゲットのギルドを選択します。",
+    "guild.assign.title": "ギルドの割り当て",
     "guild.menu.max_level": "ギルドレベルを最大にする",
     "guild.menu.move_selected_player_to_selected_guild": "選択したプレイヤーを選択したギルドへ移動",
     "guild.menu.outdated_blueprint": "古いブループリント",
@@ -1971,5 +1971,7 @@
     "edit_pals.add_active_skill": "アクティブスキルの追加",
     "inventory.technology": "テクノロジー",
     "player_technology.applied": "{count} 技術を {players} プレーヤーに適用しました。",
-    "base_inventory.click_copy_container_id": "クリックしてコンテナIDをコピーします"
+    "base_inventory.click_copy_container_id": "クリックしてコンテナIDをコピーします",
+    "guild.assign.members_label": "現在のメンバー",
+    "guild.assign.members_empty": "ギルドを選択すると、そのメンバーが表示されます。"
 }

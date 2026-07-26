@@ -1,3 +1,7 @@
+#2.2.3
+- **Guild Assignment dialog** — new button in the search player tab opens a two-pane dialog (players on left, guilds on right) with search, sortable columns, and a handy live preview of each guild's current members. Select one or more players and reassign them to any guild in one click — no more right-clicking each player individually.
+- **Character Transfer now keeps guild data intact** — transferring a character to another save now correctly copies the source guild ID to the character's save data and `CharacterSaveParameterMap`, so the game recognizes guild membership immediately. The target guild's player list stays untouched — your current members are never removed, and old player rosters are never appended.
+
 #2.2.2
 - **Windows standalone now ships as .zip** — replaced the 7z archive with a standard ZIP file for broader compatibility. No need for third-party extraction tools.
 - **Pal unique ID in pal info panel** — the detailed pal editor now shows each pal's instance GUID in the header row (left-aligned, click to copy, hover turns blue). Buff/debuff icons sit on the same row (right-aligned). No more digging through JSON or the save file to find a pal's internal ID.

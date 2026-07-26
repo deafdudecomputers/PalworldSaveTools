@@ -1806,6 +1806,8 @@ class MainWindow(QMainWindow):
                 self.bulk_pal_btn.setText(t('player.bulk_pal_management') if t else 'Bulk Pal Management')
             if hasattr(self, 'bulk_tech_btn'):
                 self.bulk_tech_btn.setText(t('player.bulk_technology_management') if t else 'Bulk Technology Management')
+            if hasattr(self, 'bulk_guild_btn'):
+                self.bulk_guild_btn.setText(t('guild.assign.btn_open') if t else 'Guild Assignments')
             if hasattr(self, '_active_dialogs'):
                 for dialog in self._active_dialogs:
                     if hasattr(dialog, 'refresh_labels'):

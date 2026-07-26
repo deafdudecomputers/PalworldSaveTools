@@ -2258,5 +2258,7 @@
     "edit_pals.add_active_skill": "Add Active Skill",
     "inventory.technology": "Technology",
     "player_technology.applied": "Applied {count} tech(s) to {players} player(s).",
-    "base_inventory.click_copy_container_id": "Click to copy Container ID"
+    "base_inventory.click_copy_container_id": "Click to copy Container ID",
+    "guild.assign.members_label": "Current Members",
+    "guild.assign.members_empty": "Select a guild to see its members."
 }

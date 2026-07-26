@@ -18,11 +18,12 @@ class SearchPanel(QWidget):
     item_selected = Signal(object)
     item_double_clicked = Signal(object)
     search_requested = Signal(str)
-    def __init__(self, label_key, column_keys, column_widths=None, parent=None):
+    def __init__(self, label_key, column_keys, column_widths=None, parent=None, selection_mode=QAbstractItemView.SingleSelection):
         super().__init__(parent)
         self.label_key = label_key
         self.column_keys = column_keys
         self.column_widths = column_widths or []
+        self._selection_mode = selection_mode
         self._setup_ui()
     def _setup_ui(self):
         layout = QVBoxLayout(self)
@@ -64,7 +65,7 @@ class SearchPanel(QWidget):
         self.tree.setHeaderLabels(self.columns)
         self.tree.setAlternatingRowColors(False)
         self.tree.setRootIsDecorated(False)
-        self.tree.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.tree.setSelectionMode(self._selection_mode)
         self.tree.setSortingEnabled(True)
         self.tree.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tree.setStyleSheet(f'''
@@ -149,6 +150,8 @@ class SearchPanel(QWidget):
         self.tree.addTopLevelItem(item)
         self._all_items.append(item)
         return item
+    def get_selected_items(self):
+        return self.tree.selectedItems()
     def get_selected_item(self):
         items = self.tree.selectedItems()
         if items:
@@ -159,6 +162,8 @@ class SearchPanel(QWidget):
         if item:
             return [item.text(i) for i in range(item.columnCount())]
         return None
+    def get_selected_data_all(self):
+        return [[item.text(i) for i in range(item.columnCount())] for item in self.tree.selectedItems()]
     def set_items(self, items_data):
         self.clear()
         for values in items_data:

@@ -1,4 +1,4 @@
-﻿{
+{
     "1. Use LocalData.sav from the 'resources' folder": "1. Utiliser LocalData.sav du dossier 'resources'",
     "2. Create backups of each existing LocalData.sav": "2. Créer des sauvegardes pour chaque LocalData.sav existant",
     "3. Copy LocalData.sav to all other worlds/servers": "3. Copier LocalData.sav vers tous les autres mondes/serveurs",
@@ -456,16 +456,16 @@
     "guild.leader_updated.title": "Chef mis à jour",
     "guild.level.maxed": "Le niveau du camp de base de la guilde a été défini sur 35 avec succès.",
     "guild.marked_for_deletion": "Guilde {gid} et {count} joueur(s) marqué(s) pour suppression (les fichiers seront supprimés lors de l'enregistrement)",
-    "guild.assign.btn": "Assign to Guild",
-    "guild.assign.btn_open": "Guild Assignments",
-    "guild.assign.desc": "Select players on the left, choose a target guild on the right, then click Assign.",
-    "guild.assign.done": "Moved {count} player(s) to {guild}.",
-    "guild.assign.guild_label": "Target Guild",
-    "guild.assign.players_label": "Players",
-    "guild.assign.status_no_guild": "Select a target guild on the right.",
-    "guild.assign.status_no_players": "Select one or more players to move.",
-    "guild.assign.status_none": "Select players and a target guild.",
-    "guild.assign.title": "Guild Assignment",
+    "guild.assign.btn": "Attribuer à la guilde",
+    "guild.assign.btn_open": "Affectations de guilde",
+    "guild.assign.desc": "Sélectionnez les joueurs à gauche, choisissez une guilde cible à droite, puis cliquez sur Attribuer.",
+    "guild.assign.done": "Déplacement du ou des joueurs {count} vers {guild}.",
+    "guild.assign.guild_label": "Guilde cible",
+    "guild.assign.players_label": "Joueurs",
+    "guild.assign.status_no_guild": "Sélectionnez une guilde cible sur la droite.",
+    "guild.assign.status_no_players": "Sélectionnez un ou plusieurs joueurs à déplacer.",
+    "guild.assign.status_none": "Sélectionnez des joueurs et une guilde cible.",
+    "guild.assign.title": "Affectation de guilde",
     "guild.menu.max_level": "Niveau de guilde max",
     "guild.menu.move_selected_player_to_selected_guild": "Déplacer le joueur sélectionné vers la guilde sélectionnée",
     "guild.menu.outdated_blueprint": "Plan obsolète",
@@ -1953,5 +1953,7 @@
     "edit_pals.add_active_skill": "Ajouter une compétence active",
     "inventory.technology": "Technologie",
     "player_technology.applied": "Application de la ou des technologies {count} au(x) joueur(s) {players}.",
-    "base_inventory.click_copy_container_id": "Cliquez pour copier l'ID du conteneur"
+    "base_inventory.click_copy_container_id": "Cliquez pour copier l'ID du conteneur",
+    "guild.assign.members_label": "Membres actuels",
+    "guild.assign.members_empty": "Sélectionnez une guilde pour voir ses membres."
 }

@@ -1,8 +1,8 @@
 import os
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QLineEdit, QTreeWidget, QTreeWidgetItem, QFrame, QSplitter,
-    QAbstractItemView,
+    QFrame, QSplitter, QAbstractItemView, QTreeWidget, QTreeWidgetItem,
+    QSizePolicy,
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
@@ -10,57 +10,49 @@ from i18n import t
 from palworld_aio import constants
 from palworld_aio.managers.guild_manager import move_player_to_guild
 from palworld_aio.ui.chrome.styles import DIALOG_STYLE as DARK_THEME_STYLE
+from palworld_aio.widgets.search_panel import SearchPanel
 
 
-class _SortableItem(QTreeWidgetItem):
-    """QTreeWidgetItem that sorts numeric columns by value, not string."""
-    _NUMERIC_COLS = {1, 2}
-
-    def __lt__(self, other):
-        col = self.treeWidget().sortColumn() if self.treeWidget() else 0
-        if col in self._NUMERIC_COLS:
-            try:
-                return int(self.text(col)) < int(other.text(col))
-            except (ValueError, TypeError):
-                pass
-        return self.text(col).lower() < other.text(col).lower()
-
-
-_SEARCH_STYLE = (
-    'border: 1px solid rgba(255,255,255,0.15);'
-    ' border-radius: 4px;'
-    ' background: rgba(255,255,255,0.05);'
-    ' color: #e2e8f0;'
-    ' padding: 4px 8px;'
-)
-_PANEL_STYLE = (
-    'QFrame {{ background: {glass}; border: 1px solid {border};'
-    ' border-radius: {r}px; }}'
-)
-_HDR_STYLE = (
-    'font-weight: 600; font-size: 13px; color: #e2e8f0;'
-    ' border: none; background: transparent;'
-)
+_DESC_STYLE = f'color: {constants.MUTED}; font-size: 12px;'
 _MUTED_STYLE = 'border: none; background: transparent;'
 _TREE_STYLE = '''
     QTreeWidget {
-        border: none;
-        background: transparent;
+        background: rgba(18,20,24,0.65);
+        border: 1px solid rgba(125,211,252,0.15);
+        border-radius: 8px;
+        color: #A6B8C8;
+        font-size: 11px;
+        outline: none;
     }
     QTreeWidget::item {
-        padding: 3px 2px;
-        border-radius: 3px;
+        padding: 4px 8px;
+        border-radius: 4px;
     }
-    QTreeWidget::item:selected,
-    QTreeWidget::item:selected:active,
+    QTreeWidget::item:hover {
+        background: rgba(125,211,252,0.1);
+        color: #7DD3FC;
+    }
+    QTreeWidget::item:selected {
+        background: rgba(125,211,252,0.15);
+        color: #7DD3FC;
+        border-left: 3px solid #7DD3FC;
+    }
     QTreeWidget::item:selected:!active {
-        background: rgba(59, 142, 208, 0.85);
-        color: #ffffff;
-        border: 1px solid rgba(125, 211, 252, 0.7);
-        border-radius: 3px;
+        background: rgba(125,211,252,0.1);
+        color: #7DD3FC;
     }
-    QTreeWidget::item:hover:!selected {
-        background: rgba(125, 211, 252, 0.12);
+    QHeaderView::section {
+        background: rgba(8,10,16,0.9);
+        color: #7DD3FC;
+        padding: 6px 8px;
+        border: none;
+        border-bottom: 1px solid rgba(125,211,252,0.15);
+        font-weight: 600;
+        font-size: 10px;
+        text-align: center;
+    }
+    QHeaderView::section:hover {
+        background: rgba(125,211,252,0.08);
     }
 '''
 _BTN_ASSIGN = '''
@@ -86,18 +78,20 @@ _BTN_ASSIGN = '''
 '''
 
 
+class _SortableItem(QTreeWidgetItem):
+    _NUMERIC_COLS = {1}
+
+    def __lt__(self, other):
+        col = self.treeWidget().sortColumn() if self.treeWidget() else 0
+        if col in self._NUMERIC_COLS:
+            try:
+                return int(self.text(col)) < int(other.text(col))
+            except (ValueError, TypeError):
+                pass
+        return self.text(col).lower() < other.text(col).lower()
+
+
 class GuildAssignDialog(QDialog):
-    """
-    Two-pane guild assignment dialog.
-
-    Left pane  – searchable multi-select player list (Name / Level / Current Guild).
-    Right pane – searchable single-select guild list  (Guild Name / Members / Level).
-
-    Select one or more players, pick a target guild, click "Assign to Guild".
-    The lists refresh in-place after each assignment so the user can chain moves
-    without closing the dialog.
-    """
-
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle(t('guild.assign.title') if t else 'Guild Assignment')
@@ -110,8 +104,6 @@ class GuildAssignDialog(QDialog):
         self._setup_ui()
         self._load_data()
 
-    # ──────────────────────────────────────────────────────── UI setup ──
-
     def _setup_ui(self):
         root = QVBoxLayout(self)
         root.setContentsMargins(12, 12, 12, 12)
@@ -122,102 +114,82 @@ class GuildAssignDialog(QDialog):
             'Select players on the left, choose a target guild on the right, then click Assign.'
         )
         desc.setWordWrap(True)
-        desc.setStyleSheet(f'color: {constants.MUTED}; font-size: 12px;')
+        desc.setStyleSheet(_DESC_STYLE)
         root.addWidget(desc)
 
-        splitter = QSplitter(Qt.Horizontal)
-        splitter.setHandleWidth(8)
-        splitter.addWidget(self._build_player_pane())
-        splitter.addWidget(self._build_guild_pane())
-        splitter.setSizes([560, 380])
-        root.addWidget(splitter, stretch=1)
+        hsplit = QSplitter(Qt.Horizontal)
+        hsplit.setHandleWidth(8)
 
+        self.player_panel = SearchPanel(
+            'guild.assign.players_label',
+            [None, None, None],
+            [170, 40, 200],
+            selection_mode=QAbstractItemView.ExtendedSelection,
+        )
+        self.player_panel.tree.headerItem().setText(0, t('deletion.col.player_name') if t else 'Name')
+        self.player_panel.tree.headerItem().setText(1, t('deletion.col.level') if t else 'Lv')
+        self.player_panel.tree.headerItem().setText(2, t('deletion.col.guild_name') if t else 'Guild')
+        self.player_panel.tree.itemSelectionChanged.connect(self._update_status)
+        hsplit.addWidget(self.player_panel)
+
+        right = QSplitter(Qt.Vertical)
+        right.setHandleWidth(6)
+
+        self.guild_panel = SearchPanel(
+            'guild.assign.guild_label',
+            [None, None, None],
+            [200, 70, 60],
+        )
+        self.guild_panel.tree.headerItem().setText(0, t('deletion.col.guild_name') if t else 'Guild Name')
+        self.guild_panel.tree.headerItem().setText(1, t('deletion.col.member') if t else 'Members')
+        self.guild_panel.tree.headerItem().setText(2, t('deletion.col.guild_level') if t else 'Level')
+        self.guild_panel.tree.itemSelectionChanged.connect(self._update_status)
+        self.guild_panel.tree.itemSelectionChanged.connect(self._update_members_panel)
+        right.addWidget(self.guild_panel)
+
+        right.addWidget(self._build_members_pane())
+        right.setSizes([320, 220])
+        hsplit.addWidget(right)
+
+        hsplit.setSizes([520, 520])
+        root.addWidget(hsplit, stretch=1)
         root.addLayout(self._build_bottom_bar())
 
-    def _build_player_pane(self) -> QFrame:
-        panel_style = _PANEL_STYLE.format(
-            glass=constants.GLASS, border=constants.BORDER, r=constants.CORNER_RADIUS
-        )
+    def _build_members_pane(self) -> QFrame:
+        panel_style = (
+            'QFrame {{ background: {glass}; border: 1px solid {border};'
+            ' border-radius: {r}px; }}'
+        ).format(glass=constants.GLASS, border=constants.BORDER, r=constants.CORNER_RADIUS)
         pane = QFrame()
         pane.setStyleSheet(panel_style)
         lv = QVBoxLayout(pane)
         lv.setContentsMargins(8, 8, 8, 8)
         lv.setSpacing(6)
 
-        hdr = QLabel(t('guild.assign.players_label') if t else 'Players')
-        hdr.setStyleSheet(_HDR_STYLE)
+        hdr = QLabel(t('guild.assign.members_label') if t else 'Current Members')
+        hdr.setStyleSheet('font-weight: 600; font-size: 13px; color: #e2e8f0; border: none; background: transparent;')
         lv.addWidget(hdr)
 
-        self.player_search = QLineEdit()
-        self.player_search.setPlaceholderText(t('deletion.search_players') if t else 'Search players…')
-        self.player_search.setMinimumHeight(30)
-        self.player_search.setStyleSheet(_SEARCH_STYLE)
-        self.player_search.textChanged.connect(self._filter_players)
-        lv.addWidget(self.player_search)
-
-        self.player_tree = QTreeWidget()
-        self.player_tree.setHeaderLabels([
+        self.members_tree = QTreeWidget()
+        self.members_tree.setHeaderLabels([
             t('deletion.col.player_name') if t else 'Name',
             t('deletion.col.level') if t else 'Lv',
-            t('deletion.col.guild_name') if t else 'Guild',
         ])
-        self.player_tree.setColumnWidth(0, 170)
-        self.player_tree.setColumnWidth(1, 40)
-        self.player_tree.header().setStretchLastSection(True)
-        self.player_tree.setSelectionMode(QAbstractItemView.ExtendedSelection)
-        self.player_tree.setAlternatingRowColors(True)
-        self.player_tree.setRootIsDecorated(False)
-        self.player_tree.setSortingEnabled(True)
-        self.player_tree.setStyleSheet(_TREE_STYLE)
-        self.player_tree.itemSelectionChanged.connect(self._update_status)
-        lv.addWidget(self.player_tree)
+        self.members_tree.setColumnWidth(0, 200)
+        self.members_tree.setColumnWidth(1, 50)
+        self.members_tree.header().setStretchLastSection(True)
+        self.members_tree.setSelectionMode(QAbstractItemView.NoSelection)
+        self.members_tree.setAlternatingRowColors(False)
+        self.members_tree.setRootIsDecorated(False)
+        self.members_tree.setSortingEnabled(True)
+        self.members_tree.setStyleSheet(_TREE_STYLE)
+        lv.addWidget(self.members_tree)
 
-        self.player_count_lbl = QLabel('')
-        self.player_count_lbl.setStyleSheet(f'color: {constants.MUTED}; font-size: 11px; {_MUTED_STYLE}')
-        lv.addWidget(self.player_count_lbl)
-        return pane
-
-    def _build_guild_pane(self) -> QFrame:
-        panel_style = _PANEL_STYLE.format(
-            glass=constants.GLASS, border=constants.BORDER, r=constants.CORNER_RADIUS
+        self.members_lbl = QLabel(
+            t('guild.assign.members_empty') if t else 'Select a guild to see its members.'
         )
-        pane = QFrame()
-        pane.setStyleSheet(panel_style)
-        rv = QVBoxLayout(pane)
-        rv.setContentsMargins(8, 8, 8, 8)
-        rv.setSpacing(6)
-
-        hdr = QLabel(t('guild.assign.guild_label') if t else 'Target Guild')
-        hdr.setStyleSheet(_HDR_STYLE)
-        rv.addWidget(hdr)
-
-        self.guild_search = QLineEdit()
-        self.guild_search.setPlaceholderText(t('deletion.search_guilds') if t else 'Search guilds…')
-        self.guild_search.setMinimumHeight(30)
-        self.guild_search.setStyleSheet(_SEARCH_STYLE)
-        self.guild_search.textChanged.connect(self._filter_guilds)
-        rv.addWidget(self.guild_search)
-
-        self.guild_tree = QTreeWidget()
-        self.guild_tree.setHeaderLabels([
-            t('deletion.col.guild_name') if t else 'Guild Name',
-            t('deletion.col.member') if t else 'Members',
-            t('deletion.col.guild_level') if t else 'Level',
-        ])
-        self.guild_tree.setColumnWidth(0, 200)
-        self.guild_tree.setColumnWidth(1, 70)
-        self.guild_tree.setColumnWidth(2, 60)
-        self.guild_tree.setSelectionMode(QAbstractItemView.SingleSelection)
-        self.guild_tree.setAlternatingRowColors(True)
-        self.guild_tree.setRootIsDecorated(False)
-        self.guild_tree.setSortingEnabled(True)
-        self.guild_tree.setStyleSheet(_TREE_STYLE)
-        self.guild_tree.itemSelectionChanged.connect(self._update_status)
-        rv.addWidget(self.guild_tree)
-
-        self.guild_count_lbl = QLabel('')
-        self.guild_count_lbl.setStyleSheet(f'color: {constants.MUTED}; font-size: 11px; {_MUTED_STYLE}')
-        rv.addWidget(self.guild_count_lbl)
+        self.members_lbl.setStyleSheet(f'color: {constants.MUTED}; font-size: 11px; {_MUTED_STYLE}')
+        lv.addWidget(self.members_lbl)
         return pane
 
     def _build_bottom_bar(self) -> QHBoxLayout:
@@ -227,7 +199,7 @@ class GuildAssignDialog(QDialog):
         self.status_lbl = QLabel(
             t('guild.assign.status_none') if t else 'Select players and a target guild.'
         )
-        self.status_lbl.setStyleSheet(f'color: {constants.MUTED}; font-size: 12px;')
+        self.status_lbl.setStyleSheet(_DESC_STYLE)
         self.status_lbl.setWordWrap(True)
         bar.addWidget(self.status_lbl, stretch=1)
 
@@ -247,20 +219,16 @@ class GuildAssignDialog(QDialog):
         bar.addWidget(close_btn)
         return bar
 
-    # ──────────────────────────────────────────────────────── Data ──────
-
     def _load_data(self):
         self._load_players()
         self._load_guilds()
+        self._update_members_panel()
 
     def _load_players(self):
-        """Populate the player list from every group in GroupSaveDataMap."""
-        self.player_tree.setSortingEnabled(False)
-        self.player_tree.clear()
+        self.player_panel.clear()
         if not constants.loaded_level_json:
             return
         wsd = constants.loaded_level_json['properties']['worldSaveData']['value']
-        guild_name_map: dict[str, str] = {}
         for g in wsd['GroupSaveDataMap']['value']:
             raw = g['value']['RawData']['value']
             gtype = g['value']['GroupType']['value']['value']
@@ -273,18 +241,14 @@ class GuildAssignDialog(QDialog):
                 uid_norm = uid.replace('-', '').lower()
                 name = p.get('player_info', {}).get('player_name', 'Unknown')
                 level = constants.player_levels.get(uid_norm, 1)
-                item = _SortableItem([name, str(level), gname])
+                item = self.player_panel.add_item(
+                    [name, str(level), gname],
+                    sort_keys={1: int(level)},
+                )
                 item.setData(0, Qt.UserRole, uid)
-                self.player_tree.addTopLevelItem(item)
-        self.player_tree.setSortingEnabled(True)
-        self.player_tree.sortByColumn(0, Qt.AscendingOrder)
-        n = self.player_tree.topLevelItemCount()
-        self.player_count_lbl.setText(f'{n} player(s)')
 
     def _load_guilds(self):
-        """Populate the guild list directly from GroupSaveDataMap (fast single pass)."""
-        self.guild_tree.setSortingEnabled(False)
-        self.guild_tree.clear()
+        self.guild_panel.clear()
         if not constants.loaded_level_json:
             return
         wsd = constants.loaded_level_json['properties']['worldSaveData']['value']
@@ -296,40 +260,51 @@ class GuildAssignDialog(QDialog):
             gname = raw.get('guild_name', 'Unknown')
             glevel = raw.get('base_camp_level', 1)
             members = len(raw.get('players', []))
-            item = _SortableItem([gname, str(members), str(glevel)])
+            item = self.guild_panel.add_item(
+                [gname, str(members), str(glevel)],
+                sort_keys={1: members, 2: int(glevel)},
+            )
             item.setData(0, Qt.UserRole, gid)
-            self.guild_tree.addTopLevelItem(item)
-        self.guild_tree.setSortingEnabled(True)
-        self.guild_tree.sortByColumn(0, Qt.AscendingOrder)
-        n = self.guild_tree.topLevelItemCount()
-        self.guild_count_lbl.setText(f'{n} guild(s)')
 
-    # ──────────────────────────────────────────────────── Filtering ──────
-
-    def _filter_players(self, text: str):
-        q = text.lower()
-        for i in range(self.player_tree.topLevelItemCount()):
-            item = self.player_tree.topLevelItem(i)
-            match = (not q or q in item.text(0).lower() or q in item.text(2).lower())
-            item.setHidden(not match)
-
-    def _filter_guilds(self, text: str):
-        q = text.lower()
-        for i in range(self.guild_tree.topLevelItemCount()):
-            item = self.guild_tree.topLevelItem(i)
-            item.setHidden(bool(q) and q not in item.text(0).lower())
-
-    # ──────────────────────────────────────────────── Selection state ──
+    def _update_members_panel(self):
+        self.members_tree.setSortingEnabled(False)
+        self.members_tree.clear()
+        _, guild_id = self._selected_guild()
+        if guild_id is None:
+            self.members_lbl.setText(
+                t('guild.assign.members_empty') if t else 'Select a guild to see its members.'
+            )
+            return
+        wsd = constants.loaded_level_json['properties']['worldSaveData']['value']
+        for g in wsd['GroupSaveDataMap']['value']:
+            if str(g['key']) != guild_id:
+                continue
+            raw = g['value']['RawData']['value']
+            for p in raw.get('players', []):
+                uid_raw = p.get('player_uid')
+                if uid_raw is None:
+                    continue
+                uid_norm = str(uid_raw).replace('-', '').lower()
+                name = p.get('player_info', {}).get('player_name', 'Unknown')
+                level = constants.player_levels.get(uid_norm, 1)
+                item = _SortableItem([name, str(level)])
+                item.setData(0, Qt.UserRole, str(uid_raw))
+                self.members_tree.addTopLevelItem(item)
+            break
+        self.members_tree.setSortingEnabled(True)
+        self.members_tree.sortByColumn(0, Qt.AscendingOrder)
+        n = self.members_tree.topLevelItemCount()
+        self.members_lbl.setText(f'{n} member(s)')
 
     def _selected_players(self) -> list[tuple[str, str]]:
         return [(item.text(0), item.data(0, Qt.UserRole))
-                for item in self.player_tree.selectedItems()]
+                for item in self.player_panel.get_selected_items()]
 
     def _selected_guild(self) -> tuple[str | None, str | None]:
-        items = self.guild_tree.selectedItems()
-        if not items:
+        item = self.guild_panel.get_selected_item()
+        if not item:
             return None, None
-        return items[0].text(0), items[0].data(0, Qt.UserRole)
+        return item.text(0), item.data(0, Qt.UserRole)
 
     def _update_status(self):
         players = self._selected_players()
@@ -347,11 +322,8 @@ class GuildAssignDialog(QDialog):
             shown = ', '.join(n for n, _ in players[:3])
             if len(players) > 3:
                 shown += f' +{len(players) - 3} more'
-            msg = f'{len(players)} player(s) → {guild_name}   ({shown})'
-        self.status_lbl.setStyleSheet(f'color: {constants.MUTED}; font-size: 12px;')
+            msg = f'{len(players)} player(s) \u2192 {guild_name}   ({shown})'
         self.status_lbl.setText(msg)
-
-    # ──────────────────────────────────────────────────── Assignment ──
 
     def _assign(self):
         players = self._selected_players()
@@ -377,6 +349,6 @@ class GuildAssignDialog(QDialog):
             )
             self.status_lbl.setStyleSheet('color: #4ade80; font-size: 12px;')
         else:
-            msg = f'Moved {ok} player(s), {fail} failed — target guild may not exist.'
+            msg = f'Moved {ok} player(s), {fail} failed \u2014 target guild may not exist.'
             self.status_lbl.setStyleSheet('color: #fb923c; font-size: 12px;')
         self.status_lbl.setText(msg)
