@@ -2,7 +2,7 @@ import os
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QLineEdit, QTreeWidget, QTreeWidgetItem, QFrame, QSplitter,
-    QAbstractItemView,
+    QAbstractItemView, QSizePolicy,
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
@@ -129,7 +129,7 @@ class GuildAssignDialog(QDialog):
         splitter.setHandleWidth(8)
         splitter.addWidget(self._build_player_pane())
         splitter.addWidget(self._build_guild_pane())
-        splitter.setSizes([560, 380])
+        splitter.setSizes([560, 420])
         root.addWidget(splitter, stretch=1)
 
         root.addLayout(self._build_bottom_bar())
@@ -177,13 +177,16 @@ class GuildAssignDialog(QDialog):
         lv.addWidget(self.player_count_lbl)
         return pane
 
-    def _build_guild_pane(self) -> QFrame:
+    def _build_guild_pane(self) -> QSplitter:
+        """Returns a vertical splitter: guild selector on top, members table on bottom."""
         panel_style = _PANEL_STYLE.format(
             glass=constants.GLASS, border=constants.BORDER, r=constants.CORNER_RADIUS
         )
-        pane = QFrame()
-        pane.setStyleSheet(panel_style)
-        rv = QVBoxLayout(pane)
+
+        # ── top: guild selector ──────────────────────────────────────────
+        top = QFrame()
+        top.setStyleSheet(panel_style)
+        rv = QVBoxLayout(top)
         rv.setContentsMargins(8, 8, 8, 8)
         rv.setSpacing(6)
 
@@ -213,11 +216,53 @@ class GuildAssignDialog(QDialog):
         self.guild_tree.setSortingEnabled(True)
         self.guild_tree.setStyleSheet(_TREE_STYLE)
         self.guild_tree.itemSelectionChanged.connect(self._update_status)
+        self.guild_tree.itemSelectionChanged.connect(self._update_members_panel)
         rv.addWidget(self.guild_tree)
 
         self.guild_count_lbl = QLabel('')
         self.guild_count_lbl.setStyleSheet(f'color: {constants.MUTED}; font-size: 11px; {_MUTED_STYLE}')
         rv.addWidget(self.guild_count_lbl)
+
+        # ── bottom: members panel ────────────────────────────────────────
+        bot = self._build_members_pane(panel_style)
+
+        vsplit = QSplitter(Qt.Vertical)
+        vsplit.setHandleWidth(6)
+        vsplit.addWidget(top)
+        vsplit.addWidget(bot)
+        vsplit.setSizes([320, 220])
+        vsplit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        return vsplit
+
+    def _build_members_pane(self, panel_style: str) -> QFrame:
+        pane = QFrame()
+        pane.setStyleSheet(panel_style)
+        lv = QVBoxLayout(pane)
+        lv.setContentsMargins(8, 8, 8, 8)
+        lv.setSpacing(6)
+
+        hdr = QLabel(t('guild.assign.members_label') if t else 'Current Members')
+        hdr.setStyleSheet(_HDR_STYLE)
+        lv.addWidget(hdr)
+
+        self.members_tree = QTreeWidget()
+        self.members_tree.setHeaderLabels([
+            t('deletion.col.player_name') if t else 'Name',
+            t('deletion.col.level') if t else 'Lv',
+        ])
+        self.members_tree.setColumnWidth(0, 200)
+        self.members_tree.setColumnWidth(1, 50)
+        self.members_tree.header().setStretchLastSection(True)
+        self.members_tree.setSelectionMode(QAbstractItemView.NoSelection)
+        self.members_tree.setAlternatingRowColors(True)
+        self.members_tree.setRootIsDecorated(False)
+        self.members_tree.setSortingEnabled(True)
+        self.members_tree.setStyleSheet(_TREE_STYLE)
+        lv.addWidget(self.members_tree)
+
+        self.members_lbl = QLabel(t('guild.assign.members_empty') if t else 'Select a guild to see its members.')
+        self.members_lbl.setStyleSheet(f'color: {constants.MUTED}; font-size: 11px; {_MUTED_STYLE}')
+        lv.addWidget(self.members_lbl)
         return pane
 
     def _build_bottom_bar(self) -> QHBoxLayout:
@@ -252,6 +297,7 @@ class GuildAssignDialog(QDialog):
     def _load_data(self):
         self._load_players()
         self._load_guilds()
+        self._update_members_panel()
 
     def _load_players(self):
         """Populate the player list from every group in GroupSaveDataMap."""
@@ -303,6 +349,37 @@ class GuildAssignDialog(QDialog):
         self.guild_tree.sortByColumn(0, Qt.AscendingOrder)
         n = self.guild_tree.topLevelItemCount()
         self.guild_count_lbl.setText(f'{n} guild(s)')
+
+    def _update_members_panel(self):
+        """Populate the members table for the currently selected guild."""
+        self.members_tree.setSortingEnabled(False)
+        self.members_tree.clear()
+        guild_name, guild_id = self._selected_guild()
+        if guild_id is None:
+            self.members_lbl.setText(
+                t('guild.assign.members_empty') if t else 'Select a guild to see its members.'
+            )
+            return
+        wsd = constants.loaded_level_json['properties']['worldSaveData']['value']
+        for g in wsd['GroupSaveDataMap']['value']:
+            if str(g['key']) != guild_id:
+                continue
+            raw = g['value']['RawData']['value']
+            for p in raw.get('players', []):
+                uid_raw = p.get('player_uid')
+                if uid_raw is None:
+                    continue
+                uid_norm = str(uid_raw).replace('-', '').lower()
+                name = p.get('player_info', {}).get('player_name', 'Unknown')
+                level = constants.player_levels.get(uid_norm, 1)
+                item = _SortableItem([name, str(level)])
+                item.setData(0, Qt.UserRole, str(uid_raw))
+                self.members_tree.addTopLevelItem(item)
+            break
+        self.members_tree.setSortingEnabled(True)
+        self.members_tree.sortByColumn(0, Qt.AscendingOrder)
+        n = self.members_tree.topLevelItemCount()
+        self.members_lbl.setText(f'{n} member(s) in {guild_name}')
 
     # ──────────────────────────────────────────────────── Filtering ──────
 

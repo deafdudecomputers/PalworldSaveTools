@@ -23,6 +23,18 @@ NEW_TRANSLATIONS = {
     'edit_pals.add_active_skill': 'Add Active Skill',
     'inventory.technology': 'Technology',
     'player_technology.applied': 'Applied {count} tech(s) to {players} player(s).',
+    'guild.assign.btn': 'Assign to Guild',
+    'guild.assign.btn_open': 'Guild Assignments',
+    'guild.assign.title': 'Guild Assignment',
+    'guild.assign.desc': 'Select players on the left, choose a target guild on the right, then click Assign.',
+    'guild.assign.players_label': 'Players',
+    'guild.assign.guild_label': 'Target Guild',
+    'guild.assign.status_none': 'Select players and a target guild.',
+    'guild.assign.status_no_players': 'Select one or more players to move.',
+    'guild.assign.status_no_guild': 'Select a target guild on the right.',
+    'guild.assign.done': 'Moved {count} player(s) to {guild}.',
+    'guild.assign.members_label': 'Current Members',
+    'guild.assign.members_empty': 'Select a guild to see its members.',
 }
 OLD_KEYS = []
 def _clean_uv_locks():
