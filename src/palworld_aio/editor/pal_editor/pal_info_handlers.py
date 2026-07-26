@@ -95,7 +95,7 @@ class PalInfoHandlerMixin:
             text = dlg.textValue()
             if text is not None:
                 self._raw['NickName'] = {'id': None, 'type': 'StrProperty', 'value': text}
-                self._refresh()
+                QTimer.singleShot(0, self._refresh)
 
     def _on_gender_click(self):
         if not self._raw:
@@ -178,7 +178,7 @@ class PalInfoHandlerMixin:
         if dlg.exec() == QDialog.Accepted:
             new_level = dlg.intValue()
             _set_work_suitability(self._raw, ws_key, new_level)
-            self._refresh()
+            QTimer.singleShot(0, self._refresh)
 
     def _on_trust_click(self):
         if not self._raw:

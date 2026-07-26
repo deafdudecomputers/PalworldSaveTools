@@ -2311,7 +2311,7 @@ class PlayerInventoryTab(QWidget):
 
             total = len(to_add) + len(missing_unlocks)
             if not total:
-                self._refresh_display()
+                QTimer.singleShot(0, self._refresh_display)
                 self._themed_message_box(QMessageBox.Information, t('inventory.add_all_key_items', default='Add All Key Items'), t('inventory.no_new_items', default='All key items already present.'))
                 return
 
@@ -2475,7 +2475,8 @@ class PlayerInventoryTab(QWidget):
                 self.key_grid.load_items(key_c.slots)
         dlg = InventoryLoadoutDialog(self, _get_items, _apply_items, loadouts_path=_INV_LOADOUTS_PATH)
         dlg.exec()
-        self._refresh_display()
+        QApplication.processEvents()
+        QTimer.singleShot(0, self._refresh_display)
     def _on_sort_requested(self):
         if not self.inventory:
             return
@@ -2569,7 +2570,8 @@ class PlayerInventoryTab(QWidget):
                         sw.set_item(item)
         dlg = InventoryLoadoutDialog(self, _get_equipment, _apply_equipment, title=t('inventory.equip_loadouts_title', default='Equipment Loadouts'), loadouts_path=_EQ_LOADOUTS_PATH, key_prefix='inventory.equip')
         dlg.exec()
-        self._refresh_display()
+        QApplication.processEvents()
+        QTimer.singleShot(0, self._refresh_display)
     def _clear_all_inventory(self):
         if not self.current_player_uid:
             QMessageBox.warning(self, t('inventory.select_player', default='Select Player...'), t('inventory.select_player_first', default='Please select a player first.'))
@@ -2935,7 +2937,8 @@ class PlayerInventoryTab(QWidget):
                 if container.set_item_count(slot_index, new_qty):
                     self._update_raw_save_data(container_type, container)
                     self.inventory.save()
-                    self._refresh_display()
+                    QApplication.processEvents()
+                    QTimer.singleShot(0, self._refresh_display)
     def _clear_equip_slot(self, slot_name: str, slot_widget):
         current_item = slot_widget.current_item
         if not current_item:

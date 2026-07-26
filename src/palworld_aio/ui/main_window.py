@@ -9,8 +9,12 @@ from functools import partial
 import logging
 from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QFrame, QMenuBar, QMenu, QStatusBar, QSplitter, QMessageBox, QFileDialog, QInputDialog, QDialog, QComboBox, QApplication, QStackedWidget, QTextEdit, QLineEdit
 from PySide6.QtCore import Qt, QTimer, Signal, QObject, QPoint, QPropertyAnimation, QEasingCurve, QByteArray, QThread
+from collections import deque
+from PySide6.QtCore import QObject as _QObject
 
-_keep_dialogs = []
+# --- Belt: keep dialog C++ objects alive until Qt flushes queued teardown events ---
+_KEEP_DIALOGS_MAX = 50
+_keep_dialogs = deque(maxlen=_KEEP_DIALOGS_MAX)
 _original_exec = QDialog.exec
 _original_exec_ = QDialog.exec_
 
@@ -24,6 +28,20 @@ def _safe_exec_(self, *args, **kwargs):
 
 QDialog.exec = _safe_exec
 QDialog.exec_ = _safe_exec_
+
+# --- Suspenders: keep ANY QObject wrapper alive until Qt actually deletes it ---
+_keep_until_deleted = {}
+_original_deleteLater = _QObject.deleteLater
+
+def _safe_deleteLater(self):
+    if id(self) in _keep_until_deleted:
+        _original_deleteLater(self)
+        return
+    _keep_until_deleted[id(self)] = self
+    self.destroyed.connect(lambda: _keep_until_deleted.pop(id(self), None))
+    _original_deleteLater(self)
+
+_QObject.deleteLater = _safe_deleteLater
 
 from PySide6.QtGui import QIcon, QFont, QAction, QPixmap, QCloseEvent, QTextCursor
 from i18n import t, set_language, load_resources, get_native_lang_name
@@ -1719,7 +1737,7 @@ class MainWindow(QMainWindow):
         constants.invalidate_container_lookup()
         if 'base_inventory_tab' in self.__dict__:
             self.base_inventory_tab.manager.invalidate_cache()
-        self.refresh_all()
+        QTimer.singleShot(0, self.refresh_all)
 
     def _move_player_to_guild(self):
         self._open_guild_assign_dialog()
@@ -2146,7 +2164,7 @@ class MainWindow(QMainWindow):
         from ..editor.edit_pals import EditPalsDialog
         dialog = EditPalsDialog(uid, name, self)
         if dialog.exec() == QDialog.Accepted:
-            self.refresh_all()
+            QTimer.singleShot(0, self.refresh_all)
     def _edit_player_inventory(self, uid, name):
         self.sidebar.set_active('player_inventory')
         self.stacked_widget.setCurrentIndex(2)
