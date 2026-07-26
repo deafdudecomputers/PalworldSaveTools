@@ -1973,5 +1973,8 @@
     "base_inventory.click_copy_container_id": "컨테이너 ID를 복사하려면 클릭하세요.",
     "guild.assign.members_label": "현재 회원",
     "guild.assign.members_empty": "길드를 선택하면 구성원을 볼 수 있습니다.",
-    "base.nudge.rotate": "회전"
+    "base.nudge.rotate": "회전",
+    "deletion.menu.reset_lock_gimmick": "미니 게임 타워 재설정",
+    "loading.reset_lock_gimmick": "미니게임 타워 재설정 중...",
+    "lock_gimmick_reset_count": "{count} 미니 게임 타워 재설정"
 }

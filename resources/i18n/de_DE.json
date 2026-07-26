@@ -1998,5 +1998,8 @@
     "base_inventory.click_copy_container_id": "Klicken Sie, um die Container-ID zu kopieren",
     "guild.assign.members_label": "Aktuelle Mitglieder",
     "guild.assign.members_empty": "Wählen Sie eine Gilde aus, um ihre Mitglieder anzuzeigen.",
-    "base.nudge.rotate": "Drehung"
+    "base.nudge.rotate": "Drehung",
+    "deletion.menu.reset_lock_gimmick": "Minispieltürme zurücksetzen",
+    "loading.reset_lock_gimmick": "Minispieltürme werden zurückgesetzt...",
+    "lock_gimmick_reset_count": "Setzen Sie {count} Minispieltürme zurück"
 }

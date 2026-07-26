@@ -1956,5 +1956,8 @@
     "base_inventory.click_copy_container_id": "Cliquez pour copier l'ID du conteneur",
     "guild.assign.members_label": "Membres actuels",
     "guild.assign.members_empty": "Sélectionnez une guilde pour voir ses membres.",
-    "base.nudge.rotate": "Rotation"
+    "base.nudge.rotate": "Rotation",
+    "deletion.menu.reset_lock_gimmick": "Réinitialiser les mini-tours de jeu",
+    "loading.reset_lock_gimmick": "Réinitialisation des mini-tours de jeu...",
+    "lock_gimmick_reset_count": "Réinitialiser les mini-tours de jeu {count}"
 }

@@ -2261,5 +2261,8 @@
     "base_inventory.click_copy_container_id": "Click to copy Container ID",
     "guild.assign.members_label": "Current Members",
     "guild.assign.members_empty": "Select a guild to see its members.",
-    "base.nudge.rotate": "Rotation"
+    "base.nudge.rotate": "Rotation",
+    "deletion.menu.reset_lock_gimmick": "Reset Mini Game Towers",
+    "loading.reset_lock_gimmick": "Resetting mini game towers...",
+    "lock_gimmick_reset_count": "Reset {count} mini game towers"
 }

@@ -1976,5 +1976,8 @@
     "base_inventory.click_copy_container_id": "点击复制容器ID",
     "guild.assign.members_label": "现任会员",
     "guild.assign.members_empty": "选择一个公会以查看其成员。",
-    "base.nudge.rotate": "旋转"
+    "base.nudge.rotate": "旋转",
+    "deletion.menu.reset_lock_gimmick": "重置迷你游戏塔",
+    "loading.reset_lock_gimmick": "重置迷你游戏塔...",
+    "lock_gimmick_reset_count": "重置 {count} 迷你游戏塔"
 }

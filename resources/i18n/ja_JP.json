@@ -1974,5 +1974,8 @@
     "base_inventory.click_copy_container_id": "クリックしてコンテナIDをコピーします",
     "guild.assign.members_label": "現在のメンバー",
     "guild.assign.members_empty": "ギルドを選択すると、そのメンバーが表示されます。",
-    "base.nudge.rotate": "回転"
+    "base.nudge.rotate": "回転",
+    "deletion.menu.reset_lock_gimmick": "ミニゲームタワーをリセットする",
+    "loading.reset_lock_gimmick": "ミニゲームタワーをリセットしています...",
+    "lock_gimmick_reset_count": "{count} ミニ ゲーム タワーをリセットする"
 }

@@ -1968,5 +1968,8 @@
     "base_inventory.click_copy_container_id": "Haga clic para copiar el ID del contenedor",
     "guild.assign.members_label": "Miembros actuales",
     "guild.assign.members_empty": "Selecciona un gremio para ver sus miembros.",
-    "base.nudge.rotate": "Rotación"
+    "base.nudge.rotate": "Rotación",
+    "deletion.menu.reset_lock_gimmick": "Restablecer torres de minijuegos",
+    "loading.reset_lock_gimmick": "Restableciendo torres de minijuegos...",
+    "lock_gimmick_reset_count": "Restablecer torres de minijuegos {count}"
 }

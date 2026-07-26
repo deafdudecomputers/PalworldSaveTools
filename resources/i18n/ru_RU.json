@@ -1972,5 +1972,8 @@
     "base_inventory.click_copy_container_id": "Нажмите, чтобы скопировать идентификатор контейнера",
     "guild.assign.members_label": "Текущие участники",
     "guild.assign.members_empty": "Выберите гильдию, чтобы увидеть ее участников.",
-    "base.nudge.rotate": "Вращение"
+    "base.nudge.rotate": "Вращение",
+    "deletion.menu.reset_lock_gimmick": "Сброс башен мини-игр",
+    "loading.reset_lock_gimmick": "Сброс башен мини-игры...",
+    "lock_gimmick_reset_count": "Сбросить {count} башни мини-игры"
 }

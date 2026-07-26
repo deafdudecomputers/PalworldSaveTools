@@ -2261,5 +2261,8 @@
     "base_inventory.click_copy_container_id": "Clique para copiar o ID do contêiner",
     "guild.assign.members_label": "Membros Atuais",
     "guild.assign.members_empty": "Selecione uma guilda para ver seus membros.",
-    "base.nudge.rotate": "Rotação"
+    "base.nudge.rotate": "Rotação",
+    "deletion.menu.reset_lock_gimmick": "Redefinir torres de minijogo",
+    "loading.reset_lock_gimmick": "Reinicializando torres de minijogos...",
+    "lock_gimmick_reset_count": "Redefinir torres de minijogo {count}"
 }
