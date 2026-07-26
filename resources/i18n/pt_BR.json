@@ -2260,6 +2260,5 @@
     "player_technology.applied": "Aplicou tecnologia(s) {count} ao(s) jogador(es) {players}.",
     "base_inventory.click_copy_container_id": "Clique para copiar o ID do contêiner",
     "guild.assign.members_label": "Membros Atuais",
-    "guild.assign.members_empty": "Selecione uma guilda para ver seus membros.",
-    "base.nudge.rotate": "Rotação"
+    "guild.assign.members_empty": "Selecione uma guilda para ver seus membros."
 }

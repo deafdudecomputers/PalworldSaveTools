@@ -35,7 +35,6 @@ NEW_TRANSLATIONS = {
     'guild.assign.title': 'Guild Assignment',
     'guild.assign.members_label': 'Current Members',
     'guild.assign.members_empty': 'Select a guild to see its members.',
-    'base.nudge.rotate': 'Rotation',
 }
 OLD_KEYS = []
 def _clean_uv_locks():

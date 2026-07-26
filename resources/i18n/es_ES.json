@@ -1967,6 +1967,5 @@
     "player_technology.applied": "Se aplicaron {count} tecnología(es) a {players} jugadores.",
     "base_inventory.click_copy_container_id": "Haga clic para copiar el ID del contenedor",
     "guild.assign.members_label": "Miembros actuales",
-    "guild.assign.members_empty": "Selecciona un gremio para ver sus miembros.",
-    "base.nudge.rotate": "Rotación"
+    "guild.assign.members_empty": "Selecciona un gremio para ver sus miembros."
 }

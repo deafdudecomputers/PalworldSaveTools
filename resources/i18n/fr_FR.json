@@ -1955,6 +1955,5 @@
     "player_technology.applied": "Application de la ou des technologies {count} au(x) joueur(s) {players}.",
     "base_inventory.click_copy_container_id": "Cliquez pour copier l'ID du conteneur",
     "guild.assign.members_label": "Membres actuels",
-    "guild.assign.members_empty": "Sélectionnez une guilde pour voir ses membres.",
-    "base.nudge.rotate": "Rotation"
+    "guild.assign.members_empty": "Sélectionnez une guilde pour voir ses membres."
 }
