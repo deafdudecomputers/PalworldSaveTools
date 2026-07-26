@@ -50,6 +50,7 @@ from resource_resolver import resource_path
 from palworld_aio.ui.dialogs.player_item_dialog import PlayerItemActionDialog
 from palworld_aio.ui.dialogs.player_pal_dialog import PlayerPalActionDialog
 from palworld_aio.ui.dialogs.player_technology_dialog import PlayerTechnologyActionDialog
+from palworld_aio.ui.dialogs.guild_assign_dialog import GuildAssignDialog
 class DetachedStatusWindow(QWidget):
     def __init__(self, parent=None):
         super().__init__()
@@ -410,6 +411,10 @@ class MainWindow(QMainWindow):
         self.bulk_tech_btn.setStyleSheet('\n            QPushButton {\n                background: rgba(125, 211, 252, 0.12);\n                color: #7DD3FC;\n                border: 1px solid rgba(125, 211, 252, 0.2);\n                border-radius: 6px;\n                padding: 8px 16px;\n                font-weight: 600;\n            }\n            QPushButton:hover {\n                background: rgba(125, 211, 252, 0.2);\n                border-color: rgba(125, 211, 252, 0.4);\n                color: #FFFFFF;\n            }\n        ')
         self.bulk_tech_btn.clicked.connect(self._open_bulk_technology_dialog)
         bulk_layout.addWidget(self.bulk_tech_btn)
+        self.bulk_guild_btn = QPushButton(t('guild.assign.btn_open') if t else 'Guild Assignments')
+        self.bulk_guild_btn.setStyleSheet('\n            QPushButton {\n                background: rgba(125, 211, 252, 0.12);\n                color: #7DD3FC;\n                border: 1px solid rgba(125, 211, 252, 0.2);\n                border-radius: 6px;\n                padding: 8px 16px;\n                font-weight: 600;\n            }\n            QPushButton:hover {\n                background: rgba(125, 211, 252, 0.2);\n                border-color: rgba(125, 211, 252, 0.4);\n                color: #FFFFFF;\n            }\n        ')
+        self.bulk_guild_btn.clicked.connect(self._open_guild_assign_dialog)
+        bulk_layout.addWidget(self.bulk_guild_btn)
         bulk_layout.addStretch()
         layout.addWidget(bulk_frame)
         self.stacked_widget.addWidget(players_tab)
@@ -1705,26 +1710,19 @@ class MainWindow(QMainWindow):
             else:
                 self._show_warning(t('error.title'), t('guild.rebuild.failed'))
         run_with_loading(on_finished, task)
-    def _move_player_to_guild(self):
+    def _open_guild_assign_dialog(self):
         if not constants.loaded_level_json:
             self._show_warning(t('Error'), t('error.no_save_loaded'))
             return
-        player_data = self.players_panel.get_selected_data()
-        guild_data = self.guilds_panel.get_selected_data()
-        if not player_data:
-            self._show_warning(t('Error'), t('guild.move.no_player'))
-            return
-        if not guild_data:
-            self._show_warning(t('Error'), t('guild.common.select_guild_first'))
-            return
-        if move_player_to_guild(player_data[4], guild_data[1]):
-            constants.invalidate_container_lookup()
-            if 'base_inventory_tab' in self.__dict__:
-                self.base_inventory_tab.manager.invalidate_cache()
-            self.refresh_all()
-            self._show_info(t('Done'), t('guild.move.moved', player=player_data[0], guild=guild_data[0]))
-        else:
-            self._show_warning(t('Error'), t('guild.move.failed'))
+        dlg = GuildAssignDialog(self)
+        dlg.exec()
+        constants.invalidate_container_lookup()
+        if 'base_inventory_tab' in self.__dict__:
+            self.base_inventory_tab.manager.invalidate_cache()
+        self.refresh_all()
+
+    def _move_player_to_guild(self):
+        self._open_guild_assign_dialog()
     def _show_map(self):
         if not constants.loaded_level_json:
             self._show_warning(t('Error') if t else 'Error', t('error.no_save_loaded') if t else 'No save file loaded.')
