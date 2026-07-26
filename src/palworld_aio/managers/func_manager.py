@@ -1178,11 +1178,10 @@ def detect_and_trim_overfilled_inventories(parent=None):
                 additional_inventory_count = 0
                 if key_id in container_lookup:
                     key_slots = container_lookup[key_id]['value']['Slots']['value']['values']
-                    additional_items = ['AdditionalInventory_001', 'AdditionalInventory_002', 'AdditionalInventory_003', 'AdditionalInventory_004']
                     for slot in key_slots:
                         try:
                             item_id = slot.get('RawData', {}).get('value', {}).get('item', {}).get('static_id', '')
-                            if item_id in additional_items:
+                            if item_id and item_id.startswith('AdditionalInventory_'):
                                 additional_inventory_count += 1
                         except:
                             continue
@@ -1191,22 +1190,28 @@ def detect_and_trim_overfilled_inventories(parent=None):
                     container = container_lookup[main_id]
                     slots = container['value']['Slots']['value']['values']
                     current_slot_num = container['value'].get('SlotNum', {}).get('value', 0)
-                    if len(slots) != player_max_slots or current_slot_num != player_max_slots:
-                        if len(slots) >= player_max_slots or (len(slots) < player_max_slots and len(slots) >= 42):
-                            if len(slots) > player_max_slots:
-                                slots[:] = slots[:player_max_slots]
-                            elif len(slots) < player_max_slots:
-                                if len(slots) > 0:
-                                    template_slot = copy.deepcopy(slots[0])
-                                    template_slot['RawData']['value']['item']['static_id'] = ''
-                                    template_slot['RawData']['value']['item']['dynamic_id']['created_world_id'] = '00000000-0000-0000-0000-000000000000'
-                                    template_slot['RawData']['value']['item']['dynamic_id']['local_id'] = '00000000-0000-0000-0000-000000000000'
-                                    template_slot['RawData']['value']['count'] = 0
-                                    while len(slots) < player_max_slots:
-                                        slots.append(copy.deepcopy(template_slot))
-                            if 'SlotNum' in container['value']:
-                                container['value']['SlotNum']['value'] = len(slots)
-                            fixed_containers += 1
+                    target_slots = player_max_slots
+                    if len(slots) != target_slots or current_slot_num != target_slots:
+                        for si, s in enumerate(slots):
+                            rd = s.get('RawData', {}).get('value', {})
+                            if isinstance(rd, dict):
+                                rd['slot_index'] = si
+                        if len(slots) > target_slots:
+                            slots[:] = slots[:target_slots]
+                        elif len(slots) < target_slots:
+                            if len(slots) > 0:
+                                template_slot = copy.deepcopy(slots[0])
+                                template_slot['RawData']['value']['item']['static_id'] = ''
+                                template_slot['RawData']['value']['item']['dynamic_id']['created_world_id'] = '00000000-0000-0000-0000-000000000000'
+                                template_slot['RawData']['value']['item']['dynamic_id']['local_id'] = '00000000-0000-0000-0000-000000000000'
+                                template_slot['RawData']['value']['count'] = 0
+                                while len(slots) < target_slots:
+                                    new_slot = copy.deepcopy(template_slot)
+                                    new_slot['RawData']['value']['slot_index'] = len(slots)
+                                    slots.append(new_slot)
+                        if 'SlotNum' in container['value']:
+                            container['value']['SlotNum']['value'] = len(slots)
+                        fixed_containers += 1
             except Exception as e:
                 pass
         return fixed_containers
