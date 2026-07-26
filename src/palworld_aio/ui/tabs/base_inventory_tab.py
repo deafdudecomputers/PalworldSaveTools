@@ -3887,6 +3887,7 @@ class BaseInventoryTab(QWidget):
         if ok:
             slot_index = slot_data.get('slot_index', 0)
             if self.manager.update_item_count(slot_index, new_count):
+                QApplication.processEvents()
                 inventory_container = self.manager.select_container(self.manager.current_container['id'])
                 if inventory_container:
                     items = inventory_container.get_items()
