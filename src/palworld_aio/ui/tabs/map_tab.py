@@ -1840,9 +1840,25 @@ class MapTab(QWidget):
         dialog = NudgeInputDialog(self)
         if dialog.exec() != QDialog.Accepted:
             return
-        dx, dy, dz = dialog.result_value
-        if dx == 0 and dy == 0 and dz == 0:
+        dx, dy, dz, angle = dialog.result_value
+        if dx == 0 and dy == 0 and dz == 0 and angle == 0:
             return
+        def _apply_rotation(rot):
+            if not rot or angle == 0:
+                return rot
+            import math
+            ha = math.radians(angle) / 2
+            sin_a = math.sin(ha)
+            cos_a = math.cos(ha)
+            qx = rot.get('x', 0.0)
+            qy = rot.get('y', 0.0)
+            qz = rot.get('z', 0.0)
+            qw = rot.get('w', 1.0)
+            rot['x'] = cos_a * qx + 0 * qw + 0 * qz - sin_a * qy
+            rot['y'] = cos_a * qy - 0 * qz + 0 * qw + sin_a * qx
+            rot['z'] = cos_a * qz + 0 * qy - 0 * qx + sin_a * qw
+            rot['w'] = cos_a * qw - 0 * qx - 0 * qy - sin_a * qz
+            return rot
         def task():
             bid = str(base_data['base_id']).replace('-', '').lower()
             wsd = constants.loaded_level_json['properties']['worldSaveData']['value']
@@ -1850,14 +1866,17 @@ class MapTab(QWidget):
             base_entry = next((b for b in base_list if str(b['key']).replace('-', '').lower() == bid), None)
             if not base_entry:
                 return False
-            base_entry['value']['RawData']['value']['transform']['translation']['x'] += dx
-            base_entry['value']['RawData']['value']['transform']['translation']['y'] += dy
-            base_entry['value']['RawData']['value']['transform']['translation']['z'] += dz
+            trans = base_entry['value']['RawData']['value']['transform']['translation']
+            trans['x'] += dx
+            trans['y'] += dy
+            trans['z'] += dz
+            _apply_rotation(base_entry['value']['RawData']['value']['transform'].get('rotation'))
             try:
-                wd_trans = base_entry['value']['WorkerDirector']['value']['RawData']['value']['spawn_transform']['translation']
-                wd_trans['x'] += dx
-                wd_trans['y'] += dy
-                wd_trans['z'] += dz
+                wd = base_entry['value']['WorkerDirector']['value']['RawData']['value']['spawn_transform']
+                wd['translation']['x'] += dx
+                wd['translation']['y'] += dy
+                wd['translation']['z'] += dz
+                _apply_rotation(wd.get('rotation'))
             except:
                 pass
             map_objs = wsd.get('MapObjectSaveData', {}).get('value', {}).get('values', [])
@@ -1877,6 +1896,15 @@ class MapTab(QWidget):
                             t2['x'] += dx
                             t2['y'] += dy
                             t2['z'] += dz
+                    for cache_key in ('initital_transform_cache',):
+                        cache = mr.get(cache_key, {})
+                        rot = cache.get('rotation')
+                        if rot:
+                            _apply_rotation(rot)
+                        inner = cache.get('transform', {})
+                        irot = inner.get('rotation')
+                        if irot:
+                            _apply_rotation(irot)
                 except:
                     pass
             work_root = wsd.get('WorkSaveData', {})
@@ -1892,6 +1920,7 @@ class MapTab(QWidget):
                             tr['translation']['x'] += dx
                             tr['translation']['y'] += dy
                             tr['translation']['z'] += dz
+                        _apply_rotation(tr.get('rotation'))
                     except:
                         pass
             constants.invalidate_container_lookup()

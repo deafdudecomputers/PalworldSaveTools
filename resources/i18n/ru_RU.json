@@ -1971,5 +1971,6 @@
     "player_technology.applied": "Применены технологии {count} к игрокам {players}.",
     "base_inventory.click_copy_container_id": "Нажмите, чтобы скопировать идентификатор контейнера",
     "guild.assign.members_label": "Текущие участники",
-    "guild.assign.members_empty": "Выберите гильдию, чтобы увидеть ее участников."
+    "guild.assign.members_empty": "Выберите гильдию, чтобы увидеть ее участников.",
+    "base.nudge.rotate": "Вращение"
 }

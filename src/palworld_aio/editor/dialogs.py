@@ -1193,7 +1193,7 @@ class NudgeInputDialog(ThemedDialog):
         self.result_value = None
         layout = QVBoxLayout(self)
         layout.setSpacing(12)
-        label = QLabel((t('base.nudge.prompt') if t else 'Enter offset values for each axis.\nPositive = right/up/raise, Negative = left/down/lower.'))
+        label = QLabel((t('base.nudge.prompt') if t else 'Enter offset values for each axis.\nPositive = right/up/raise, Negative = left/down/lower.\nRotation angle rotates the base around its center (Z axis).'))
         label.setWordWrap(True)
         layout.addWidget(label)
         form = QFormLayout()
@@ -1213,6 +1213,12 @@ class NudgeInputDialog(ThemedDialog):
         self.z_spin.setValue(0)
         self.z_spin.setSingleStep(500)
         form.addRow((t('base.nudge.offset_z') if t else 'Z offset') + ':', self.z_spin)
+        self.rotate_spin = QSpinBox()
+        self.rotate_spin.setRange(-180, 180)
+        self.rotate_spin.setValue(0)
+        self.rotate_spin.setSingleStep(45)
+        self.rotate_spin.setSuffix('\u00b0')
+        form.addRow((t('base.nudge.rotate') if t else 'Rotation') + ':', self.rotate_spin)
         layout.addLayout(form)
         btn_layout = QHBoxLayout()
         ok_btn = QPushButton((t('button.ok') if t else 'OK'))
@@ -1224,6 +1230,6 @@ class NudgeInputDialog(ThemedDialog):
         btn_layout.addWidget(cancel_btn)
         layout.addLayout(btn_layout)
     def accept(self):
-        self.result_value = (self.x_spin.value(), self.y_spin.value(), self.z_spin.value())
+        self.result_value = (self.x_spin.value(), self.y_spin.value(), self.z_spin.value(), self.rotate_spin.value())
         super().accept()
 from .edit_pals import EditPalsDialog, PalFrame

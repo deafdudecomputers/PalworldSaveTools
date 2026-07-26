@@ -1997,5 +1997,6 @@
     "player_technology.applied": "{count} Technologie(n) auf {players} Spieler angewendet.",
     "base_inventory.click_copy_container_id": "Klicken Sie, um die Container-ID zu kopieren",
     "guild.assign.members_label": "Aktuelle Mitglieder",
-    "guild.assign.members_empty": "Wählen Sie eine Gilde aus, um ihre Mitglieder anzuzeigen."
+    "guild.assign.members_empty": "Wählen Sie eine Gilde aus, um ihre Mitglieder anzuzeigen.",
+    "base.nudge.rotate": "Drehung"
 }
