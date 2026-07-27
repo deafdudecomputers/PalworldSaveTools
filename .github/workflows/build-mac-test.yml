@@ -1,0 +1,50 @@
+name: Build Mac Test
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: build-mac-test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - name: Bootstrap environment
+        id: env
+        uses: ./.github/actions/setup-build-env
+      - name: Restore cached dist
+        id: cache-dist
+        uses: actions/cache@v4
+        with:
+          path: dist
+          key: ${{ runner.os }}-pst-dist-${{ steps.env.outputs.version }}-${{ hashFiles('build/**', 'src/**', 'resources/**', 'pyproject.toml', 'requirements.txt', 'README.md', 'license') }}
+      - name: Install dependencies
+        if: steps.cache-dist.outputs.cache-hit != 'true'
+        run: |
+          uv venv --clear
+          uv pip install -r requirements.txt nuitka imageio
+      - name: Build macOS DMG
+        if: steps.cache-dist.outputs.cache-hit != 'true'
+        run: uv run python build/macos_build.py --ad-hoc
+      - name: Verify macOS app and DMG
+        run: python3 build/verify_build.py
+      - name: Verify build output
+        run: |
+          echo "=== Files in dist/ ==="
+          if ! ls -la dist/; then
+            echo "::error::dist/ directory not found — build produced no output"
+            exit 1
+          fi
+      - uses: actions/upload-artifact@v7
+        with:
+          name: macos-test-build
+          path: dist/**.dmg
+          if-no-files-found: error
