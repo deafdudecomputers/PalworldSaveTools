@@ -110,6 +110,8 @@ class SaveManager(QObject):
         constants.xgp_save_id = None
         constants.xgp_container_index = None
         constants.xgp_loaded = False
+        constants.gps_path = None
+        constants.gps_gvas = None
         self.dps_tasks.clear()
         self.player_sav_cache.clear()
         if hasattr(MappingCacheObject, '_MappingCacheInstances'):
@@ -364,6 +366,63 @@ class SaveManager(QObject):
             new_world_name=self._xgp_new_world_name,
         )
         constants.xgp_save_id = new_id
+    def load_gps(self, path=None, parent=None):
+        if path is None:
+            from common import get_preferred_save_path
+            default_dir = get_preferred_save_path()
+            p, _ = QFileDialog.getOpenFileName(parent, 'Select GlobalPalStorage.sav', default_dir, 'SAV Files(*.sav)')
+        else:
+            p = path
+        if not p:
+            return False
+        try:
+            from palobject import SKP_PALWORLD_CUSTOM_PROPERTIES
+            from palsav.gvas import GvasFile
+            from palsav.core import decompress_sav_to_gvas
+            raw_bytes = open(p, 'rb').read()
+            gvas_bytes, _save_type = decompress_sav_to_gvas(raw_bytes)
+            gvas = GvasFile.read(gvas_bytes, PALWORLD_TYPE_HINTS, SKP_PALWORLD_CUSTOM_PROPERTIES)
+            constants.gps_path = p
+            constants.gps_gvas = gvas
+            return True
+        except Exception as e:
+            print(f'load_gps error: {e}')
+            import traceback
+            traceback.print_exc()
+            if parent:
+                show_critical(parent, t('error.title'), f'Failed to load GlobalPalStorage.sav:\n{str(e)}')
+            return False
+
+    def save_gps(self, path=None, parent=None):
+        if not constants.gps_gvas:
+            if parent:
+                show_critical(parent, t('error.title'), 'No Global Pal Storage data loaded.')
+            return False
+        if path is None:
+            path = constants.gps_path
+        if not path:
+            if parent:
+                show_critical(parent, t('error.title'), 'No GPS path set.')
+            return False
+        try:
+            from palsav.core import compress_gvas_to_sav
+            from palobject import SKP_PALWORLD_CUSTOM_PROPERTIES
+            gvas_bytes = constants.gps_gvas.write(SKP_PALWORLD_CUSTOM_PROPERTIES)
+            save_type = 49
+            if '/Script/Pal.PalGlobalPalStorageSaveGame' in (constants.gps_gvas.header.save_game_class_name or ''):
+                save_type = 49
+            sav_bytes = compress_gvas_to_sav(gvas_bytes, save_type)
+            with open(path, 'wb') as f:
+                f.write(sav_bytes)
+            return True
+        except Exception as e:
+            print(f'save_gps error: {e}')
+            import traceback
+            traceback.print_exc()
+            if parent:
+                show_critical(parent, t('error.title'), f'Failed to save GlobalPalStorage.sav:\n{str(e)}')
+            return False
+
     def _sanitize_for_alignment(self, text):
         return re.sub('[^\\x00-\\x7F\\u00C0-\\u017F\\u0080-\\u00BF]', '', text)
     def _build_player_levels(self):

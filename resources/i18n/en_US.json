@@ -2267,5 +2267,12 @@
     "lock_gimmick_reset_count": "Reset {count} mini game towers",
     "map.header.base_pals": "Base Pals",
     "deletion.col.members": "Members",
-    "guild.assign.role": "Role"
+    "guild.assign.role": "Role",
+    "menu.file.load_gps": "Load Global Pal Storage",
+    "menu.file.save_gps": "Save Global Pal Storage",
+    "pal_editor.gps": "GPS",
+    "pal_editor.gps_count": "GPS {n}/{m} ({count})",
+    "menu.file.load_gps.success": "Global Pal Storage loaded.",
+    "gps_editor.title": "Global Pal Storage Editor",
+    "pal_editor.bulk_max_confirm": "Max all stats for {n} pals?"
 }

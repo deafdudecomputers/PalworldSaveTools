@@ -1978,5 +1978,12 @@
     "lock_gimmick_reset_count": "Сбросить {count} башни мини-игры",
     "map.header.base_pals": "Базовые приятели",
     "deletion.col.members": "Члены",
-    "guild.assign.role": "Роль"
+    "guild.assign.role": "Роль",
+    "menu.file.load_gps": "Загрузить глобальное хранилище Pal",
+    "menu.file.save_gps": "Сохранить глобальное хранилище Pal",
+    "pal_editor.gps": "GPS",
+    "pal_editor.gps_count": "GPS {n}/{m} ({count})",
+    "menu.file.load_gps.success": "Глобальное хранилище Pal загружено.",
+    "gps_editor.title": "Редактор хранилища Global Pal",
+    "pal_editor.bulk_max_confirm": "Максимизировать все характеристики для друзей {n}?"
 }

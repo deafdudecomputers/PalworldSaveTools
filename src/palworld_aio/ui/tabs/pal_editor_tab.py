@@ -187,6 +187,14 @@ class PalEditorTab(QWidget):
         self.current_player_uid = None
         self.current_player_name = None
         self.player_select_btn.setText(t('inventory.select_player', default='Select Player...'))
+    def load_gps_data(self):
+        if not constants.gps_gvas:
+            return
+        self.pal_editor_widget._load_gps_pals()
+        self.pal_editor_widget._update_mode_buttons()
+        self.pal_editor_widget._set_palbox_mode('gps')
+        self.pal_editor_widget.apply_player_ui()
+
     def refresh_labels(self):
         if hasattr(self, 'title_label'):
             self.title_label.setText(t('pal_editor.title'))

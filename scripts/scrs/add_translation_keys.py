@@ -19,6 +19,13 @@ NEW_TRANSLATIONS = {
     'map.header.base_pals': 'Base Pals',
     'deletion.col.members': 'Members',
     'guild.assign.role': 'Role',
+    'menu.file.load_gps': 'Load Global Pal Storage',
+    'menu.file.load_gps.success': 'Global Pal Storage loaded.',
+    'menu.file.save_gps': 'Save Global Pal Storage',
+    'gps_editor.title': 'Global Pal Storage Editor',
+    'pal_editor.bulk_max_confirm': 'Max all stats for {n} pals?',
+    'pal_editor.gps': 'GPS',
+    'pal_editor.gps_count': 'GPS {n}/{m} ({count})',
 }
 OLD_KEYS = []
 def _clean_uv_locks():

@@ -1974,5 +1974,12 @@
     "lock_gimmick_reset_count": "Restablecer torres de minijuegos {count}",
     "map.header.base_pals": "Amigos básicos",
     "deletion.col.members": "Miembros",
-    "guild.assign.role": "Role"
+    "guild.assign.role": "Role",
+    "menu.file.load_gps": "Cargar almacenamiento global Pal",
+    "menu.file.save_gps": "Ahorre almacenamiento global de Pal",
+    "pal_editor.gps": "GPS",
+    "pal_editor.gps_count": "GPS {n}/{m} ({count})",
+    "menu.file.load_gps.success": "Almacenamiento Global Pal cargado.",
+    "gps_editor.title": "Editor de almacenamiento global de Pal",
+    "pal_editor.bulk_max_confirm": "¿Maximizar todas las estadísticas para los amigos de {n}?"
 }

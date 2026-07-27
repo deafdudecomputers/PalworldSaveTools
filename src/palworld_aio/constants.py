@@ -73,6 +73,8 @@ xgp_container_index = None
 loading_screen_mode = 'overlay'
 header_loading_widget = None
 xgp_loaded: bool = False
+gps_path: str | None = None
+gps_gvas = None
 def get_container_lookup():
     global container_lookup
     if container_lookup and loaded_level_json:

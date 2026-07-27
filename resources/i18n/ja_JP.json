@@ -1980,5 +1980,12 @@
     "lock_gimmick_reset_count": "{count} ミニ ゲーム タワーをリセットする",
     "map.header.base_pals": "ベースフレンド",
     "deletion.col.members": "メンバー",
-    "guild.assign.role": "役割"
+    "guild.assign.role": "役割",
+    "menu.file.load_gps": "グローバル Pal ストレージをロードする",
+    "menu.file.save_gps": "グローバル Pal ストレージを保存する",
+    "pal_editor.gps": "GPS",
+    "pal_editor.gps_count": "GPS {n}/{m} ({count})",
+    "menu.file.load_gps.success": "グローバル Pal ストレージがロードされました。",
+    "gps_editor.title": "グローバル Pal ストレージ編集者",
+    "pal_editor.bulk_max_confirm": "{n} 友達のすべてのステータスを最大にしますか?"
 }

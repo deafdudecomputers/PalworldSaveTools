@@ -1979,5 +1979,12 @@
     "lock_gimmick_reset_count": "{count} 미니 게임 타워 재설정",
     "map.header.base_pals": "기본 친구",
     "deletion.col.members": "회원",
-    "guild.assign.role": "역할"
+    "guild.assign.role": "역할",
+    "menu.file.load_gps": "글로벌 Pal 스토리지 로드",
+    "menu.file.save_gps": "글로벌 Pal 스토리지 저장",
+    "pal_editor.gps": "GPS",
+    "pal_editor.gps_count": "GPS {n}/{m}({count})",
+    "menu.file.load_gps.success": "글로벌 Pal 저장소가 로드되었습니다.",
+    "gps_editor.title": "글로벌 Pal 스토리지 편집자",
+    "pal_editor.bulk_max_confirm": "{n} 친구의 모든 통계를 최대화하시겠습니까?"
 }

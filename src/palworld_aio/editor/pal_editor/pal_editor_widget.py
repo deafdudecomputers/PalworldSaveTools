@@ -56,6 +56,7 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
         self.dps_pals = {}
         self.dps_slots = []
         self.dps_total_slots = 0
+
         self.party_pals = {}
         self.palbox_pals = []
         self.current_box_index = 1
@@ -1665,10 +1666,10 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
         if self.player_uid:
             self._load_pals()
             self._load_dps_pals()
-            self._update_party_slots()
-            self._update_palbox_page()
-            self._update_box_label()
-            self._update_mode_buttons()
+        self._update_party_slots()
+        self._update_palbox_page()
+        self._update_box_label()
+        self._update_mode_buttons()
     def _process_pending_changes(self):
         pass
     def _update_dashboard_stats(self):

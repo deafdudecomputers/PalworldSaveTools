@@ -2004,5 +2004,12 @@
     "lock_gimmick_reset_count": "Setzen Sie {count} Minispieltürme zurück",
     "map.header.base_pals": "Basisfreunde",
     "deletion.col.members": "Mitglieder",
-    "guild.assign.role": "Rolle"
+    "guild.assign.role": "Rolle",
+    "menu.file.load_gps": "Laden Sie den globalen Pal-Speicher",
+    "menu.file.save_gps": "Speichern Sie den globalen Pal-Speicher",
+    "pal_editor.gps": "GPS",
+    "pal_editor.gps_count": "GPS {n}/{m} ({count})",
+    "menu.file.load_gps.success": "Globaler Pal-Speicher geladen.",
+    "gps_editor.title": "Globaler Pal-Speichereditor",
+    "pal_editor.bulk_max_confirm": "Alle Statistiken für {n}-Freunde maximieren?"
 }

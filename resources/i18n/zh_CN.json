@@ -1982,5 +1982,12 @@
     "lock_gimmick_reset_count": "重置 {count} 迷你游戏塔",
     "map.header.base_pals": "基地伙伴",
     "deletion.col.members": "会员",
-    "guild.assign.role": "角色"
+    "guild.assign.role": "角色",
+    "menu.file.load_gps": "加载全局 Pal 存储",
+    "menu.file.save_gps": "保存全局 Pal 存储",
+    "pal_editor.gps": "全球定位系统",
+    "pal_editor.gps_count": "GPS {n}/{m} ({count})",
+    "menu.file.load_gps.success": "全球 Pal 存储已加载。",
+    "gps_editor.title": "全球 Pal 存储编辑器",
+    "pal_editor.bulk_max_confirm": "最大化 {n} 朋友的所有统计数据？"
 }

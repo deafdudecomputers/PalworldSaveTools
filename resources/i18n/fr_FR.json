@@ -1962,5 +1962,12 @@
     "lock_gimmick_reset_count": "Réinitialiser les mini-tours de jeu {count}",
     "map.header.base_pals": "Copains de base",
     "deletion.col.members": "Membres",
-    "guild.assign.role": "Rôle"
+    "guild.assign.role": "Rôle",
+    "menu.file.load_gps": "Charger le stockage Global Pal",
+    "menu.file.save_gps": "Enregistrer le stockage Global Pal",
+    "pal_editor.gps": "GPS",
+    "pal_editor.gps_count": "GPS {n}/{m} ({count})",
+    "menu.file.load_gps.success": "Stockage Global Pal chargé.",
+    "gps_editor.title": "Éditeur de stockage Global Pal",
+    "pal_editor.bulk_max_confirm": "Maximiser toutes les statistiques des amis de {n} ?"
 }
