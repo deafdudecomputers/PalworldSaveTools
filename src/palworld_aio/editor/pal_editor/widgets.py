@@ -1,6 +1,6 @@
 import math
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QFrame, QWidget
-from PySide6.QtCore import Qt, QTimer, QEvent, QPoint, QPointF, QRectF
+from PySide6.QtCore import Qt, QTimer, QEvent, QPoint, QPointF, QRectF, Signal
 from PySide6.QtGui import QFont, QPixmap, QPainter, QPainterPath, QPen, QBrush, QFontMetrics, QColor, QLinearGradient
 from i18n import t
 from palworld_aio import constants
@@ -62,7 +62,7 @@ class FramelessDialog(QDialog):
 
 class StarButton(QPushButton):
 
-    def mouseReleaseEvent(self, event):
+    def mousePressEvent(self, event):
 
         if event.button() == Qt.LeftButton:
 
@@ -475,6 +475,20 @@ class SANTrackerWidget(QWidget):
             painter.drawLine(tx, y - 1, tx, y + bar_h + 1)
 
 class SkillSlotFrame(QFrame):
+
+    activated = Signal(object)
+
+    def mouseReleaseEvent(self, event):
+
+        if event.button() == Qt.LeftButton:
+
+            self.activated.emit(self)
+
+            event.accept()
+
+            return
+
+        super().mousePressEvent(event)
 
     def paintEvent(self, event):
 

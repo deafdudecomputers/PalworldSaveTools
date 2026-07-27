@@ -27,7 +27,7 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-palsav-flex = { workspace = true, editable = true }
+palsav-flex = { workspace = true }
 
 [tool.uv.workspace]
 members = [
@@ -50,5 +50,6 @@ reportOptionalIn = false
 [dependency-groups]
 dev = [
     "cx-freeze>=8.6.0",
+    "imageio",
     "pytest",
 ]

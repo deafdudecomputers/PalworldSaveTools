@@ -2,7 +2,7 @@ import os
 import sys
 import traceback
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QFrame, QScrollArea, QSizePolicy, QSpacerItem, QGridLayout, QApplication, QDialog, QStylePainter, QStyleOptionButton, QStyle
-from PySide6.QtCore import Qt, QSize, Signal, QPropertyAnimation, QEasingCurve, QRectF
+from PySide6.QtCore import Qt, QSize, Signal, QPropertyAnimation, QEasingCurve, QRectF, QObject, QEvent
 from PySide6.QtGui import QPixmap, QIcon, QFont, QCursor, QDragEnterEvent, QDropEvent, QDragLeaveEvent, QPainter, QColor, QPen, QPainterPath, QFontMetrics, QFontDatabase, QGuiApplication
 from i18n import t
 from loading_manager import show_critical
@@ -13,6 +13,19 @@ from ..chrome.sidebar_widget import ICONS
 CONVERTING_TOOL_KEYS = ['tool.convert.saves', 'tool.convert.gamepass.steam', 'tool.convert.steamid', 'tool.restore_map']
 MANAGEMENT_TOOL_KEYS = ['tool.slot_injector', 'tool.modify_save', 'tool.character_transfer', 'tool.fix_host_save']
 TOOL_DESCRIPTIONS = {'tool.convert.saves': 'tool.convert.saves.desc', 'tool.convert.gamepass.steam': 'tool.convert.gamepass.steam.desc', 'tool.convert.steamid': 'tool.convert.steamid.desc', 'tool.restore_map': 'tool.restore_map.desc', 'tool.slot_injector': 'tool.slot_injector.desc', 'tool.modify_save': 'tool.modify_save.desc', 'tool.character_transfer': 'tool.character_transfer.desc', 'tool.fix_host_save': 'tool.fix_host_save.desc'}
+
+
+class _RestoreOnCloseFilter(QObject):
+    def __init__(self, callback, parent=None):
+        super().__init__(parent)
+        self._callback = callback
+
+    def eventFilter(self, watched, event):
+        if event.type() in (QEvent.Close, QEvent.Hide):
+            self._callback()
+        return super().eventFilter(watched, event)
+
+
 def center_window(win):
     win_center = win.frameGeometry().center()
     screen = QApplication.screenAt(win_center)
@@ -202,6 +215,11 @@ class StatIconBtn(QPushButton):
         super().__init__(icon, parent)
         font_family = self._resolve_nerdfont()
         self.setFont(QFont(font_family, 11))
+        self.setFixedSize(44, 28)
+        self.setCursor(QCursor(Qt.PointingHandCursor))
+        self.setFocusPolicy(Qt.NoFocus)
+        self.setStyleSheet('QPushButton { background: rgba(125,211,252,0.08); color: #7DD3FC; border: 1px solid rgba(125,211,252,0.15); border-radius: 6px; } QPushButton:hover { background: rgba(125,211,252,0.15); border-color: rgba(125,211,252,0.3); color: #FFFFFF; } QPushButton:pressed { background: rgba(125,211,252,0.25); }')
+
     @staticmethod
     def _resolve_nerdfont():
         db = QFontDatabase()
@@ -210,10 +228,7 @@ class StatIconBtn(QPushButton):
             if name in db.families():
                 return name
         return constants.FONT_FAMILY
-        self.setFixedSize(44, 28)
-        self.setCursor(QCursor(Qt.PointingHandCursor))
-        self.setFocusPolicy(Qt.NoFocus)
-        self.setStyleSheet('QPushButton { background: rgba(125,211,252,0.08); color: #7DD3FC; border: 1px solid rgba(125,211,252,0.15); border-radius: 6px; } QPushButton:hover { background: rgba(125,211,252,0.15); border-color: rgba(125,211,252,0.3); color: #FFFFFF; } QPushButton:pressed { background: rgba(125,211,252,0.25); }')
+
     def paintEvent(self, event):
         sp = QStylePainter(self)
         opt = QStyleOptionButton()
@@ -504,21 +519,23 @@ class ToolsTab(QWidget):
         if _main and _main.isVisible():
             QApplication.setQuitOnLastWindowClosed(False)
             _main.hide()
+            restored = False
+
             def _show():
+                nonlocal restored
+                if restored:
+                    return
+                restored = True
                 if _main:
                     _main.show()
                     _main.activateWindow()
                     _main.raise_()
                 QApplication.setQuitOnLastWindowClosed(True)
+
             if isinstance(dialog, QDialog):
                 dialog.finished.connect(lambda r: _show())
-            _orig_close = dialog.closeEvent
-            def _restore(event, orig=_orig_close):
-                if callable(orig):
-                    orig(event)
-                if event.isAccepted():
-                    _show()
-            dialog.closeEvent = _restore
+            dialog._restore_filter = _RestoreOnCloseFilter(_show, dialog)
+            dialog.installEventFilter(dialog._restore_filter)
         dialog.show()
         self.fade_animation = QPropertyAnimation(dialog, b'windowOpacity')
         self.fade_animation.setDuration(400)

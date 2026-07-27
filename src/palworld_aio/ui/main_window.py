@@ -9,39 +9,6 @@ from functools import partial
 import logging
 from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QFrame, QMenuBar, QMenu, QStatusBar, QSplitter, QMessageBox, QFileDialog, QInputDialog, QDialog, QComboBox, QApplication, QStackedWidget, QTextEdit, QLineEdit
 from PySide6.QtCore import Qt, QTimer, Signal, QObject, QPoint, QPropertyAnimation, QEasingCurve, QByteArray, QThread
-from collections import deque
-from PySide6.QtCore import QObject as _QObject
-
-# --- Belt: keep dialog C++ objects alive until Qt flushes queued teardown events ---
-_KEEP_DIALOGS_MAX = 50
-_keep_dialogs = deque(maxlen=_KEEP_DIALOGS_MAX)
-_original_exec = QDialog.exec
-_original_exec_ = QDialog.exec_
-
-def _safe_exec(self, *args, **kwargs):
-    _keep_dialogs.append(self)
-    return _original_exec(self, *args, **kwargs)
-
-def _safe_exec_(self, *args, **kwargs):
-    _keep_dialogs.append(self)
-    return _original_exec_(self, *args, **kwargs)
-
-QDialog.exec = _safe_exec
-QDialog.exec_ = _safe_exec_
-
-# --- Suspenders: keep ANY QObject wrapper alive until Qt actually deletes it ---
-_keep_until_deleted = {}
-_original_deleteLater = _QObject.deleteLater
-
-def _safe_deleteLater(self):
-    if id(self) in _keep_until_deleted:
-        _original_deleteLater(self)
-        return
-    _keep_until_deleted[id(self)] = self
-    self.destroyed.connect(lambda oid=id(self): _keep_until_deleted.pop(oid, None))
-    _original_deleteLater(self)
-
-_QObject.deleteLater = _safe_deleteLater
 
 from PySide6.QtGui import QIcon, QFont, QAction, QPixmap, QCloseEvent, QTextCursor
 from i18n import t, set_language, load_resources, get_native_lang_name
@@ -398,7 +365,7 @@ class MainWindow(QMainWindow):
             self.stacked_widget.removeWidget(placeholder)
             placeholder.setParent(None)
             placeholder.hide()
-            _original_deleteLater(placeholder)
+            placeholder.deleteLater()
             getattr(self, method_name)()
             widget = self.stacked_widget.widget(self.stacked_widget.count() - 1)
             self.stacked_widget.removeWidget(widget)
