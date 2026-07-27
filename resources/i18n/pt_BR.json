@@ -2265,5 +2265,6 @@
     "deletion.menu.reset_lock_gimmick": "Redefinir torres de minijogo",
     "loading.reset_lock_gimmick": "Reinicializando torres de minijogos...",
     "lock_gimmick_reset_count": "Redefinir torres de minijogo {count}",
-    "map.header.base_pals": "Amigos básicos"
+    "map.header.base_pals": "Amigos básicos",
+    "deletion.col.members": "Membros"
 }

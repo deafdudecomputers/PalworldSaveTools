@@ -2002,5 +2002,6 @@
     "deletion.menu.reset_lock_gimmick": "Minispieltürme zurücksetzen",
     "loading.reset_lock_gimmick": "Minispieltürme werden zurückgesetzt...",
     "lock_gimmick_reset_count": "Setzen Sie {count} Minispieltürme zurück",
-    "map.header.base_pals": "Basisfreunde"
+    "map.header.base_pals": "Basisfreunde",
+    "deletion.col.members": "Mitglieder"
 }

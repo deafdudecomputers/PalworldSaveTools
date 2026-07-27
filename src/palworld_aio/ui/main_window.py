@@ -409,7 +409,7 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(guilds_tab)
         layout.setContentsMargins(10, 10, 10, 10)
         splitter = QSplitter(Qt.Vertical)
-        self.guilds_panel = SearchPanel('deletion.search_guilds', ['deletion.col.guild_name', 'deletion.col.guild_id', 'deletion.col.guild_level'], [200, 300, 60])
+        self.guilds_panel = SearchPanel('deletion.search_guilds', ['deletion.col.guild_name', 'deletion.col.guild_id', 'deletion.col.guild_level', 'deletion.col.members'], [200, 280, 100, 80])
         self.guilds_panel.item_selected.connect(self._on_guild_selected)
         self.guilds_panel.tree.customContextMenuRequested.connect(self._show_guild_context_menu)
         splitter.addWidget(self.guilds_panel)
@@ -717,8 +717,8 @@ class MainWindow(QMainWindow):
         self.guild_members_panel.clear()
         guilds = get_guilds()
         for g in guilds:
-            sort_keys = {2: int(g['level']) if str(g['level']).isdigit() else 0}
-            self.guilds_panel.add_item([g['name'], g['id'], g['level']], sort_keys=sort_keys)
+            sort_keys = {2: int(g['level']) if str(g['level']).isdigit() else 0, 3: int(g['member_count'])}
+            self.guilds_panel.add_item([g['name'], g['id'], g['level'], g['member_count']], sort_keys=sort_keys)
     def _refresh_bases(self):
         self.bases_panel.clear()
         bases = get_bases()

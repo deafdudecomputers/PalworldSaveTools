@@ -1977,5 +1977,6 @@
     "deletion.menu.reset_lock_gimmick": "미니 게임 타워 재설정",
     "loading.reset_lock_gimmick": "미니게임 타워 재설정 중...",
     "lock_gimmick_reset_count": "{count} 미니 게임 타워 재설정",
-    "map.header.base_pals": "기본 친구"
+    "map.header.base_pals": "기본 친구",
+    "deletion.col.members": "회원"
 }

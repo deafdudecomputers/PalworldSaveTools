@@ -1976,5 +1976,6 @@
     "deletion.menu.reset_lock_gimmick": "Сброс башен мини-игр",
     "loading.reset_lock_gimmick": "Сброс башен мини-игры...",
     "lock_gimmick_reset_count": "Сбросить {count} башни мини-игры",
-    "map.header.base_pals": "Базовые приятели"
+    "map.header.base_pals": "Базовые приятели",
+    "deletion.col.members": "Члены"
 }

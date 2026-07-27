@@ -1,3 +1,8 @@
+#2.2.5
+- **Bulk clone dialog text color fixed** — pal names and qty spinbox in BulkSpeciesDialog now use explicit `color: #e2e8f0` (matching stats panel style) instead of inheriting the system palette, which gave black text on dark background for some Windows configs.
+- **Guild member count column** — the guild search tree now shows a sortable "Members" column with per-guild member count. Column widths redistributed for readability.
+- Bumped version to 2.2.5
+
 #2.2.4
 - **Eliminated all deleteLater() calls** — every `widget.deleteLater()` in the codebase (29 sites across 20 files) replaced with `widget.hide()` + `widget.setParent(None)`. `deleteLater()` defers widget destruction to the Qt event loop, which when called inside a modal `dialog.exec()` causes the nested event loop to process the deferred delete immediately, destroying C++ widgets while signal handlers are still running — a guaranteed use-after-free crash. Simply detaching widgets from their parent avoids the event loop entirely; orphaned C++ objects are cleaned up by Qt's parent-child ownership when the container widget is destroyed. Fixes hard crashes in player inventory add-item, learned moves skill removal/bulk operations, world option setting switches, passive loadout preview, guild search, technology search, tab switching, breeding results, wiki content rebuild, base pal slots, item slot rebuild, mission list rebuild, map zone cleanup, context menus, and GamePass save list rebuild.
 - **Base Pals column in map viewer tree** — the guild/base tree in the Map tab now shows a sortable "Base Pals" column displaying the total worker pal count per guild and per base, read from each base's WorkerDirector container slot count.

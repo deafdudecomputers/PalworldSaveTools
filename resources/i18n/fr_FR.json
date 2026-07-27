@@ -1960,5 +1960,6 @@
     "deletion.menu.reset_lock_gimmick": "Réinitialiser les mini-tours de jeu",
     "loading.reset_lock_gimmick": "Réinitialisation des mini-tours de jeu...",
     "lock_gimmick_reset_count": "Réinitialiser les mini-tours de jeu {count}",
-    "map.header.base_pals": "Copains de base"
+    "map.header.base_pals": "Copains de base",
+    "deletion.col.members": "Membres"
 }
