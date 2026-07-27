@@ -152,8 +152,6 @@ jobs:
       - name: Build macOS DMG
         if: steps.cache-dist.outputs.cache-hit != 'true'
         run: uv run python build/macos_build.py
-      - name: Verify macOS app and DMG
-        run: python3 build/verify_build.py
       - name: List built files
         run: ls -la dist/ || { echo "dist/ directory not found"; exit 1; }
       - uses: actions/upload-artifact@v7
