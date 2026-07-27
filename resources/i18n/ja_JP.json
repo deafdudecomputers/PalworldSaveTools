@@ -1977,5 +1977,6 @@
     "base.nudge.rotate": "回転",
     "deletion.menu.reset_lock_gimmick": "ミニゲームタワーをリセットする",
     "loading.reset_lock_gimmick": "ミニゲームタワーをリセットしています...",
-    "lock_gimmick_reset_count": "{count} ミニ ゲーム タワーをリセットする"
+    "lock_gimmick_reset_count": "{count} ミニ ゲーム タワーをリセットする",
+    "map.header.base_pals": "ベースフレンド"
 }

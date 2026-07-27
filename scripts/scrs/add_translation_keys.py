@@ -16,6 +16,7 @@ NEW_TRANSLATIONS = {
     'deletion.menu.reset_lock_gimmick': 'Reset Mini Game Towers',
     'loading.reset_lock_gimmick': 'Resetting mini game towers...',
     'lock_gimmick_reset_count': 'Reset {count} mini game towers',
+    'map.header.base_pals': 'Base Pals',
 }
 OLD_KEYS = []
 def _clean_uv_locks():

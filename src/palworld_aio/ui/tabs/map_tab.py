@@ -104,7 +104,7 @@ class MapTab(QWidget):
                 self._calibration_label.setText(t('calibrate.label', n=n + 1, total=total, ox=ox, oy=oy))
                 self._calibration_label.adjustSize()
         if hasattr(self, 'base_tree'):
-            self.base_tree.setHeaderLabels([t('map.header.guild') if t else 'Guild', t('map.header.leader') if t else 'Leader', t('map.header.lastseen') if t else 'Last Seen', t('map.header.bases') if t else 'Bases'])
+            self.base_tree.setHeaderLabels([t('map.header.guild') if t else 'Guild', t('map.header.leader') if t else 'Leader', t('map.header.lastseen') if t else 'Last Seen', t('map.header.bases') if t else 'Bases', t('map.header.base_pals') if t else 'Base Pals'])
         if hasattr(self, 'player_tree'):
             self.player_tree.setHeaderLabels([t('map.header.player') if t else 'Player', t('map.info.level') if t else 'Level', t('map.header.lastseen') if t else 'Last Seen', t('player.pals') if t else 'Pals'])
         if hasattr(self, 'bases_tab_btn'):
@@ -380,7 +380,7 @@ class MapTab(QWidget):
         '''
         self.base_tree = QTreeWidget()
         self.base_tree.setObjectName('baseTree')
-        self.base_tree.setHeaderLabels([t('map.header.guild') if t else 'Guild', t('map.header.leader') if t else 'Leader', t('map.header.lastseen') if t else 'Last Seen', t('map.header.bases') if t else 'Bases'])
+        self.base_tree.setHeaderLabels([t('map.header.guild') if t else 'Guild', t('map.header.leader') if t else 'Leader', t('map.header.lastseen') if t else 'Last Seen', t('map.header.bases') if t else 'Bases', t('map.header.base_pals') if t else 'Base Pals'])
         self.base_tree.setAlternatingRowColors(False)
         self.base_tree.setRootIsDecorated(False)
         self.base_tree.itemExpanded.connect(self._on_item_expanded)
@@ -1065,14 +1065,17 @@ class MapTab(QWidget):
         if hasattr(self, 'base_tree'):
             self.base_tree.clear()
             for gid, guild in self.filtered_guilds.items():
-                guild_item = _SortableItem([guild['guild_name'], guild['leader_name'], guild['last_seen'], str(len(guild['bases']))])
+                total_pals = sum(b.get('pal_count', 0) for b in guild['bases'])
+                guild_item = _SortableItem([guild['guild_name'], guild['leader_name'], guild['last_seen'], str(len(guild['bases'])), str(total_pals)])
                 guild_item.setData(0, Qt.UserRole, ('guild', gid))
                 guild_item.setData(2, _SORT_ROLE, guild.get('last_seen_sort', float('inf')))
                 guild_item.setData(3, _SORT_ROLE, len(guild['bases']))
+                guild_item.setData(4, _SORT_ROLE, total_pals)
                 for base in guild['bases']:
-                    base_item = _SortableItem([f"X:{int(base['coords'][0])} Y:{int(base['coords'][1])}", str(base['base_id'])[:12] + '...', '', ''])
+                    base_item = _SortableItem([f"X:{int(base['coords'][0])} Y:{int(base['coords'][1])}", str(base['base_id'])[:12] + '...', '', '', str(base.get('pal_count', 0))])
                     base_item.setData(0, Qt.UserRole, ('base', base))
                     base_item.setData(0, _SORT_ROLE, (int(base['coords'][0]), int(base['coords'][1])))
+                    base_item.setData(4, _SORT_ROLE, base.get('pal_count', 0))
                     base_item.setForeground(0, QColor(0, 180, 255))
                     guild_item.addChild(base_item)
                 self.base_tree.addTopLevelItem(guild_item)

@@ -2001,5 +2001,6 @@
     "base.nudge.rotate": "Drehung",
     "deletion.menu.reset_lock_gimmick": "Minispieltürme zurücksetzen",
     "loading.reset_lock_gimmick": "Minispieltürme werden zurückgesetzt...",
-    "lock_gimmick_reset_count": "Setzen Sie {count} Minispieltürme zurück"
+    "lock_gimmick_reset_count": "Setzen Sie {count} Minispieltürme zurück",
+    "map.header.base_pals": "Basisfreunde"
 }

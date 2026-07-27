@@ -1975,5 +1975,6 @@
     "base.nudge.rotate": "Вращение",
     "deletion.menu.reset_lock_gimmick": "Сброс башен мини-игр",
     "loading.reset_lock_gimmick": "Сброс башен мини-игры...",
-    "lock_gimmick_reset_count": "Сбросить {count} башни мини-игры"
+    "lock_gimmick_reset_count": "Сбросить {count} башни мини-игры",
+    "map.header.base_pals": "Базовые приятели"
 }

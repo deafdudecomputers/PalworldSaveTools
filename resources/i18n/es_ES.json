@@ -1971,5 +1971,6 @@
     "base.nudge.rotate": "Rotación",
     "deletion.menu.reset_lock_gimmick": "Restablecer torres de minijuegos",
     "loading.reset_lock_gimmick": "Restableciendo torres de minijuegos...",
-    "lock_gimmick_reset_count": "Restablecer torres de minijuegos {count}"
+    "lock_gimmick_reset_count": "Restablecer torres de minijuegos {count}",
+    "map.header.base_pals": "Amigos básicos"
 }
