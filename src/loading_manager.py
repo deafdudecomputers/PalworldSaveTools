@@ -1,6 +1,7 @@
 import sys, os, json, time, random, subprocess, threading, traceback
 from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QFrame, QLabel, QPushButton, QTextEdit, QGraphicsOpacityEffect, QMessageBox, QProgressBar, QDialog
 from PySide6.QtCore import Qt, QTimer, QPropertyAnimation, QObject, QEvent
+import weakref
 from PySide6.QtGui import QPixmap, QCursor, QFont
 from i18n import t, init_language
 from resource_resolver import get_base_dir, get_resources_dir, resource_path
@@ -131,7 +132,7 @@ def run_with_loading(callback, func, *args, parent=None, **kwargs):
         except:
             phrases = ['LOADING...']
         overlay_widget = QWidget(parent)
-        overlay_widget.setAttribute(Qt.WA_TransparentForMouseEvents, True)
+        overlay_widget.setAttribute(Qt.WA_TransparentForMouseEvents, False)
         overlay_widget.setGeometry(parent.rect())
         overlay_widget.setStyleSheet('background: rgba(18,20,24,0.94);')
         ol = QVBoxLayout(overlay_widget)
@@ -382,19 +383,27 @@ class ErrorDialog(QWidget):
         QApplication.quit()
         os._exit(0)
     def copy_to_clipboard(self, text, btn):
+        btn_ref = weakref.ref(btn)
+        def _restore(txt):
+            b = btn_ref()
+            if b is not None:
+                try:
+                    b.setText(txt)
+                except RuntimeError:
+                    pass
         try:
             import subprocess
             subprocess.run(['clip.exe'], input=text.encode('utf-16'), check=True)
             old_txt = btn.text()
             btn.setText('COPIED!')
-            QTimer.singleShot(2000, lambda: btn.setText(old_txt))
+            QTimer.singleShot(2000, lambda t=old_txt: _restore(t))
         except:
             try:
                 clipboard = QApplication.clipboard()
                 clipboard.setText(text)
                 old_txt = btn.text()
                 btn.setText('COPIED!')
-                QTimer.singleShot(2000, lambda: btn.setText(old_txt))
+                QTimer.singleShot(2000, lambda t=old_txt: _restore(t))
             except:
                 pass
 def show_error_screen(error_text):
