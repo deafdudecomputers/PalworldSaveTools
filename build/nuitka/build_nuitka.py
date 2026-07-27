@@ -1,10 +1,9 @@
-import os
-import sys
-import glob
-import subprocess
-import shutil
-import re
 import argparse
+import glob
+import os
+import shutil
+import subprocess
+import sys
 
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(_SCRIPT_DIR, '..', '..'))
@@ -101,7 +100,7 @@ def clean_build_artifacts():
 
 def set_standalone_mode(enabled: bool):
     os.makedirs(BUILD_CFG_DIR, exist_ok=True)
-    cfg_lines = [f'[build]\nstandalone = {"true" if enabled else "false"}\n']
+    cfg_lines = [f'[build]\nstandalone = {"true" if enabled else "false"}\n\n']
     with open(BUILD_CFG_PATH, 'w', encoding='utf-8') as f:
         f.writelines(cfg_lines)
     print(f'Set build mode to: {"standalone" if enabled else "source"}')
@@ -149,8 +148,8 @@ def build_with_nuitka(onefile: bool = True):
         '--include-data-dir=resources=resources',
         '--include-data-dir=src/data=src/data',
         '--include-data-file=src/games.json=games.json',
-        '--include-data-file=README.md=README.md',
-        '--include-data-file=license=license',
+        '--include-data-file=README.md=resources/README.md',
+        '--include-data-file=license=resources/license',
         '--output-dir=dist',
         '--product-name=Palworld Save Tools',
         f'--file-version={version}',
@@ -185,6 +184,8 @@ def build_with_nuitka(onefile: bool = True):
     if sys.platform == 'darwin':
         cmd.append('--macos-create-app-bundle')
         cmd.append('--macos-app-name=PalworldSaveTools')
+        cmd.append(f'--macos-app-version={version}')
+        cmd.append('--macos-signed-app-name=com.deafdudecomputers.PalworldSaveTools')
 
     cmd.append(MAIN_SCRIPT)
 
@@ -195,7 +196,7 @@ def build_with_nuitka(onefile: bool = True):
         os.path.join(ROOT_DIR, 'resources'),
         env.get('PYTHONPATH', ''),
     ])
-    result = subprocess.run(cmd, env=env)
+    result = subprocess.run(cmd, env=env, check=False)
     return result.returncode
 
 

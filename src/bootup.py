@@ -194,6 +194,14 @@ if GUI_AVAILABLE:
         raw = Signal(str, int)
         finished = Signal(int)
         started = Signal()
+
+    class _SplashLogoBox(QFrame):
+        resized = Signal()
+
+        def resizeEvent(self, event):
+            super().resizeEvent(event)
+            self.resized.emit()
+
     _signals: Optional[WorkerSignals] = None
 def _get_dark_splash():
     from palworld_aio import constants
@@ -277,7 +285,7 @@ def build_splash_ui():
     layout = QVBoxLayout(frame)
     layout.setContentsMargins(20, 18, 20, 18)
     layout.setSpacing(12)
-    logo_box = QFrame()
+    logo_box = _SplashLogoBox()
     logo_box.setObjectName('logoBox')
     logo_layout = QHBoxLayout(logo_box)
     logo_layout.setContentsMargins(12, 8, 12, 8)
@@ -327,19 +335,7 @@ def build_splash_ui():
         except Exception:
             if DEBUG:
                 traceback.print_exc()
-    orig_resize = getattr(logo_box, 'resizeEvent', None)
-    def logo_box_resize_event(ev):
-        try:
-            adjust_logo()
-        except Exception:
-            if DEBUG:
-                traceback.print_exc()
-        if orig_resize:
-            try:
-                return orig_resize(ev)
-            except Exception:
-                pass
-    logo_box.resizeEvent = logo_box_resize_event
+    logo_box.resized.connect(adjust_logo)
     screen = QApplication.primaryScreen().availableGeometry()
     container.move((screen.width() - container.width()) // 2, (screen.height() - container.height()) // 2)
     QTimer.singleShot(60, adjust_logo)

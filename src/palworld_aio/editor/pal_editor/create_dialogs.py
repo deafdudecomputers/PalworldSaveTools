@@ -61,36 +61,36 @@ def _show_learned_moves_dialog(raw, parent):
     scl.setSpacing(2)
     scl.addStretch()
     skill_slots = []
-    def _make_handler(sv, parent_dlg, slot_widget, outer_layout, count_label):
-        def handler(event):
-            event.accept()
-            sname = PalFrame._SKILLMAP.get(sv.split('::')[-1].lower(), sv.split('::')[-1])
-            confirm = show_question(parent_dlg, t('edit_pals.learnt_skills_title'), t('edit_pals.confirm_remove_skill', name=sname))
-            if not confirm:
-                return
-            mw_data = raw.get('MasteredWaza', {})
-            if isinstance(mw_data, dict):
-                mlist = mw_data.get('value', {}).get('values', [])
-            elif isinstance(mw_data, list):
-                mlist = mw_data
-            else:
-                mlist = []
-            if sv in mlist:
-                mlist.remove(sv)
-                new_mw = {'array_type': 'EnumProperty', 'id': None, 'value': {'values': mlist}, 'type': 'ArrayProperty'}
-                raw['MasteredWaza'] = new_mw
-            outer_layout.removeWidget(slot_widget)
-            slot_widget.deleteLater()
-            skill_slots[:] = [(s, n) for s, n in skill_slots if s is not slot_widget]
-            search_edit.clear()
-            remaining = outer_layout.count() - 1
-            count_label.setText(t('edit_pals.learnt_skills_count', count=remaining))
-            if remaining == 0:
-                nl = QLabel('--')
-                nl.setAlignment(Qt.AlignCenter)
-                nl.setStyleSheet('font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.25); background: transparent; border: none; padding: 20px;')
-                outer_layout.insertWidget(0, nl)
-        return handler
+    def _remove_skill(slot_widget):
+        sv = slot_widget._skill_raw_value
+        sname = PalFrame._SKILLMAP.get(sv.split('::')[-1].lower(), sv.split('::')[-1])
+        confirm = show_question(dlg, t('edit_pals.learnt_skills_title'), t('edit_pals.confirm_remove_skill', name=sname))
+        if not confirm:
+            return
+        mw_data = raw.get('MasteredWaza', {})
+        if isinstance(mw_data, dict):
+            mlist = mw_data.get('value', {}).get('values', [])
+        elif isinstance(mw_data, list):
+            mlist = mw_data
+        else:
+            mlist = []
+        if sv in mlist:
+            mlist.remove(sv)
+            new_mw = {'array_type': 'EnumProperty', 'id': None, 'value': {'values': mlist}, 'type': 'ArrayProperty'}
+            raw['MasteredWaza'] = new_mw
+        scl.removeWidget(slot_widget)
+        slot_widget.hide()
+        slot_widget.setParent(None)
+        slot_widget.deleteLater()
+        skill_slots[:] = [(s, n) for s, n in skill_slots if s is not slot_widget]
+        search_edit.clear()
+        remaining = scl.count() - 1
+        count_lbl.setText(t('edit_pals.learnt_skills_count', count=remaining))
+        if remaining == 0:
+            nl = QLabel('--')
+            nl.setAlignment(Qt.AlignCenter)
+            nl.setStyleSheet('font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.25); background: transparent; border: none; padding: 20px;')
+            scl.insertWidget(0, nl)
     def _filter_skills(text):
         text = text.lower()
         visible = 0
@@ -131,9 +131,11 @@ def _show_learned_moves_dialog(raw, parent):
             slot_layout.setSpacing(4)
             slot_layout.setAlignment(Qt.AlignVCenter)
             name_lbl = QLabel(move_name)
+            name_lbl.setAttribute(Qt.WA_TransparentForMouseEvents)
             name_lbl.setStyleSheet('font-size: 9px; font-weight: 600; color: #E2E8F0; background: transparent; border: none;')
             slot_layout.addWidget(name_lbl, 1)
             elem_badge = QLabel()
+            elem_badge.setAttribute(Qt.WA_TransparentForMouseEvents)
             elem_badge.setFixedSize(18, 18)
             elem_badge.setAlignment(Qt.AlignCenter)
             if skill_elem:
@@ -149,6 +151,7 @@ def _show_learned_moves_dialog(raw, parent):
                 elem_badge.setStyleSheet('background: transparent; border: none;')
             slot_layout.addWidget(elem_badge)
             power_lbl = QLabel(str(skill_power) if skill_power else '--')
+            power_lbl.setAttribute(Qt.WA_TransparentForMouseEvents)
             power_lbl.setFixedWidth(24)
             power_lbl.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
             power_lbl.setStyleSheet('font-size: 9px; font-weight: 700; color: #F59E0B; background: transparent; border: none;')
@@ -163,7 +166,7 @@ def _show_learned_moves_dialog(raw, parent):
                     tip_parts.append('')
                     tip_parts.append(desc)
                 slot.setToolTip('<br>'.join(tip_parts))
-            slot.mousePressEvent = _make_handler(skill_val, dlg, slot, scl, count_lbl)
+            slot.activated.connect(_remove_skill)
             scl.insertWidget(scl.count() - 1, slot)
             skill_slots.append((slot, move_name.lower()))
     def _rebuild_list():
@@ -171,6 +174,8 @@ def _show_learned_moves_dialog(raw, parent):
             item = scl.takeAt(0)
             w = item.widget()
             if w:
+                w.hide()
+                w.setParent(None)
                 w.deleteLater()
         mw_data = raw.get('MasteredWaza', {})
         if isinstance(mw_data, dict):
@@ -211,9 +216,11 @@ def _show_learned_moves_dialog(raw, parent):
                 slot_layout.setSpacing(4)
                 slot_layout.setAlignment(Qt.AlignVCenter)
                 name_lbl = QLabel(move_name)
+                name_lbl.setAttribute(Qt.WA_TransparentForMouseEvents)
                 name_lbl.setStyleSheet('font-size: 9px; font-weight: 600; color: #E2E8F0; background: transparent; border: none;')
                 slot_layout.addWidget(name_lbl, 1)
                 elem_badge = QLabel()
+                elem_badge.setAttribute(Qt.WA_TransparentForMouseEvents)
                 elem_badge.setFixedSize(18, 18)
                 elem_badge.setAlignment(Qt.AlignCenter)
                 if skill_elem:
@@ -229,6 +236,7 @@ def _show_learned_moves_dialog(raw, parent):
                     elem_badge.setStyleSheet('background: transparent; border: none;')
                 slot_layout.addWidget(elem_badge)
                 power_lbl = QLabel(str(skill_power) if skill_power else '--')
+                power_lbl.setAttribute(Qt.WA_TransparentForMouseEvents)
                 power_lbl.setFixedWidth(24)
                 power_lbl.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
                 power_lbl.setStyleSheet('font-size: 9px; font-weight: 700; color: #F59E0B; background: transparent; border: none;')
@@ -243,7 +251,7 @@ def _show_learned_moves_dialog(raw, parent):
                         tip_parts.append('')
                         tip_parts.append(desc)
                     slot.setToolTip('<br>'.join(tip_parts))
-                slot.mousePressEvent = _make_handler(skill_val, dlg, slot, scl, count_lbl)
+                slot.activated.connect(_remove_skill)
                 scl.insertWidget(scl.count() - 1, slot)
                 skill_slots.append((slot, move_name.lower()))
     scroll.setWidget(scroll_ct)

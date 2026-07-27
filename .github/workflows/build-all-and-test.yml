@@ -52,7 +52,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: dist
-          key: ${{ runner.os }}-pst-dist-${{ steps.env.outputs.version }}-${{ hashFiles('build/**') }}
+          key: ${{ runner.os }}-pst-dist-${{ steps.env.outputs.version }}-${{ hashFiles('build/**', 'src/**', 'resources/**', 'pyproject.toml', 'requirements.txt', 'README.md', 'license') }}
       - name: Install system deps
         if: ${{ matrix.system_deps != '' && steps.cache-dist.outputs.cache-hit != 'true' }}
         run: |
@@ -71,6 +71,9 @@ jobs:
       - name: Build macOS DMG
         if: ${{ matrix.platform == 'macos' && steps.cache-dist.outputs.cache-hit != 'true' }}
         run: uv run python build/macos_build.py --ad-hoc
+      - name: Verify macOS app and DMG
+        if: ${{ matrix.platform == 'macos' }}
+        run: python3 build/verify_build.py
       - name: Verify build output
         shell: bash
         run: |

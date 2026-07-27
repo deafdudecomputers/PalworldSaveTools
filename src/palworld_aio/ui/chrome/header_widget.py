@@ -95,7 +95,7 @@ class HeaderWidget(QWidget):
         self.app_version_label.setCursor(QCursor(Qt.PointingHandCursor))
         self.app_version_label.setFont(QFont(constants.FONT_FAMILY_NERD, 11))
         self.app_version_label.setToolTip(t('github.tooltip') if t else 'Click to open GitHub repository')
-        self.app_version_label.mousePressEvent = self._on_version_click
+        self.app_version_label.clicked.connect(self._on_version_click)
         layout.addWidget(self.app_version_label, alignment=Qt.AlignVCenter)
         self.game_version_label = NerdLabel(f"{nf.icons['nf-fa-save']} {game_version}")
         self.game_version_label.setObjectName('gameVersionChip')
@@ -186,7 +186,7 @@ class HeaderWidget(QWidget):
         self.close_btn.setCursor(QCursor(Qt.PointingHandCursor))
         self.close_btn.clicked.connect(self.close_clicked.emit)
         layout.addWidget(self.close_btn)
-    def _on_version_click(self, event):
+    def _on_version_click(self):
         self._open_stable()
     def _open_stable(self):
         import webbrowser

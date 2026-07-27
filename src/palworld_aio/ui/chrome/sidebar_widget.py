@@ -31,6 +31,15 @@ class NerdBtn(QPushButton):
         p.drawText(int(x), int(y), self.text())
         p.end()
 class NerdLabel(QLabel):
+    clicked = Signal()
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.clicked.emit()
+            event.accept()
+            return
+        super().mousePressEvent(event)
+
     def paintEvent(self, event):
         super().paintEvent(event)
         if not self.text():

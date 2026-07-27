@@ -8,11 +8,11 @@ Usage:
     uv run python build/macos_build.py --sign "My ID"     # real cert sign + DMG
 """
 
+import argparse
 import os
-import sys
 import shutil
 import subprocess
-import argparse
+import sys
 
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(_SCRIPT_DIR, '..'))
@@ -49,7 +49,7 @@ def run(cmd: list, desc: str = ''):
     if desc:
         print(f'── {desc} ──')
     print(f'$ {" ".join(cmd)}')
-    result = subprocess.run(cmd)
+    result = subprocess.run(cmd, check=False)
     if result.returncode != 0:
         print(f'ERROR: step failed with exit code {result.returncode}')
         sys.exit(result.returncode)
@@ -66,16 +66,15 @@ def build_nuitka_onedir():
 
 def find_app_bundle() -> str:
     """Find the .app bundle created by Nuitka in dist/."""
-    for entry in os.listdir(DIST_DIR):
-        if entry.endswith('.app'):
-            return os.path.join(DIST_DIR, entry)
-    # Sometimes Nuitka puts it in a .dist folder
-    for entry in os.listdir(DIST_DIR):
-        full = os.path.join(DIST_DIR, entry)
-        if entry.endswith('.dist') and os.path.isdir(full):
-            for inner in os.listdir(full):
-                if inner.endswith('.app'):
-                    return os.path.join(full, inner)
+    candidates = []
+    for root, dirs, _files in os.walk(DIST_DIR):
+        for directory in dirs:
+            if directory.endswith('.app'):
+                candidates.append(os.path.join(root, directory))
+        # Do not descend into bundles after finding them.
+        dirs[:] = [d for d in dirs if not d.endswith('.app')]
+    if candidates:
+        return max(candidates, key=os.path.getmtime)
     print('ERROR: No .app bundle found in dist/')
     sys.exit(1)
 
@@ -101,7 +100,10 @@ def sign_app(app_path: str, identity: str | None = None):
     ], label)
 
     # Verify the signature
-    run(['codesign', '-v', app_path], 'Verifying signature')
+    run([
+        'codesign', '--verify', '--deep', '--strict', '--verbose=2',
+        app_path,
+    ], 'Verifying signature')
 
 
 def create_dmg(app_path: str, app_name: str, version: str) -> str:
@@ -118,29 +120,29 @@ def create_dmg(app_path: str, app_name: str, version: str) -> str:
         shutil.rmtree(stage_dir)
     os.makedirs(stage_dir)
 
-    # Copy the .app into staging
-    dest_app = os.path.join(stage_dir, os.path.basename(app_path))
-    print(f'Copying .app to staging…')
-    shutil.copytree(app_path, dest_app, symlinks=True)
+    try:
+        # Preserve code-signing extended attributes. Python's shutil.copytree()
+        # drops com.apple.cs.* attributes from non-Mach-O files in Contents/MacOS,
+        # which leaves the app inside the DMG with an invalid deep signature.
+        run(['cp', '-a', app_path, stage_dir], 'Copying signed app to staging')
 
-    # Create /Applications symlink (like PSP's applications_shortcut=True)
-    applications_link = os.path.join(stage_dir, 'Applications')
-    os.symlink('/Applications', applications_link)
-    print('Created /Applications symlink')
+        # Create /Applications symlink (like PSP's applications_shortcut=True)
+        applications_link = os.path.join(stage_dir, 'Applications')
+        os.symlink('/Applications', applications_link)
+        print('Created /Applications symlink')
 
-    # Create the DMG
-    vol_name = f'{app_name} v{version}'
-    run([
-        'hdiutil', 'create',
-        '-volname', vol_name,
-        '-srcfolder', stage_dir,
-        '-ov',
-        '-format', 'UDZO',
-        dmg_path,
-    ], 'Creating DMG')
-
-    # Clean up staging
-    shutil.rmtree(stage_dir)
+        # Create the DMG
+        vol_name = f'{app_name} v{version}'
+        run([
+            'hdiutil', 'create',
+            '-volname', vol_name,
+            '-srcfolder', stage_dir,
+            '-ov',
+            '-format', 'UDZO',
+            dmg_path,
+        ], 'Creating DMG')
+    finally:
+        shutil.rmtree(stage_dir, ignore_errors=True)
 
     # Get size
     size_mb = os.path.getsize(dmg_path) / (1024 * 1024)

@@ -103,7 +103,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: dist
-          key: ${{ runner.os }}-pst-dist-${{ steps.env.outputs.version }}-${{ hashFiles('build/**') }}
+          key: ${{ runner.os }}-pst-dist-${{ steps.env.outputs.version }}-${{ hashFiles('build/**', 'src/**', 'resources/**', 'pyproject.toml', 'requirements.txt', 'README.md', 'license') }}
       - name: Install system deps
         if: steps.cache-dist.outputs.cache-hit != 'true'
         run: |
@@ -143,7 +143,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: dist
-          key: ${{ runner.os }}-pst-dist-${{ steps.env.outputs.version }}-${{ hashFiles('build/**') }}
+          key: ${{ runner.os }}-pst-dist-${{ steps.env.outputs.version }}-${{ hashFiles('build/**', 'src/**', 'resources/**', 'pyproject.toml', 'requirements.txt', 'README.md', 'license') }}
       - name: Install dependencies
         if: steps.cache-dist.outputs.cache-hit != 'true'
         run: |
@@ -152,6 +152,8 @@ jobs:
       - name: Build macOS DMG
         if: steps.cache-dist.outputs.cache-hit != 'true'
         run: uv run python build/macos_build.py --ad-hoc
+      - name: Verify macOS app and DMG
+        run: python3 build/verify_build.py
       - name: List built files
         run: ls -la dist/ || { echo "dist/ directory not found"; exit 1; }
       - uses: actions/upload-artifact@v7
@@ -243,4 +245,3 @@ jobs:
           files: artifacts/**/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
