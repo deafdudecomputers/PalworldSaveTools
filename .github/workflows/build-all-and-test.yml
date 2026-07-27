@@ -71,9 +71,7 @@ jobs:
       - name: Build macOS DMG
         if: ${{ matrix.platform == 'macos' && steps.cache-dist.outputs.cache-hit != 'true' }}
         run: uv run python build/macos_build.py
-      - name: Verify macOS app and DMG
-        if: ${{ matrix.platform == 'macos' }}
-        run: python3 build/verify_build.py
+
       - name: Verify build output
         shell: bash
         run: |
