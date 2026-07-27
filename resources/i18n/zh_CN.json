@@ -1981,5 +1981,6 @@
     "loading.reset_lock_gimmick": "重置迷你游戏塔...",
     "lock_gimmick_reset_count": "重置 {count} 迷你游戏塔",
     "map.header.base_pals": "基地伙伴",
-    "deletion.col.members": "会员"
+    "deletion.col.members": "会员",
+    "guild.assign.role": "角色"
 }

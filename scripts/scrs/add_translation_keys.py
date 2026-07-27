@@ -18,6 +18,7 @@ NEW_TRANSLATIONS = {
     'lock_gimmick_reset_count': 'Reset {count} mini game towers',
     'map.header.base_pals': 'Base Pals',
     'deletion.col.members': 'Members',
+    'guild.assign.role': 'Role',
 }
 OLD_KEYS = []
 def _clean_uv_locks():

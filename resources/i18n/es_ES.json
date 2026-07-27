@@ -1973,5 +1973,6 @@
     "loading.reset_lock_gimmick": "Restableciendo torres de minijuegos...",
     "lock_gimmick_reset_count": "Restablecer torres de minijuegos {count}",
     "map.header.base_pals": "Amigos básicos",
-    "deletion.col.members": "Miembros"
+    "deletion.col.members": "Miembros",
+    "guild.assign.role": "Role"
 }

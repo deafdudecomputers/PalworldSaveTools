@@ -2,19 +2,20 @@ import os
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QFrame, QSplitter, QAbstractItemView, QTreeWidget, QTreeWidgetItem,
-    QSizePolicy,
+    QSizePolicy, QMenu,
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
 from i18n import t
 from palworld_aio import constants
-from palworld_aio.managers.guild_manager import move_player_to_guild
+from palworld_aio.managers.guild_manager import move_player_to_guild, set_member_role
 from palworld_aio.ui.chrome.styles import DIALOG_STYLE as DARK_THEME_STYLE
 from palworld_aio.widgets.search_panel import SearchPanel
 
 
 _DESC_STYLE = f'color: {constants.MUTED}; font-size: 12px;'
 _MUTED_STYLE = 'border: none; background: transparent;'
+_ROLE_LABELS = {1: 'guild.role.guild_master', 2: 'guild.role.submaster', 3: 'guild.role.member', 4: 'guild.role.guest'}
 _TREE_STYLE = '''
     QTreeWidget {
         background: rgba(18,20,24,0.65);
@@ -79,15 +80,14 @@ _BTN_ASSIGN = '''
 
 
 class _SortableItem(QTreeWidgetItem):
-    _NUMERIC_COLS = {1}
+    _SORT_ROLE = Qt.UserRole + 1
 
     def __lt__(self, other):
         col = self.treeWidget().sortColumn() if self.treeWidget() else 0
-        if col in self._NUMERIC_COLS:
-            try:
-                return int(self.text(col)) < int(other.text(col))
-            except (ValueError, TypeError):
-                pass
+        a = self.data(col, self._SORT_ROLE)
+        b = other.data(col, self._SORT_ROLE)
+        if a is not None and b is not None:
+            return a < b
         return self.text(col).lower() < other.text(col).lower()
 
 
@@ -122,13 +122,14 @@ class GuildAssignDialog(QDialog):
 
         self.player_panel = SearchPanel(
             'guild.assign.players_label',
-            [None, None, None],
-            [170, 40, 200],
+            [None, None, None, None],
+            [150, 40, 150, 90],
             selection_mode=QAbstractItemView.ExtendedSelection,
         )
         self.player_panel.tree.headerItem().setText(0, t('deletion.col.player_name') if t else 'Name')
         self.player_panel.tree.headerItem().setText(1, t('deletion.col.level') if t else 'Lv')
         self.player_panel.tree.headerItem().setText(2, t('deletion.col.guild_name') if t else 'Guild')
+        self.player_panel.tree.headerItem().setText(3, t('guild.assign.role') if t else 'Role')
         self.player_panel.tree.itemSelectionChanged.connect(self._update_status)
         hsplit.addWidget(self.player_panel)
 
@@ -174,13 +175,17 @@ class GuildAssignDialog(QDialog):
         self.members_tree.setHeaderLabels([
             t('deletion.col.player_name') if t else 'Name',
             t('deletion.col.level') if t else 'Lv',
+            t('guild.assign.role') if t else 'Role',
         ])
-        self.members_tree.setColumnWidth(0, 200)
-        self.members_tree.setColumnWidth(1, 50)
+        self.members_tree.setColumnWidth(0, 180)
+        self.members_tree.setColumnWidth(1, 40)
+        self.members_tree.setColumnWidth(2, 80)
         self.members_tree.header().setStretchLastSection(True)
         self.members_tree.setSelectionMode(QAbstractItemView.NoSelection)
         self.members_tree.setAlternatingRowColors(False)
         self.members_tree.setRootIsDecorated(False)
+        self.members_tree.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.members_tree.customContextMenuRequested.connect(self._show_member_context_menu)
         self.members_tree.setSortingEnabled(True)
         self.members_tree.setStyleSheet(_TREE_STYLE)
         lv.addWidget(self.members_tree)
@@ -241,9 +246,12 @@ class GuildAssignDialog(QDialog):
                 uid_norm = uid.replace('-', '').lower()
                 name = p.get('player_info', {}).get('player_name', 'Unknown')
                 level = constants.player_levels.get(uid_norm, 1)
+                role = p.get('role', 3)
+                rkey = _ROLE_LABELS.get(role)
+                role_label = t(rkey) if t and rkey else f'?{role}'
                 item = self.player_panel.add_item(
-                    [name, str(level), gname],
-                    sort_keys={1: int(level)},
+                    [name, str(level), gname, role_label],
+                    sort_keys={1: int(level), 3: int(role)},
                 )
                 item.setData(0, Qt.UserRole, uid)
 
@@ -287,14 +295,62 @@ class GuildAssignDialog(QDialog):
                 uid_norm = str(uid_raw).replace('-', '').lower()
                 name = p.get('player_info', {}).get('player_name', 'Unknown')
                 level = constants.player_levels.get(uid_norm, 1)
-                item = _SortableItem([name, str(level)])
+                role = p.get('role', 3)
+                rkey = _ROLE_LABELS.get(role)
+                role_label = t(rkey) if t and rkey else f'?{role}'
+                item = _SortableItem([name, str(level), role_label])
                 item.setData(0, Qt.UserRole, str(uid_raw))
+                item.setData(1, _SortableItem._SORT_ROLE, int(level))
+                item.setData(2, _SortableItem._SORT_ROLE, role)
                 self.members_tree.addTopLevelItem(item)
             break
         self.members_tree.setSortingEnabled(True)
         self.members_tree.sortByColumn(0, Qt.AscendingOrder)
         n = self.members_tree.topLevelItemCount()
         self.members_lbl.setText(f'{n} member(s)')
+
+    def _show_member_context_menu(self, pos):
+        item = self.members_tree.itemAt(pos)
+        if not item:
+            return
+        uid = item.data(0, Qt.UserRole)
+        if not uid:
+            return
+        _, guild_id = self._selected_guild()
+        if not guild_id:
+            return
+        current_role = item.data(2, _SortableItem._SORT_ROLE) or 3
+        menu = QMenu(self)
+        menu.setStyleSheet('''
+            QMenu {
+                background: rgba(18,20,24,0.95);
+                border: 1px solid rgba(125,211,252,0.2);
+                border-radius: 6px;
+                padding: 4px;
+                color: #E2E8F0;
+                font-size: 12px;
+            }
+            QMenu::item {
+                padding: 6px 20px 6px 10px;
+                border-radius: 4px;
+            }
+            QMenu::item:selected {
+                background: rgba(125,211,252,0.15);
+                color: #7DD3FC;
+            }
+        ''')
+        for rv, rl in [(1, 'guild_master'), (2, 'submaster'), (3, 'member'), (4, 'guest')]:
+            rkey = f'guild.role.{rl}'
+            label = t(rkey) if t else rl.replace('_', ' ').title()
+            chk = '✓ ' if rv == current_role else '  '
+            action = menu.addAction(f'{chk}{label}')
+            action.setData(rv)
+        action = menu.exec(self.members_tree.viewport().mapToGlobal(pos))
+        if action:
+            new_role = action.data()
+            if new_role and new_role != current_role:
+                set_member_role(guild_id, uid, new_role)
+                self._update_members_panel()
 
     def _selected_players(self) -> list[tuple[str, str]]:
         return [(item.text(0), item.data(0, Qt.UserRole))

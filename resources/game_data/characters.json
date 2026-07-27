@@ -56885,6 +56885,70 @@
                 "Transport": 0,
                 "MonsterFarm": 0
             }
+        },
+        {
+            "name": "Wandering Merchant",
+            "asset": "NPC_Dungeon_Shop",
+            "icon": "/icons/npcs/T_SalesPerson_icon_normal.webp",
+            "stats": {
+                "hp": 50,
+                "melee_attack": 20,
+                "shot_attack": 50,
+                "defense": 50,
+                "support": 100,
+                "craft_speed": 100,
+                "max_full_stomach": 100,
+                "food_amount": 1,
+                "run_speed": -1,
+                "ride_sprint_speed": -1
+            },
+            "work_suitabilities": {
+                "EmitFlame": 0,
+                "Watering": 1,
+                "Seeding": 0,
+                "GenerateElectricity": 0,
+                "Handcraft": 1,
+                "Collection": 0,
+                "Deforest": 2,
+                "Mining": 1,
+                "OilExtraction": 0,
+                "ProductMedicine": 0,
+                "Cool": 0,
+                "Transport": 0,
+                "MonsterFarm": 0
+            }
+        },
+        {
+            "name": "Islander",
+            "asset": "SorajimaTowerGuide",
+            "icon": "/icons/npcs/T_Male_SorajimaPeople01_icon_normal.webp",
+            "stats": {
+                "hp": 20,
+                "melee_attack": 20,
+                "shot_attack": 50,
+                "defense": 10,
+                "support": 100,
+                "craft_speed": 100,
+                "max_full_stomach": 100,
+                "food_amount": 1,
+                "run_speed": -1,
+                "ride_sprint_speed": -1
+            },
+            "work_suitabilities": {
+                "EmitFlame": 0,
+                "Watering": 3,
+                "Seeding": 0,
+                "GenerateElectricity": 0,
+                "Handcraft": 3,
+                "Collection": 2,
+                "Deforest": 0,
+                "Mining": 1,
+                "OilExtraction": 0,
+                "ProductMedicine": 0,
+                "Cool": 0,
+                "Transport": 0,
+                "MonsterFarm": 0
+            }
         }
     ],
     "friendship": {

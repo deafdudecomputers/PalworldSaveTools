@@ -1977,5 +1977,6 @@
     "loading.reset_lock_gimmick": "Сброс башен мини-игры...",
     "lock_gimmick_reset_count": "Сбросить {count} башни мини-игры",
     "map.header.base_pals": "Базовые приятели",
-    "deletion.col.members": "Члены"
+    "deletion.col.members": "Члены",
+    "guild.assign.role": "Роль"
 }

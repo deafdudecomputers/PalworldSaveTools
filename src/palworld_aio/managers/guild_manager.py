@@ -689,10 +689,31 @@ def set_member_role(guild_id, player_uid, role):
                     elif pn == admin_norm and pn != pu_norm:
                         p['role'] = 2
             else:
+                if pu_norm == admin_norm:
+                    demoting_admin = True
+                else:
+                    demoting_admin = False
                 for p in raw.get('players', []):
                     if str(p.get('player_uid', '')).replace('-', '').lower() == pu_norm:
                         p['role'] = role
                         break
+                if demoting_admin:
+                    successor = None
+                    for p in raw.get('players', []):
+                        pn = str(p.get('player_uid', '')).replace('-', '').lower()
+                        pr = p.get('role', 3)
+                        if pn != pu_norm and pr == 2:
+                            successor = p
+                            break
+                    if not successor:
+                        for p in raw.get('players', []):
+                            pn = str(p.get('player_uid', '')).replace('-', '').lower()
+                            if pn != pu_norm:
+                                successor = p
+                                break
+                    if successor:
+                        successor['role'] = 1
+                        raw['admin_player_uid'] = successor['player_uid']
             return True
     return False
 

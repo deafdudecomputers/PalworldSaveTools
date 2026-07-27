@@ -57,7 +57,6 @@ def create_guild_context_menu(parent, handlers):
     builder.add_action(t('guild.rename.menu'), handlers.get('rename_guild', lambda: None))
     builder.add_action(t('guild.menu.set_level'), handlers.get('set_guild_level', lambda: None))
     builder.add_action(t('button.import'), handlers.get('import_base', lambda: None))
-    builder.add_action(t('guild.menu.move_selected_player_to_selected_guild'), handlers.get('move_player', lambda: None))
     return builder.build()
 def create_base_context_menu(parent, handlers):
     builder = ContextMenuBuilder(parent)

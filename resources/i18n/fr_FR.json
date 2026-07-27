@@ -1961,5 +1961,6 @@
     "loading.reset_lock_gimmick": "Réinitialisation des mini-tours de jeu...",
     "lock_gimmick_reset_count": "Réinitialiser les mini-tours de jeu {count}",
     "map.header.base_pals": "Copains de base",
-    "deletion.col.members": "Membres"
+    "deletion.col.members": "Membres",
+    "guild.assign.role": "Rôle"
 }

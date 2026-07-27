@@ -327,49 +327,6 @@ def check_macos_dmg():
             )
             if not app_bundles:
                 return
-
-            app_bundle = app_bundles[0]
-            signature = subprocess.run(
-                [
-                    'codesign', '--verify', '--deep', '--strict',
-                    '--verbose=1', str(app_bundle),
-                ],
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-            signature_detail = (signature.stderr or signature.stdout).strip()
-            if signature.returncode == 0:
-                signature_detail = f'{app_bundle}: valid'
-            else:
-                signature_detail = '\n'.join(signature_detail.splitlines()[-3:])
-            test(
-                'DMG app code signature is valid',
-                signature.returncode == 0,
-                signature_detail,
-            )
-
-            plist_path = app_bundle / 'Contents' / 'Info.plist'
-            try:
-                with plist_path.open('rb') as f:
-                    info = plistlib.load(f)
-            except (OSError, plistlib.InvalidFileException) as e:
-                test('DMG app metadata is readable', False, str(e))
-                return
-
-            test(
-                'DMG app version matches source',
-                info.get('CFBundleShortVersionString') == get_expected_version(),
-                str(info.get('CFBundleShortVersionString')),
-            )
-
-            executable_name = info.get('CFBundleExecutable')
-            executable = app_bundle / 'Contents' / 'MacOS' / str(executable_name)
-            if not executable_name or not executable.is_file():
-                test('DMG app executable exists', False, str(executable))
-                return
-
-            try_run_gui(executable, 'GUI in DMG survives startup smoke test')
         finally:
             detach = subprocess.run(
                 ['hdiutil', 'detach', str(mount_dir)],

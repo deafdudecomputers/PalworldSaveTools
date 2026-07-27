@@ -1979,5 +1979,6 @@
     "loading.reset_lock_gimmick": "ミニゲームタワーをリセットしています...",
     "lock_gimmick_reset_count": "{count} ミニ ゲーム タワーをリセットする",
     "map.header.base_pals": "ベースフレンド",
-    "deletion.col.members": "メンバー"
+    "deletion.col.members": "メンバー",
+    "guild.assign.role": "役割"
 }

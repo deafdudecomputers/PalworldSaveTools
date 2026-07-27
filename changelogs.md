@@ -1,5 +1,8 @@
 #2.2.5
 - **Bulk clone dialog text color fixed** — pal names and qty spinbox in BulkSpeciesDialog now use explicit `color: #e2e8f0` (matching stats panel style) instead of inheriting the system palette, which gave black text on dark background for some Windows configs.
+- **Removed redundant context menu for moving player to guild** — the "Move Selected Player to Selected Guild" action is removed from guild context menu and main menu bar. Superseded by the Guild Assignment dialog.
+- **Guild Assignment role column and right-click role setting** — the Guild Assignment dialog now shows each player's current role (Guild Master/Submaster/Member/Guest) as a sortable column in both the player list and the members preview panel. Right-click any member in the preview to change their role, matching the guild tab UX. Demoting a Guild Master auto-promotes the next Submaster (or any other member) to keep the guild led.
+- **macOS CI verification speedup** — `verify_build.py` on macOS was redundantly codesign-verifying and GUI-smoke-testing the app bundle twice: once directly, again from inside the mounted DMG. Since the DMG just wraps the same bundle, removed the duplicate codesign (~5-30s), version check, and GUI smoke test (~8s) from the DMG verification step. Now only mounts, checks app exists, detaches.
 - **Guild member count column** — the guild search tree now shows a sortable "Members" column with per-guild member count. Column widths redistributed for readability.
 - **Guild member pal count fixed** — `get_guild_members()` was looking up `PLAYER_PAL_COUNTS` with hyphens in the UID, but the dict keys are stored without hyphens. All players showed 0 pals. Now strips hyphens before lookup, matching the pattern used elsewhere.
 - Bumped version to 2.2.5
