@@ -21,7 +21,7 @@ on:
       skip_nexus_upload:
         description: "Skip Nexus upload"
         required: false
-        default: false
+        default: true
         type: boolean
       force_rebuild:
         description: "Force Rebuild"
