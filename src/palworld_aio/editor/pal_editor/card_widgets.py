@@ -292,9 +292,8 @@ class PalIcon(QFrame):
             if child is not self.bg and child.objectName() != 'slotBg':
 
                 try:
-
-                    child.deleteLater()
-
+                    child.hide()
+                    child.setParent(None)
                 except RuntimeError:
 
                     pass
@@ -470,7 +469,8 @@ class TribeIcon(QFrame):
             if child.objectName() in ('slotBg',):
                 continue
             try:
-                child.deleteLater()
+                child.hide()
+                child.setParent(None)
             except RuntimeError:
                 pass
 
@@ -580,9 +580,9 @@ class PalCardWidget(QFrame):
     def _setup_ui(self):
 
         for child in self.findChildren(QWidget):
-
-            child.deleteLater()
-
+            child.hide()
+            child.setParent(None)
+        
         raw = self._get_raw_data()
 
         self.setFixedHeight(72)

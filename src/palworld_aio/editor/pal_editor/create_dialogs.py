@@ -81,7 +81,6 @@ def _show_learned_moves_dialog(raw, parent):
         scl.removeWidget(slot_widget)
         slot_widget.hide()
         slot_widget.setParent(None)
-        slot_widget.deleteLater()
         skill_slots[:] = [(s, n) for s, n in skill_slots if s is not slot_widget]
         search_edit.clear()
         remaining = scl.count() - 1
@@ -176,7 +175,6 @@ def _show_learned_moves_dialog(raw, parent):
             if w:
                 w.hide()
                 w.setParent(None)
-                w.deleteLater()
         mw_data = raw.get('MasteredWaza', {})
         if isinstance(mw_data, dict):
             new_mw_list = mw_data.get('value', {}).get('values', [])
@@ -663,7 +661,8 @@ class BulkSyncAllDialog(FramelessDialog):
                 item = clayout.takeAt(0)
                 w = item.widget()
                 if w:
-                    w.deleteLater()
+                    w.hide()
+                    w.setParent(None)
         else:
             clayout = QVBoxLayout(self._pal_list_inner)
             clayout.setContentsMargins(2, 2, 2, 2)

@@ -365,7 +365,6 @@ class MainWindow(QMainWindow):
             self.stacked_widget.removeWidget(placeholder)
             placeholder.setParent(None)
             placeholder.hide()
-            placeholder.deleteLater()
             getattr(self, method_name)()
             widget = self.stacked_widget.widget(self.stacked_widget.count() - 1)
             self.stacked_widget.removeWidget(widget)

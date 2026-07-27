@@ -266,9 +266,9 @@ class PartySlotWidget(QFrame):
             QWidget().setLayout(old_layout)
 
         for child in self.findChildren(QWidget):
-
-            child.deleteLater()
-
+            child.hide()
+            child.setParent(None)
+        
         raw = self._get_raw()
 
         if not raw or not isinstance(raw, dict):

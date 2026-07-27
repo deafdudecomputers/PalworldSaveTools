@@ -201,7 +201,8 @@ def run_with_loading(callback, func, *args, parent=None, **kwargs):
                 pass
         if overlay_widget:
             try:
-                overlay_widget.deleteLater()
+                overlay_widget.hide()
+                overlay_widget.setParent(None)
             except RuntimeError:
                 pass
         res = result['data']

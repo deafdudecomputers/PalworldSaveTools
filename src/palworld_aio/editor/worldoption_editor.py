@@ -118,12 +118,14 @@ class WorldOptionEditorDialog(QDialog):
             item = self.editor_layout.takeAt(0)
             if item:
                 if item.widget():
-                    item.widget().deleteLater()
+                    item.widget().hide()
+                    item.widget().setParent(None)
                 elif item.layout():
                     while item.layout().count():
                         child = item.layout().takeAt(0)
                         if child.widget():
-                            child.widget().deleteLater()
+                            child.widget().hide()
+                            child.widget().setParent(None)
         self.editor_title.setText(setting_name)
         editor = self._create_editor(setting_name, prop_type, actual_value)
         if editor:

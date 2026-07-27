@@ -102,8 +102,10 @@ class PalInfoWidget(PalInfoDisplayMixin, PalInfoHandlerMixin, QFrame):
         self.gender_icon.setStyleSheet('QPushButton { background: transparent; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; } QPushButton:hover { background: rgba(255,255,255,0.08); } QToolTip { background: rgba(18,20,24,0.98); color: #E2E8F0; border: 1px solid rgba(125,211,252,0.25); border-radius: 6px; padding: 6px 10px; font-size: 11px; }')
         while self.type_icons_layout.count():
             item = self.type_icons_layout.takeAt(0)
-            if item and item.widget():
-                item.widget().deleteLater()
+            w = item.widget() if item else None
+            if w:
+                w.hide()
+                w.setParent(None)
         for fc in self.food_icon_labels:
             fc.setStyleSheet('background: transparent; border: none;')
             foff = _icons._get_ui_icon_pixmap('food_off', 12)
@@ -117,8 +119,10 @@ class PalInfoWidget(PalInfoDisplayMixin, PalInfoHandlerMixin, QFrame):
         self.partner_desc_lbl.setText(t('pal_editor.no_pal_data') if t else 'No Pal Data')
         while self.active_skills_list.count():
             item = self.active_skills_list.takeAt(0)
-            if item and item.widget():
-                item.widget().deleteLater()
+            w = item.widget() if item else None
+            if w:
+                w.hide()
+                w.setParent(None)
         for s in self.passive_slots:
             s.setText('--')
             s.setStyleSheet('font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.3); background: transparent; border: none;')

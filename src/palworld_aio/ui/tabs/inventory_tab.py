@@ -62,7 +62,8 @@ class ItemSlotWidget(QFrame):
     def _rebuild(self):
         was_selected = self.multi_selected
         for c in list(self._children):
-            c.deleteLater()
+            c.hide()
+            c.setParent(None)
         self._children = []
         if not self.slot_data or not self.slot_data.get('item_id'):
             self.setStyleSheet(slot_full('QFrame#itemSlot'))
@@ -960,7 +961,9 @@ class MissionPanelWidget(QFrame):
     def _rebuild_list(self):
         for i in reversed(range(self._scroll_layout.count())):
             w = self._scroll_layout.itemAt(i).widget()
-            if w: w.deleteLater()
+            if w:
+                w.hide()
+                w.setParent(None)
         self._quest_rows = []
         groups = [('not_started', t('inventory.missions_not_started', default='Not Started'), '#888'),
                   ('active', t('inventory.missions_active', default='Active'), '#4ade80'),

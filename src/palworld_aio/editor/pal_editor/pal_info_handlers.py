@@ -600,7 +600,8 @@ class PalInfoHandlerMixin:
                 cl = card.layout()
                 for lbl in card.findChildren(QLabel, options=Qt.FindChildrenRecursively):
                     if lbl is not plbl and lbl is not ri and lbl.parent() is card:
-                        lbl.deleteLater()
+                        lbl.hide()
+                        lbl.setParent(None)
                 if icon_path:
                     full_path = resource_path(constants.get_base_path(), 'game_data', icon_path.lstrip('/'))
                     pix = _icons._get_cached_pixmap(full_path, 14)

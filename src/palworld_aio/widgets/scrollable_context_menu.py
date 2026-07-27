@@ -209,7 +209,8 @@ class ScrollableContextMenu(QWidget):
     def _hide_sub(self):
         if self._sub_popup:
             self._sub_popup.blockSignals(True)
-            self._sub_popup.deleteLater()
+            self._sub_popup.hide()
+            self._sub_popup.setParent(None)
             self._sub_popup = None
         for idx, (hdr, items) in enumerate(self._groups):
             hdr.set_active(False)

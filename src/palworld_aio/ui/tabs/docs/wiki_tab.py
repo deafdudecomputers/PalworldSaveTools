@@ -376,7 +376,8 @@ class WikiDetailPanel(QScrollArea):
             item = self._l.takeAt(0)
             w = item.widget()
             if w:
-                w.deleteLater()
+                w.hide()
+                w.setParent(None)
 
     def _hl(self, text, size=16, bold=True, color='#e2e8f0'):
         lbl = QLabel(text)
@@ -1350,7 +1351,8 @@ class WikiCategoryPage(QWidget):
             item = self._filter_layout.takeAt(0)
             w = item.widget()
             if w:
-                w.deleteLater()
+                w.hide()
+                w.setParent(None)
         for fg in self._filter_groups:
             vals = _compute_filter_values(items, fg)
             self._filter_values_cache[fg['id']] = vals

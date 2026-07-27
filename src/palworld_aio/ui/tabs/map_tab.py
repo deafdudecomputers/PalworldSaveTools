@@ -2368,7 +2368,7 @@ class MapTab(QWidget):
     def _hide_zone_shape_buttons(self):
         if hasattr(self, '_zone_shape_buttons_container') and self._zone_shape_buttons_container is not None:
             self._zone_shape_buttons_container.hide()
-            self._zone_shape_buttons_container.deleteLater()
+            self._zone_shape_buttons_container.setParent(None)
             self._zone_shape_buttons_container = None
             self._zone_shape_btn_rect = None
             self._zone_shape_btn_poly = None

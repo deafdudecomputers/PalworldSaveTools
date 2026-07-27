@@ -68,8 +68,10 @@ class PalInfoDisplayMixin:
             base = _data.get_pal_base_data(cid)
             while self.type_icons_layout.count():
                 item = self.type_icons_layout.takeAt(0)
-                if item and item.widget():
-                    item.widget().deleteLater()
+                w = item.widget() if item else None
+                if w:
+                    w.hide()
+                    w.setParent(None)
             if base:
                 elements = base.get('elements', {})
                 if elements:
@@ -401,8 +403,10 @@ class PalInfoDisplayMixin:
                 e_list = []
             while self.active_skills_list.count():
                 item = self.active_skills_list.takeAt(0)
-                if item and item.widget():
-                    item.widget().deleteLater()
+                w = item.widget() if item else None
+                if w:
+                    w.hide()
+                    w.setParent(None)
             as_total = 255 if PalFrame._cheat_mode else 3
             as_pp = 3
             as_pages = max(1, (as_total + as_pp - 1) // as_pp)

@@ -1040,7 +1040,8 @@ class ScrollableGuildSelectionDialog(ThemedDialog):
     def _populate_guilds(self):
         for button in self.guild_buttons:
             self.guild_container_layout.removeWidget(button[1])
-            button[1].deleteLater()
+            button[1].hide()
+            button[1].setParent(None)
         self.guild_buttons.clear()
         for guild_id, guild_info in self.filtered_guilds.items():
             guild_name = guild_info.get('guild_name', 'Unknown')

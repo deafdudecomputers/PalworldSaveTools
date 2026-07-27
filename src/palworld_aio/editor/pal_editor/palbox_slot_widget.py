@@ -273,9 +273,9 @@ class PalboxSlotWidget(QFrame):
     def _build(self):
 
         for c in list(self._children):
-
-            c.deleteLater()
-
+            c.hide()
+            c.setParent(None)
+        
         self._children = []
 
         raw = self._get_raw()

@@ -591,7 +591,8 @@ def spawn_aio_and_exit(venv_py: Path):
         if splash_window is not None:
             try:
                 splash_window.close()
-                splash_window.deleteLater()
+                splash_window.hide()
+                splash_window.setParent(None)
             except Exception:
                 pass
         if app is not None:

@@ -283,8 +283,10 @@ class BreedingTab(QWidget):
         self._refreshing = True
         while self._results_layout.count():
             item = self._results_layout.takeAt(0)
-            if item and item.widget():
-                item.widget().deleteLater()
+            w = item.widget() if item else None
+            if w:
+                w.hide()
+                w.setParent(None)
         self._scroll.verticalScrollBar().setValue(0)
         try:
             if not self._selected_tribe or not self._breeding_data:

@@ -543,7 +543,8 @@ class GamePassSaveFixWidget(QWidget):
             item = layout.takeAt(0)
             widget = item.widget()
             if widget:
-                widget.deleteLater()
+                widget.hide()
+                widget.setParent(None)
         if saves:
             label_layout = QHBoxLayout()
             label_layout.addStretch()
