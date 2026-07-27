@@ -506,7 +506,7 @@ class PlayerPalActionDialog(QDialog):
     def _refresh_after_action(self):
         self.status_label.setText(t('player_pal.action_complete').format(item_name='Operation') if t else 'Operation completed successfully!')
         self.status_label.setStyleSheet('color: #4ade80; font-weight: bold; padding: 5px;')
-        QTimer.singleShot(3000, lambda: self.status_label.setText(''))
+        QTimer.singleShot(3000, lambda s=self: s.status_label.setText('') if hasattr(s, 'status_label') else None)
     def refresh_labels(self):
         self.setWindowTitle(t('player_pal.title') if t else 'Bulk Pal Management')
         self.tab_widget.setTabText(0, t('player_pal.delete_pal_tab') if t else 'Delete Pal')

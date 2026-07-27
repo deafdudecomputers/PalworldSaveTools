@@ -819,7 +819,7 @@ class FixHostSaveWindow(QWidget):
         self.new_search_entry.textChanged.connect(lambda: filter_treeview(self.new_tree, self.new_search_entry.text()))
         self.old_tree.itemSelectionChanged.connect(self.update_source_selection)
         self.new_tree.itemSelectionChanged.connect(self.update_target_selection)
-        QTimer.singleShot(0, lambda: center_window(self))
+        QTimer.singleShot(0, lambda w=self: center_window(w) if w.isVisible() else None)
     def showEvent(self, event):
         super().showEvent(event)
         if not event.spontaneous():

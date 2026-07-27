@@ -363,7 +363,7 @@ class PalInfoHandlerMixin:
                     asset = result
                 else:
                     return
-        QTimer.singleShot(0, lambda a=asset, s=slot_idx, ia=is_active: self._set_active_skill(s, a) if ia else self._set_passive_skill(s, a))
+        QTimer.singleShot(0, lambda obj=self, a=asset, s=slot_idx, ia=is_active: (obj._set_active_skill(s, a) if ia else obj._set_passive_skill(s, a)) if hasattr(obj, '_set_active_skill') else None)
 
     def _set_active_skill(self, slot_idx, asset):
         if not self._raw:

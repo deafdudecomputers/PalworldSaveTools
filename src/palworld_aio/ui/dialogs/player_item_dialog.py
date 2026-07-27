@@ -421,7 +421,7 @@ class PlayerItemActionDialog(QDialog):
         item_name = self.selected_item_name or 'Item'
         self.status_label.setText(t('player_item.action_complete').format(item_name=item_name) if t else f'{item_name} action completed successfully!')
         self.status_label.setStyleSheet('color: #4ade80; font-weight: bold; padding: 5px;')
-        QTimer.singleShot(3000, lambda: self.status_label.setText(''))
+        QTimer.singleShot(3000, lambda s=self: s.status_label.setText('') if hasattr(s, 'status_label') else None)
         if self.selected_item_id:
             self._load_players()
             self._update_player_list()
