@@ -38,7 +38,7 @@ def _safe_deleteLater(self):
         _original_deleteLater(self)
         return
     _keep_until_deleted[id(self)] = self
-    self.destroyed.connect(lambda: _keep_until_deleted.pop(id(self), None))
+    self.destroyed.connect(lambda oid=id(self): _keep_until_deleted.pop(oid, None))
     _original_deleteLater(self)
 
 _QObject.deleteLater = _safe_deleteLater
@@ -396,7 +396,9 @@ class MainWindow(QMainWindow):
         if placeholder is not None:
             idx = self.stacked_widget.indexOf(placeholder)
             self.stacked_widget.removeWidget(placeholder)
-            placeholder.deleteLater()
+            placeholder.setParent(None)
+            placeholder.hide()
+            _original_deleteLater(placeholder)
             getattr(self, method_name)()
             widget = self.stacked_widget.widget(self.stacked_widget.count() - 1)
             self.stacked_widget.removeWidget(widget)
