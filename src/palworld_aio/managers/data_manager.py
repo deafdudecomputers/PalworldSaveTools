@@ -103,7 +103,7 @@ def get_guild_members(gid):
                 from ..utils import format_duration_short
                 lastseen = format_duration_short(last_sort)
             level = constants.player_levels.get(uid.replace('-', ''), 1)
-            pals = constants.PLAYER_PAL_COUNTS.get(uid.lower(), 0)
+            pals = constants.PLAYER_PAL_COUNTS.get(uid.replace('-', '').lower(), 0)
             is_leader = as_uuid(uid) == admin_uid
             role = p.get('role', 3)
             role_label = GUILD_ROLE_LABELS.get(role, f'?{role}')

@@ -1,6 +1,7 @@
 #2.2.5
 - **Bulk clone dialog text color fixed** — pal names and qty spinbox in BulkSpeciesDialog now use explicit `color: #e2e8f0` (matching stats panel style) instead of inheriting the system palette, which gave black text on dark background for some Windows configs.
 - **Guild member count column** — the guild search tree now shows a sortable "Members" column with per-guild member count. Column widths redistributed for readability.
+- **Guild member pal count fixed** — `get_guild_members()` was looking up `PLAYER_PAL_COUNTS` with hyphens in the UID, but the dict keys are stored without hyphens. All players showed 0 pals. Now strips hyphens before lookup, matching the pattern used elsewhere.
 - Bumped version to 2.2.5
 
 #2.2.4
