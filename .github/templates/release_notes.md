@@ -30,8 +30,8 @@
 | Platform | File |
 |---|---|
 | 🪟 Windows | `PST_standalone_v${VERSION}.zip` |
-| 🐧 Linux   | `${APP_NAME}-V${VERSION}-linux.AppImage` |
-| 🍎 macOS   | `${APP_NAME}-V${VERSION}-macos.dmg` |
+| 🐧 Linux   | `${APP_NAME}-v${VERSION}-linux.AppImage` |
+| 🍎 macOS   | `${APP_NAME}-v${VERSION}-macos.dmg` |
 
 📥 Full release: ${RELEASE_URL}
 
