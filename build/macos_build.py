@@ -121,10 +121,15 @@ def create_dmg(app_path: str, app_name: str, version: str) -> str:
     os.makedirs(stage_dir)
 
     try:
-        # Preserve code-signing extended attributes. Python's shutil.copytree()
-        # drops com.apple.cs.* attributes from non-Mach-O files in Contents/MacOS,
-        # which leaves the app inside the DMG with an invalid deep signature.
-        run(['cp', '-a', app_path, stage_dir], 'Copying signed app to staging')
+        # Copy the .app into staging using shutil.copytree with symlinks=True.
+        # This intentionally strips com.apple.cs.* extended attributes (code
+        # signature), so the app inside the DMG is always unsigned regardless
+        # of any ad-hoc / Nuitka-internal signing that happened before. This
+        # prevents macOS Gatekeeper from performing OCSP/notarization network
+        # checks that would delay the first-launch prompt by ~2 minutes.
+        dest_app = os.path.join(stage_dir, os.path.basename(app_path))
+        print(f'Copying .app to staging (stripping code-sign attrs)...')
+        shutil.copytree(app_path, dest_app, symlinks=True)
 
         # Create /Applications symlink (like PSP's applications_shortcut=True)
         applications_link = os.path.join(stage_dir, 'Applications')

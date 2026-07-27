@@ -184,8 +184,7 @@ def build_with_nuitka(onefile: bool = True):
     if sys.platform == 'darwin':
         cmd.append('--macos-create-app-bundle')
         cmd.append('--macos-app-name=PalworldSaveTools')
-        cmd.append(f'--macos-app-version={version}')
-        cmd.append('--macos-signed-app-name=com.deafdudecomputers.PalworldSaveTools')
+
 
     cmd.append(MAIN_SCRIPT)
 
