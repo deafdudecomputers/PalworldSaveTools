@@ -67,6 +67,7 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
         self._last_clicked_dps_pal = None
         self._palbox_mode = 'box'
         self.palbox_pal_dict = {}
+        self.total_slots = 960
         self._dps_modified = False
         self._dps_save_timer = QTimer(self)
         self._dps_save_timer.setSingleShot(True)
@@ -325,8 +326,31 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
         if self._palbox_mode == 'dps':
             max_slots = max(self.dps_total_slots, 1)
             return (max_slots + 29) // 30
-        return 32
+        return max(1, (self.total_slots + 29) // 30)
+    def _refresh_total_slots(self):
+        if self._palbox_mode != 'box':
+            return
+        target = str(self.palbox_container).lower() if self.palbox_container else ''
+        if not target:
+            return
+        try:
+            wsd = constants.loaded_level_json['properties']['worldSaveData']['value']
+        except (KeyError, TypeError, AttributeError):
+            return
+        containers = wsd.get('CharacterContainerSaveData', {}).get('value', [])
+        for cont in containers:
+            try:
+                cid = cont['key']['ID']['value']
+                if str(cid).lower() == target:
+                    sn = cont['value']['SlotNum']['value']
+                    if isinstance(sn, (int, float)) and sn >= 30:
+                        self.total_slots = int(sn)
+                    break
+            except (KeyError, TypeError):
+                continue
+
     def _update_box_label(self):
+        self._refresh_total_slots()
         if self._palbox_mode == 'dps':
             total = (self.dps_total_slots + 29) // 30 if self.dps_total_slots else 1
             count = len(self.dps_pals)
@@ -1534,6 +1558,7 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
         source = self.dps_pals if self._palbox_mode == 'dps' else self.palbox_pal_dict
         return [source.get(start + i) for i in range(30)]
     def _update_palbox_page(self):
+        self._refresh_total_slots()
         page_pals = self._get_palbox_page_pals()
         for i, slot in enumerate(self.palbox_slots):
             slot.multi_selected = False
@@ -1597,8 +1622,6 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
                         if save_data:
                             self.party_container = safe_nested_get(save_data, ['OtomoCharacterContainerId', 'value', 'ID', 'value'])
                             self.palbox_container = safe_nested_get(save_data, ['PalStorageContainerId', 'value', 'ID', 'value'])
-                        if not self.party_container or not self.palbox_container:
-                            print(f'Container IDs not found for {target_uid}')
                 elif filename.endswith('.sav') and '_dps' in filename:
                     p_uid_raw = filename.replace('_dps.sav', '').lower()
                     if p_uid_raw == target_uid:
@@ -1619,6 +1642,7 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
         self._update_mode_buttons()
         self.party_pals = {}
         self.palbox_pal_dict = {}
+        self.total_slots = 960
         self.current_box_index = 1
         self.selected_pal_slot = None
         self._hovered_pal = None
@@ -1704,7 +1728,21 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
         target_uid = self.player_uid.replace('-', '').lower() if self.player_uid else ''
         target_party = str(self.party_container).lower() if self.party_container else ''
         target_palbox = str(self.palbox_container).lower() if self.palbox_container else ''
-        ownership = ContainerOwnership.build(cmap, constants.loaded_level_json.get('properties', {}).get('worldSaveData', {}).get('value', {}).get('CharacterContainerSaveData', {}).get('value', []))
+        containers_raw = constants.loaded_level_json['properties']['worldSaveData']['value'].get('CharacterContainerSaveData', {})
+        containers_list = containers_raw.get('value', []) if isinstance(containers_raw, dict) else []
+        ownership = ContainerOwnership.build(cmap, containers_list)
+        self.total_slots = 960
+        if target_palbox:
+            for cont in containers_list:
+                try:
+                    cid = cont['key']['ID']['value']
+                    if str(cid).lower() == target_palbox:
+                        sn = cont['value']['SlotNum']['value']
+                        if isinstance(sn, (int, float)) and sn >= 30:
+                            self.total_slots = int(sn)
+                        break
+                except (KeyError, TypeError):
+                    continue
         for item in cmap:
             try:
                 raw = item.get('value', {}).get('RawData', {}).get('value', {})

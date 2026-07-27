@@ -1047,7 +1047,7 @@ class BulkSpeciesDialog(FramelessDialog):
         self._external_pals = external_pals or []
         self._species_map = {}
         self._party_free = 5
-        self._palbox_free = 960
+        self._palbox_free = getattr(self.pal_editor, 'total_slots', 960)
         self._dps_free = 0
         self._selected_cid = None
         self._template_pal_item = None
@@ -1282,7 +1282,7 @@ class BulkSpeciesDialog(FramelessDialog):
             self._dps_free = 0
             return
         self._party_free = max(0, 5 - len(pe.party_pals))
-        self._palbox_free = max(0, 32 * 30 - len(pe.palbox_pal_dict))
+        self._palbox_free = max(0, getattr(pe, 'total_slots', 960) - len(pe.palbox_pal_dict))
         if hasattr(pe, 'dps_total_slots') and pe.dps_total_slots:
             self._dps_free = max(0, pe.dps_total_slots - len(pe.dps_pals))
         else:
@@ -1301,7 +1301,8 @@ class BulkSpeciesDialog(FramelessDialog):
         if self._from_party:
             parts.append(t('edit_pals.bulk_slots_party', used=5 - self._party_free, total=5))
         if self._from_palbox:
-            parts.append(t('edit_pals.bulk_slots_palbox', used=960 - self._palbox_free, total=960))
+            total = getattr(self.pal_editor, 'total_slots', 960)
+            parts.append(t('edit_pals.bulk_slots_palbox', used=total - self._palbox_free, total=total))
         if self._from_dps:
             parts.append(t('edit_pals.bulk_slots_dps', free=self._dps_free))
         parts.append(t('edit_pals.bulk_slots_total', free=self._get_total_free()))
@@ -1423,7 +1424,7 @@ class BulkSpeciesDialog(FramelessDialog):
                         break
             if container_id is None and self._from_palbox:
                 used = set(pe.palbox_pal_dict.keys())
-                for i in range(32 * 30):
+                for i in range(getattr(pe, 'total_slots', 960)):
                     if i not in used:
                         container_id = pe.palbox_container
                         new_index = i
