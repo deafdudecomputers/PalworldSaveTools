@@ -111,7 +111,7 @@ def create_dmg(app_path: str, app_name: str, version: str) -> str:
     Create a polished DMG with an /Applications shortcut.
     Returns the path to the created DMG.
     """
-    dmg_name = f'{app_name}-V{version}-macos.dmg'
+    dmg_name = f'{app_name}-v{version}-macos.dmg'
     dmg_path = os.path.join(DIST_DIR, dmg_name)
 
     # Temp staging directory

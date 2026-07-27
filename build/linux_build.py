@@ -79,12 +79,12 @@ def build_nuitka_onefile():
 
 def find_onefile_binary(app_name: str, version: str) -> str:
     """Locate the Nuitka onefile binary in dist/."""
-    candidate = os.path.join(DIST_DIR, f'{app_name}-V{version}-linux')
+    candidate = os.path.join(DIST_DIR, f'{app_name}-v{version}-linux')
     if os.path.exists(candidate) and os.access(candidate, os.X_OK):
         return candidate
     # Fallback: any executable matching the naming pattern
     import glob
-    matches = glob.glob(os.path.join(DIST_DIR, f'{app_name}-V*-linux'))
+    matches = glob.glob(os.path.join(DIST_DIR, f'{app_name}-v*-linux'))
     matches = [m for m in matches if os.path.isfile(m) and os.access(m, os.X_OK)]
     if not matches:
         print(f'ERROR: No onefile binary found in dist/ matching '
@@ -174,7 +174,7 @@ def package_appimage(appdir: str, app_name: str, version: str,
     underlying tool without needing FUSE.
     """
     appimagetool = ensure_appimagetool()
-    out_name = f'{app_name}-V{version}-linux.AppImage'
+    out_name = f'{app_name}-v{version}-linux.AppImage'
     out_path = os.path.join(DIST_DIR, out_name)
     if os.path.exists(out_path):
         os.remove(out_path)
