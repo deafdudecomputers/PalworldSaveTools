@@ -97,7 +97,7 @@ jobs:
         if: steps.cache-dist.outputs.cache-hit != 'true'
         run: |
           if [ "${{ github.event.inputs.signing }}" = "ad-hoc" ]; then
-            uv run python build/macos_build.py --ad-hoc
+            uv run python build/macos_build.py
           else
             uv run python build/macos_build.py
           fi

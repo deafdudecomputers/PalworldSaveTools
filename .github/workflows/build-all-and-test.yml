@@ -70,7 +70,7 @@ jobs:
         run: uv run python build/linux_build.py --appimage-extract-and-run
       - name: Build macOS DMG
         if: ${{ matrix.platform == 'macos' && steps.cache-dist.outputs.cache-hit != 'true' }}
-        run: uv run python build/macos_build.py --ad-hoc
+        run: uv run python build/macos_build.py
       - name: Verify macOS app and DMG
         if: ${{ matrix.platform == 'macos' }}
         run: python3 build/verify_build.py
