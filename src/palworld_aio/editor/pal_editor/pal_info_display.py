@@ -371,11 +371,17 @@ class PalInfoDisplayMixin:
             rank_int = int(rank_raw) if isinstance(rank_raw, (int, float)) else 0
             star_count = max(0, rank_int - 1)
             for i, sl in enumerate(self.star_labels):
-                sl.set_filled(i < star_count)
-            if star_count >= 4:
+                sl.set_filled(i < min(star_count, 4))
+            if star_count > 4:
+                self.star_overflow_label.setText(f'+{star_count - 4}')
+                self.star_overflow_label.show()
                 self._start_star_shine()
             else:
-                self._stop_star_shine()
+                self.star_overflow_label.hide()
+                if star_count >= 4:
+                    self._start_star_shine()
+                else:
+                    self._stop_star_shine()
             icon_path = _icons._get_pal_icon_path(cid)
             pix = _icons._get_cached_pixmap(icon_path, 80)
             if pix:

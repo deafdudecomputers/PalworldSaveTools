@@ -2303,5 +2303,7 @@
     "edit_pals.confirm_remove_all_skills": "Remover todas as habilidades aprendidas deste amigo?",
     "xgp.network_blocked.title": "Rede bloqueada",
     "xgp.network_blocked.text": "Rede bloqueada para impedir a sincronização na nuvem do Xbox.\n\n1. Inicie o Palworld\n2. Aguarde a mensagem \"Conexão de rede instável\"\n3. Clique em \"Pronto\" abaixo para restaurar a rede\n4. Clique em OK no Palworld",
-    "xgp.network_blocked.btn_ready": "Pronto – restaurar rede"
+    "xgp.network_blocked.btn_ready": "Pronto – restaurar rede",
+    "edit_pals.rank_title": "Definir classificação",
+    "edit_pals.rank_prompt": "Insira o valor da classificação (1-255):"
 }

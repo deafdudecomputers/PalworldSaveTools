@@ -54,6 +54,8 @@ NEW_TRANSLATIONS = {
     'xgp.network_blocked.title': 'Network Blocked',
     'xgp.network_blocked.text': 'Network blocked to prevent Xbox cloud sync.\n\n1. Launch Palworld\n2. Wait for "Network connection unstable" message\n3. Click "Ready" below to restore network\n4. Click OK in Palworld',
     'xgp.network_blocked.btn_ready': 'Ready — restore network',
+    'edit_pals.rank_title': 'Set Rank',
+    'edit_pals.rank_prompt': 'Enter rank value (1-255):',
 }
 OLD_KEYS = []
 def _clean_uv_locks():

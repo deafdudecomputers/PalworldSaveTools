@@ -115,9 +115,21 @@ class PalInfoHandlerMixin:
         if not self._raw:
             return
         cur = int(extract_value(self._raw, 'Rank', 0))
-        new_r = star_idx + 2
-        if new_r == cur:
-            new_r = 1
+        cap = 255 if PalFrame._cheat_mode else 5
+        if cur >= 5 and PalFrame._cheat_mode:
+            from palworld_aio.editor.dialogs import LevelInputDialog
+            from i18n import t
+            _v = LevelInputDialog.get_level(t('edit_pals.rank_title') if t else 'Set Rank',
+                t('edit_pals.rank_prompt') if t else f'Enter rank value (1-{cap}):', cur, self, minimum=1, maximum=cap)
+            if _v is None:
+                return
+            new_r = _v
+        else:
+            new_r = star_idx + 2
+            if new_r == cur:
+                new_r = 1
+            if new_r > cap:
+                new_r = cap
         self._raw['Rank'] = {'id': None, 'type': 'ByteProperty', 'value': {'type': 'None', 'value': new_r}}
         self._recalc_hp()
         self._refresh()

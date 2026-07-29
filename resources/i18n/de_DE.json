@@ -2040,5 +2040,7 @@
     "edit_pals.confirm_remove_all_skills": "Alle erlernten Fähigkeiten von diesem Kumpel entfernen?",
     "xgp.network_blocked.title": "Netzwerk blockiert",
     "xgp.network_blocked.text": "Netzwerk blockiert, um die Xbox-Cloud-Synchronisierung zu verhindern.\n\n1. Starten Sie Palworld\n2. Warten Sie auf die Meldung „Netzwerkverbindung instabil“.\n3. Klicken Sie unten auf „Bereit“, um das Netzwerk wiederherzustellen\n4. Klicken Sie in Palworld auf OK",
-    "xgp.network_blocked.btn_ready": "Bereit – Netzwerk wiederherstellen"
+    "xgp.network_blocked.btn_ready": "Bereit – Netzwerk wiederherstellen",
+    "edit_pals.rank_title": "Rang festlegen",
+    "edit_pals.rank_prompt": "Geben Sie den Rangwert ein (1-255):"
 }

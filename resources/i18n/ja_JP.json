@@ -2016,5 +2016,7 @@
     "edit_pals.confirm_remove_all_skills": "この仲間から学んだスキルをすべて削除しますか?",
     "xgp.network_blocked.title": "ネットワークがブロックされました",
     "xgp.network_blocked.text": "Xbox クラウド同期を防ぐためにネットワークがブロックされました。\n\n1.パルワールドを起動する\n2.「ネットワーク接続が不安定です」というメッセージが表示されるまで待ちます。\n3. 下の「準備完了」をクリックしてネットワークを復元します\n4.パルワールドで「OK」をクリックします",
-    "xgp.network_blocked.btn_ready": "準備完了 — ネットワークを復元します"
+    "xgp.network_blocked.btn_ready": "準備完了 — ネットワークを復元します",
+    "edit_pals.rank_title": "ランクを設定する",
+    "edit_pals.rank_prompt": "ランク値を入力してください (1 ～ 255):"
 }

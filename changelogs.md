@@ -6,6 +6,7 @@
 - **Fixed crash 0x8001010d in world picker** — removed `show_critical` from `pick_xgp_world` (was calling `QMessageBox.exec()` from a Windows message context disallowing COM calls).
 - **Swap Bases** — right-click a base marker on the map and pick "Swap Bases", then click a second base. The two bases exchange positions with all their structures (map objects, work stations, worker spawns) and guild assignments. Uses the same map-click picker pattern as Change Coordinates.
 - **Nudge dialog shows current and resulting coordinates** — the Nudge Base dialog now displays "Current: x, y, z" on the same row as OK/Cancel and "Result: x', y', z'" below. Both labels are clickable to copy the coordinate values, matching the pal instance ID copy pattern. Live preview updates as you adjust the offset spinners.
+- **Overflow rank display + input dialog** — when cheat mode sets condenser rank > 5 (4 stars), the pal info panel shows a purple `+N` badge next to the 4 gold stars. Clicking any star at max opens a themed spin dialog to enter any value up to 255. Without cheat mode, rank caps at 5 with normal click-to-cycle behavior.
 - Bumped version to 2.2.7
 
 #2.2.6

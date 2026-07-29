@@ -442,6 +442,10 @@ class PalInfoWidget(PalInfoDisplayMixin, PalInfoHandlerMixin, QFrame):
         self._star_shine_timer = QTimer(self)
         self._star_shine_timer.timeout.connect(self._tick_star_shine)
         self._star_shine_phase = 0.0
+        self.star_overflow_label = QLabel()
+        self.star_overflow_label.setStyleSheet('color: #c084fc; font-size: 11px; font-weight: bold; background: transparent; border: none; padding: 0px;')
+        self.star_overflow_label.hide()
+        star_layout.addWidget(self.star_overflow_label)
         left_layout.addWidget(self.star_container)
         portrait_frame = QFrame()
         self.portrait_frame = portrait_frame

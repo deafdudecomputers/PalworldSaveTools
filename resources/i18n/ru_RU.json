@@ -2014,5 +2014,7 @@
     "edit_pals.confirm_remove_all_skills": "Удалить все полученные навыки у этого приятеля?",
     "xgp.network_blocked.title": "Сеть заблокирована",
     "xgp.network_blocked.text": "Сеть заблокирована, чтобы предотвратить синхронизацию с облаком Xbox.\n\n1. Запустите Palworld\n2. Дождитесь сообщения «Сетевое соединение нестабильно».\n3. Нажмите «Готово» ниже, чтобы восстановить сеть.\n4. Нажмите «ОК» в Palworld.",
-    "xgp.network_blocked.btn_ready": "Готово — восстановить сеть"
+    "xgp.network_blocked.btn_ready": "Готово — восстановить сеть",
+    "edit_pals.rank_title": "Установить ранг",
+    "edit_pals.rank_prompt": "Введите значение ранга (1-255):"
 }

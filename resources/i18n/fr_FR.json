@@ -1998,5 +1998,7 @@
     "edit_pals.confirm_remove_all_skills": "Supprimer toutes les compétences acquises à ce copain ?",
     "xgp.network_blocked.title": "Réseau bloqué",
     "xgp.network_blocked.text": "Réseau bloqué pour empêcher la synchronisation du cloud Xbox.\n\n1. Lancez Palworld\n2. Attendez le message « Connexion réseau instable »\n3. Cliquez sur \"Prêt\" ci-dessous pour restaurer le réseau\n4. Cliquez sur OK dans Palworld",
-    "xgp.network_blocked.btn_ready": "Prêt : restaurer le réseau"
+    "xgp.network_blocked.btn_ready": "Prêt : restaurer le réseau",
+    "edit_pals.rank_title": "Définir le classement",
+    "edit_pals.rank_prompt": "Entrez la valeur du classement (1-255) :"
 }
