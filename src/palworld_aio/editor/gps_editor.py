@@ -308,6 +308,11 @@ class GpsEditorDialog(FramelessDialog):
                 self._selected_slot = abs_idx
                 self.pal_info.set_clicked_pal(pal)
                 self.slots[idx].set_selected(True)
+            else:
+                self._selected_pal = None
+                self._selected_slot = None
+                self.pal_info.set_clicked_pal(None)
+                self.pal_info.clear_hover()
             self._update_multi_toolbar()
             return
 
@@ -320,6 +325,11 @@ class GpsEditorDialog(FramelessDialog):
             self._selected_slot = abs_idx
             self.pal_info.set_clicked_pal(pal)
             self.slots[idx].set_selected(True)
+        else:
+            self._selected_pal = None
+            self._selected_slot = None
+            self.pal_info.set_clicked_pal(None)
+            self.pal_info.clear_hover()
 
     def _toggle_multi(self, slot_type, abs_idx, force_add=False):
         key = (slot_type, abs_idx)
