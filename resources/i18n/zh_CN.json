@@ -2015,5 +2015,8 @@
     "deletion.menu.fix_invalid_active_skills": "修复无效主动技能",
     "deletion.invalid_active_skills_fixed": "从 {pals} 好友中删除了 {count} 无效的主动/习得技能",
     "edit_pals.learnt_skills_remove_all": "全部删除",
-    "edit_pals.confirm_remove_all_skills": "删除这个朋友所有学到的技能？"
+    "edit_pals.confirm_remove_all_skills": "删除这个朋友所有学到的技能？",
+    "xgp.network_blocked.title": "网络被封锁",
+    "xgp.network_blocked.text": "网络被阻止以阻止 Xbox 云同步。\n\n1.启动友世界\n2. 等待“网络连接不稳定”消息\n3.点击下方“准备就绪”即可恢复网络\n4.在Palworld中点击确定",
+    "xgp.network_blocked.btn_ready": "就绪 — 恢复网络"
 }

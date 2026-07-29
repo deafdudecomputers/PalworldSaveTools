@@ -2007,5 +2007,8 @@
     "deletion.menu.fix_invalid_active_skills": "Corregir habilidades activas no válidas",
     "deletion.invalid_active_skills_fixed": "Se eliminaron {count} habilidades activas/aprendidas no válidas de {pals} amigos",
     "edit_pals.learnt_skills_remove_all": "Quitar todo",
-    "edit_pals.confirm_remove_all_skills": "¿Quitar todas las habilidades aprendidas de este amigo?"
+    "edit_pals.confirm_remove_all_skills": "¿Quitar todas las habilidades aprendidas de este amigo?",
+    "xgp.network_blocked.title": "Red bloqueada",
+    "xgp.network_blocked.text": "Red bloqueada para evitar la sincronización en la nube de Xbox.\n\n1. Inicie Palworld\n2. Espere el mensaje \"Conexión de red inestable\"\n3. Haga clic en \"Listo\" a continuación para restaurar la red.\n4. Haga clic en Aceptar en Palworld",
+    "xgp.network_blocked.btn_ready": "Listo: restaurar la red"
 }

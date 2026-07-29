@@ -693,17 +693,13 @@ def restore_network(adapters: list[str], parent=None) -> None:
         return
     if parent is not None:
         from PySide6.QtWidgets import QMessageBox
+        from i18n import t
         _m = QMessageBox(parent)
-        _m.setWindowTitle('Network Blocked')
-        _m.setText(
-            'Network blocked to prevent Xbox cloud sync.\n\n'
-            '1. Launch Palworld\n'
-            '2. Wait for "Network connection unstable" message\n'
-            '3. Click "Ready" below to restore network\n'
-            '4. Click OK in Palworld'
-        )
-        _m.addButton('Ready — restore network', QMessageBox.AcceptRole)
+        _m.setWindowTitle(t('xgp.network_blocked.title'))
+        _m.setText(t('xgp.network_blocked.text'))
+        _m.addButton(t('xgp.network_blocked.btn_ready'), QMessageBox.AcceptRole)
         _m.exec()
     else:
-        input('Network blocked. Launch Palworld, wait for "Network connection unstable", then press Enter to restore network...')
+        from i18n import t
+        input(t('xgp.network_blocked.text') + '\n')
     toggle_network(True, adapters)

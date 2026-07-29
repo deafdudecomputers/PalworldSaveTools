@@ -2012,5 +2012,8 @@
     "deletion.menu.fix_invalid_active_skills": "유효하지 않은 활성 스킬 수정",
     "deletion.invalid_active_skills_fixed": "{pals} 친구에게서 {count} 유효하지 않은 활성/학습된 기술을 제거했습니다.",
     "edit_pals.learnt_skills_remove_all": "모두 제거",
-    "edit_pals.confirm_remove_all_skills": "이 친구에게서 배운 기술을 모두 삭제하시겠습니까?"
+    "edit_pals.confirm_remove_all_skills": "이 친구에게서 배운 기술을 모두 삭제하시겠습니까?",
+    "xgp.network_blocked.title": "네트워크가 차단됨",
+    "xgp.network_blocked.text": "Xbox 클라우드 동기화를 방지하기 위해 네트워크가 차단되었습니다.\n\n1. 팔월드 실행\n2. \"네트워크 연결이 불안정합니다\" 메시지를 기다립니다.\n3. 네트워크를 복원하려면 아래의 \"준비\"를 클릭하세요.\n4. Palworld에서 확인을 클릭하세요.",
+    "xgp.network_blocked.btn_ready": "준비 - 네트워크 복원"
 }

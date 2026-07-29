@@ -1995,5 +1995,8 @@
     "deletion.menu.fix_invalid_active_skills": "Corriger les compétences actives invalides",
     "deletion.invalid_active_skills_fixed": "Suppression des compétences actives/appris invalides {count} des amis {pals}",
     "edit_pals.learnt_skills_remove_all": "Supprimer tout",
-    "edit_pals.confirm_remove_all_skills": "Supprimer toutes les compétences acquises à ce copain ?"
+    "edit_pals.confirm_remove_all_skills": "Supprimer toutes les compétences acquises à ce copain ?",
+    "xgp.network_blocked.title": "Réseau bloqué",
+    "xgp.network_blocked.text": "Réseau bloqué pour empêcher la synchronisation du cloud Xbox.\n\n1. Lancez Palworld\n2. Attendez le message « Connexion réseau instable »\n3. Cliquez sur \"Prêt\" ci-dessous pour restaurer le réseau\n4. Cliquez sur OK dans Palworld",
+    "xgp.network_blocked.btn_ready": "Prêt : restaurer le réseau"
 }

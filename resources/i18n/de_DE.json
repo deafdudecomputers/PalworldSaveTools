@@ -2037,5 +2037,8 @@
     "deletion.menu.fix_invalid_active_skills": "Korrigieren Sie ungültige aktive Fähigkeiten",
     "deletion.invalid_active_skills_fixed": "{count} ungültige aktive/erlernte Fähigkeiten von {pals} Freunden entfernt",
     "edit_pals.learnt_skills_remove_all": "Alle entfernen",
-    "edit_pals.confirm_remove_all_skills": "Alle erlernten Fähigkeiten von diesem Kumpel entfernen?"
+    "edit_pals.confirm_remove_all_skills": "Alle erlernten Fähigkeiten von diesem Kumpel entfernen?",
+    "xgp.network_blocked.title": "Netzwerk blockiert",
+    "xgp.network_blocked.text": "Netzwerk blockiert, um die Xbox-Cloud-Synchronisierung zu verhindern.\n\n1. Starten Sie Palworld\n2. Warten Sie auf die Meldung „Netzwerkverbindung instabil“.\n3. Klicken Sie unten auf „Bereit“, um das Netzwerk wiederherzustellen\n4. Klicken Sie in Palworld auf OK",
+    "xgp.network_blocked.btn_ready": "Bereit – Netzwerk wiederherstellen"
 }

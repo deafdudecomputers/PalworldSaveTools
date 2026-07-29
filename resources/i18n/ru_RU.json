@@ -2011,5 +2011,8 @@
     "deletion.menu.fix_invalid_active_skills": "Исправить неверные активные навыки",
     "deletion.invalid_active_skills_fixed": "Удалены {count} неверные активные/изученные навыки у друзей {pals}.",
     "edit_pals.learnt_skills_remove_all": "Удалить все",
-    "edit_pals.confirm_remove_all_skills": "Удалить все полученные навыки у этого приятеля?"
+    "edit_pals.confirm_remove_all_skills": "Удалить все полученные навыки у этого приятеля?",
+    "xgp.network_blocked.title": "Сеть заблокирована",
+    "xgp.network_blocked.text": "Сеть заблокирована, чтобы предотвратить синхронизацию с облаком Xbox.\n\n1. Запустите Palworld\n2. Дождитесь сообщения «Сетевое соединение нестабильно».\n3. Нажмите «Готово» ниже, чтобы восстановить сеть.\n4. Нажмите «ОК» в Palworld.",
+    "xgp.network_blocked.btn_ready": "Готово — восстановить сеть"
 }
