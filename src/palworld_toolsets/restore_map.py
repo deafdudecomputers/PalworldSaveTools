@@ -161,79 +161,71 @@ def restore_map():
                 self.raise_()
         def on_xgp_clear_fog(self):
             from palworld_xgp_import.gamepass_manager import (
-                pick_xgp_world, extract_save_to_temp,
+                find_container_paths, read_container_index,
+                toggle_network, restore_network,
+                _read_container_data,
             )
-            pick = pick_xgp_world(self, 'Clear XGP Fog')
-            if not pick:
+            from palworld_xgp_import.container_types import ContainerFileList, FILETIME
+            containers = find_container_paths()
+            if not containers:
+                show_critical(self, t('Error'), 'No XGP saves found.')
                 return
-            cpath, save_id, index = pick
-            import tempfile as _tf, shutil as _sh
-            tmp = _tf.mkdtemp(prefix='pst_rm_xgp_')
-            extracted = extract_save_to_temp(cpath, index, save_id, tmp)
-            level_path = extracted.get('Level.sav')
-            local_path = extracted.get('LocalData.sav')
-            if not level_path or not local_path or not os.path.isfile(local_path):
-                _sh.rmtree(tmp, ignore_errors=True)
-                show_critical(self, t('Error'), 'Required save files not found.')
+            cpath = containers[0]
+            index = read_container_index(cpath)
+            local_containers = [c for c in index.containers if 'LocalData' in c.container_name]
+            if not local_containers:
+                show_critical(self, t('Error'), 'No LocalData containers found.')
                 return
-            old_name = 'World'
-            _mp = extracted.get('LevelMeta.sav')
-            if _mp and os.path.isfile(_mp):
-                try:
-                    from palworld_aio.utils import sav_to_gvasfile
-                    old_name = sav_to_gvasfile(_mp).properties.get('SaveData', {}).get('value', {}).get('WorldName', {}).get('value', 'World')
-                except Exception:
-                    pass
-            new_name, ok = QInputDialog.getText(self, 'Save as New World',
-                f'World name (original: "{old_name}"):',
-                QLineEdit.Normal, f'{old_name} (cleared fog)')
-            if not ok or not new_name.strip():
-                _sh.rmtree(tmp, ignore_errors=True)
-                return
+            updated = 0
+            def _task():
+                nonlocal updated
+                _adapters = toggle_network(False)
+                import tempfile as _tf
+                for c in local_containers:
+                    try:
+                        raw = _read_container_data(cpath, c)
+                        if not raw:
+                            continue
+                        tf = _tf.NamedTemporaryFile(suffix='.sav', delete=False)
+                        tf.write(raw)
+                        tf.close()
+                        try:
+                            _ts = time.strftime('%Y-%m-%d_%H-%M-%S')
+                            _bk_dir = os.path.join(restore_map_path, _ts, c.container_name.replace('-', '_'))
+                            os.makedirs(_bk_dir, exist_ok=True)
+                            shutil.copy(tf.name, os.path.join(_bk_dir, 'LocalData.sav'))
+                            clear_fog_in_local_data(tf.name)
+                            with open(tf.name, 'rb') as _r:
+                                modified = _r.read()
+                            cdir = os.path.join(cpath, c.container_uuid.bytes_le.hex().upper())
+                            clist = sorted(f for f in os.listdir(cdir) if f.startswith('container.'))
+                            if not clist:
+                                continue
+                            with open(os.path.join(cdir, clist[0]), 'rb') as _mf:
+                                flist = ContainerFileList.from_stream(_mf)
+                            if flist.files:
+                                _data_path = os.path.join(cdir, flist.files[0].uuid.bytes_le.hex().upper())
+                                with open(_data_path, 'wb') as _wf:
+                                    _wf.write(modified)
+                                c.mtime = FILETIME.far_future()
+                                c.size = len(modified)
+                                updated += 1
+                        finally:
+                            try: os.unlink(tf.name)
+                            except: pass
+                    except Exception:
+                        import traceback
+                        traceback.print_exc()
+                index.write_file(cpath)
+                return _adapters
             run_with_loading(
-                lambda _: self._xgp_clear_done(),
-                self._xgp_clear_work, tmp=tmp, cpath=cpath,
-                level_path=level_path, new_name=new_name, save_id=save_id,
-                parent=self)
-        def _xgp_clear_work(self, tmp, cpath, level_path, new_name, save_id):
-            from palworld_xgp_import.gamepass_manager import save_xgp_changes
-            from palworld_aio.utils import sav_to_gvas_wrapper, wrapper_to_sav
-            import shutil as _sh
-            old_level = constants.loaded_level_json
-            old_path = constants.current_save_path
-            old_xgp_path = constants.xgp_container_path
-            old_xgp_id = constants.xgp_save_id
-            old_xgp_flag = constants.xgp_loaded
-            constants.loaded_level_json = sav_to_gvas_wrapper(level_path)
-            constants.current_save_path = tmp
-            constants.xgp_container_path = cpath
-            constants.xgp_save_id = save_id
-            constants.xgp_loaded = True
-            try:
-                backup_local_data(tmp)
-                clear_fog_in_local_data(os.path.join(tmp, 'LocalData.sav'))
-                wrapper_to_sav(constants.loaded_level_json, level_path)
-                save_xgp_changes(
-                    container_path=cpath,
-                    current_save_path=tmp,
-                    new_world_name=new_name.strip(),
-                )
-            finally:
-                if old_level:
-                    constants.loaded_level_json = old_level
-                    constants.current_save_path = old_path
-                    constants.xgp_container_path = old_xgp_path
-                    constants.xgp_save_id = old_xgp_id
-                    constants.xgp_loaded = old_xgp_flag
-                else:
-                    constants.loaded_level_json = None
-                    constants.current_save_path = None
-                    constants.xgp_container_path = None
-                    constants.xgp_save_id = None
-                    constants.xgp_loaded = False
-                _sh.rmtree(tmp, ignore_errors=True)
-        def _xgp_clear_done(self):
-            self.result_label.setText(t('XGP fog cleared!'))
+                lambda a: self._xgp_clear_done(a, updated),
+                _task, parent=self)
+        def _xgp_clear_done(self, adapters, count):
+            if adapters:
+                from palworld_xgp_import.gamepass_manager import restore_network
+                restore_network(adapters, self)
+            self.result_label.setText(f'XGP fog cleared in {count} worlds!')
             self.xgp_btn.setEnabled(False)
             self.yes_button.setEnabled(False)
             self.no_button.setEnabled(False)

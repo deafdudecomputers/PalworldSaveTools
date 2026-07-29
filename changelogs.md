@@ -1,4 +1,9 @@
 #2.2.7
+- **XGP saves no longer clone to new worlds** — GamePass saves now save back to the original world (same save_id, same containers). Xbox cloud sync prevented by disabling all physical network adapters during the write. After saving, PST shows a dialog to launch Palworld, wait for "Network connection unstable", then confirm to restore network — sync never starts, edits stay.
+- **Fix Host Save, Character Transfer, Slot Injector, Restore Map** — all GamePass paths now use in-place writes with network block instead of creating cloned worlds.
+- **XGP Restore Map clears fog in ALL worlds** — scans every `LocalData` container in the index (including server saves), clears fog on each, writes back in-place. No rename prompt. Per-container error handling stops one bad container from skipping the rest.
+- **Xbox sync services auto-stopped** — `XblGameSave` and `XblAuthManager` are stopped before any container index read, preventing file-lock errors.
+- **Fixed crash 0x8001010d in world picker** — removed `show_critical` from `pick_xgp_world` (was calling `QMessageBox.exec()` from a Windows message context disallowing COM calls).
 - **Swap Bases** — right-click a base marker on the map and pick "Swap Bases", then click a second base. The two bases exchange positions with all their structures (map objects, work stations, worker spawns) and guild assignments. Uses the same map-click picker pattern as Change Coordinates.
 - **Nudge dialog shows current and resulting coordinates** — the Nudge Base dialog now displays "Current: x, y, z" on the same row as OK/Cancel and "Result: x', y', z'" below. Both labels are clickable to copy the coordinate values, matching the pal instance ID copy pattern. Live preview updates as you adjust the offset spinners.
 - Bumped version to 2.2.7

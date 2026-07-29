@@ -581,14 +581,20 @@ def fix_save_wrapper(window, level_sav_entry, old_tree, new_tree):
             os.rename(f_new_sav, os.path.join(f_players, old_guid.upper() + '.sav'))
         os.rename(f_tmp, os.path.join(f_players, new_guid.upper() + '.sav'))
         if xgp_new_name:
-            from palworld_xgp_import.gamepass_manager import save_xgp_changes
-            save_xgp_changes(
+            from palworld_xgp_import.gamepass_manager import save_and_block_network
+            window._xgp_adapters = save_and_block_network(
                 container_path=window._xgp_cpath,
                 current_save_path=xgp_tmp,
+                save_id=window._xgp_save_id,
                 new_world_name=xgp_new_name,
             )
         return True
     def on_combined_done(result):
+        _adapters = getattr(window, '_xgp_adapters', [])
+        if _adapters:
+            from palworld_xgp_import.gamepass_manager import restore_network
+            restore_network(_adapters, window)
+            window._xgp_adapters = []
         if result:
             if hasattr(window, 'level_sav_mtime'):
                 window.level_sav_mtime = os.path.getmtime(os.path.join(folder_path, 'Level.sav'))
@@ -847,6 +853,7 @@ class FixHostSaveWindow(QWidget):
             return
         self._xgp_tmp = tmp
         self._xgp_cpath = cpath
+        self._xgp_save_id = save_id
         fpath = level_path
         players_dir = os.path.join(os.path.dirname(fpath), 'Players')
         if not os.path.isdir(players_dir):

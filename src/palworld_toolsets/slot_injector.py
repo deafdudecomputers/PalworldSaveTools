@@ -751,17 +751,21 @@ class SlotNumUpdaterApp(QDialog):
             if xgp_path and filepath.startswith(xgp_path):
                 level_dst = os.path.join(xgp_path, 'Level.sav')
                 gvasfile_to_sav(gvas_file, level_dst)
-                from palworld_xgp_import.gamepass_manager import save_xgp_changes
-                save_xgp_changes(
+                from palworld_xgp_import.gamepass_manager import save_and_block_network
+                return save_and_block_network(
                     container_path=self._xgp_container_path,
                     current_save_path=xgp_path,
+                    save_id=self._xgp_save_id,
                     new_world_name=new_name,
                 )
             else:
                 gvasfile_to_sav(gvas_file, filepath)
-            return True
+                return []
         def on_finished(result):
             self.set_loading_state(False)
+            if result:
+                from palworld_xgp_import.gamepass_manager import restore_network
+                restore_network(result, self)
             self.file_mtime = os.path.getmtime(filepath)
             show_information(self, t('success.title'), t('slotinjector.saved_success'))
             self.accept()

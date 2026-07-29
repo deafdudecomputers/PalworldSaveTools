@@ -14,6 +14,9 @@ FILETIME_EPOCH_CONTAINER = 116444736000000000
 CONTAINER_INDEX_VERSION = 0xE
 CONTAINER_FILE_VERSION = 4
 
+import datetime as _dt
+_FAR_FUTURE_FILETIME_CACHE = None
+
 
 class GamepassError(Exception):
     pass
@@ -40,6 +43,15 @@ class FILETIME:
 
     def to_timestamp(self):
         return (self.value - FILETIME_EPOCH_CONTAINER) / 10000000
+
+    @classmethod
+    def far_future(cls):
+        global _FAR_FUTURE_FILETIME_CACHE
+        if _FAR_FUTURE_FILETIME_CACHE is None:
+            _FAR_FUTURE_FILETIME_CACHE = cls(
+                int(_dt.datetime(2100, 1, 1, tzinfo=_dt.timezone.utc).timestamp() * 10000000 + FILETIME_EPOCH_CONTAINER)
+            )
+        return _FAR_FUTURE_FILETIME_CACHE
 
     def __eq__(self, other):
         if not isinstance(other, FILETIME):

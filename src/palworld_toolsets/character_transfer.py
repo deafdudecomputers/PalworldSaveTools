@@ -20,6 +20,8 @@ _TRANSFER_STEPS = {'character': True, 'tech_data': True, 'inventory': True, 'gui
 player_list_cache = []
 _xgp_new_world_name: str | None = None
 _xgp_cpath: str | None = None
+_xgp_save_id: str | None = None
+_xgp_adapters: list[str] = []
 _SORT_ROLE = Qt.UserRole + 1
 class _SortableItem(QTreeWidgetItem):
     def __lt__(self, other):
@@ -520,8 +522,9 @@ class CharacterTransferWindow(QWidget):
         setattr(self, f'_xgp_{which}_tmp', tmp)
         setattr(self, f'_xgp_{which}_cpath', cpath)
         setattr(self, f'_xgp_{which}_save_id', save_id)
-        global _xgp_cpath
+        global _xgp_cpath, _xgp_save_id
         _xgp_cpath = cpath
+        _xgp_save_id = save_id
         print(f'Loading {which} from XGP save {save_id}...')
         def task():
             gvas_file = _load_sav(level_path)
@@ -1447,10 +1450,12 @@ def finalize_save_task():
     modified_target_players.clear()
     modified_targets_data.clear()
     if _xgp_new_world_name is not None and _xgp_cpath:
-        from palworld_xgp_import.gamepass_manager import save_xgp_changes
-        save_xgp_changes(
+        global _xgp_adapters
+        from palworld_xgp_import.gamepass_manager import save_and_block_network
+        _xgp_adapters = save_and_block_network(
             container_path=_xgp_cpath,
             current_save_path=os.path.dirname(t_level_sav_path),
+            save_id=_xgp_save_id,
             new_world_name=_xgp_new_world_name,
         )
     return True
@@ -1653,6 +1658,11 @@ def finalize_save(window, on_close_complete=None):
             return
     try:
         def on_finished(success):
+            global _xgp_adapters
+            if _xgp_adapters:
+                from palworld_xgp_import.gamepass_manager import restore_network
+                restore_network(_xgp_adapters, window)
+                _xgp_adapters = []
             if success:
                 global t_level_mtime
                 t_level_mtime = os.path.getmtime(t_level_sav_path)

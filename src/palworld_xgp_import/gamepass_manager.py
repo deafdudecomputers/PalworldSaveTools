@@ -2,6 +2,7 @@ import datetime
 import os
 import re
 import shutil
+import subprocess
 import tempfile
 import uuid
 from typing import Optional
@@ -11,6 +12,37 @@ from palworld_xgp_import.container_types import (
 )
 
 SAVE_SUFFIXES = ("Level", "Level-01", "LocalData", "WorldOption")
+
+
+def toggle_network(enable: bool, adapters: list[str] | None = None) -> list[str]:
+    """Disable or enable physical network adapters.
+
+    When enable=False: disables all active physical adapters, returns their names.
+    When enable=True: re-enables the adapters named in the list (from prior disable).
+
+    Requires admin rights (PST already requires admin for XGP writes).
+    """
+    _ps = ['powershell', '-NoProfile', '-Command']
+    if enable:
+        for name in (adapters or []):
+            subprocess.run(
+                [*_ps, f'Enable-NetAdapter -Name "{name}" -Confirm:$false'],
+                capture_output=True, check=False,
+            )
+        return []
+    else:
+        r = subprocess.run(
+            [*_ps, '(Get-NetAdapter -Physical | Where-Object {$_.Status -eq "Up"}).Name'],
+            capture_output=True, text=True, check=False,
+        )
+        names = [n.strip() for n in r.stdout.strip().split('\n') if n.strip()]
+        for name in names:
+            subprocess.run(
+                [*_ps, f'Disable-NetAdapter -Name "{name}" -Confirm:$false'],
+                capture_output=True, check=False,
+            )
+        print(f'[toggle_network] disabled: {names}')
+        return names
 
 
 CONTAINER_REGEX = re.compile(r"[0-9A-F]{16}_[0-9A-F]{32}$")
@@ -75,6 +107,9 @@ def find_container_paths() -> list[str]:
 
 
 def read_container_index(container_path: str) -> ContainerIndex:
+    import subprocess as _sp
+    for _s in ('XblGameSave', 'XblAuthManager'):
+        _sp.run(['sc', 'stop', _s], capture_output=True, check=False)
     index_path = os.path.join(container_path, "containers.index")
     if not os.path.exists(index_path):
         raise FileNotFoundError(f"containers.index not found: {index_path}")
@@ -294,13 +329,18 @@ def write_gvas_to_container(
     local_data: Optional[bytes] = None,
     world_option_data: Optional[bytes] = None,
     players_data: Optional[dict[str, bytes]] = None,
+    bump_sync_clock: bool = False,
 ) -> None:
     """Write modified save data back into an existing XGP container,
     replacing only containers whose name starts with <save_id>-.
-    Does not touch containers belonging to other save IDs."""
+    Does not touch containers belonging to other save IDs.
+
+    When bump_sync_clock=True, container mtimes are set to year 2100
+    so Xbox cloud sync sees local as newer and uploads instead of overwriting."""
     import time as _t
     _t0 = _t.perf_counter()
     now_ts = datetime.datetime.now().timestamp()
+    write_mtime = FILETIME.far_future() if bump_sync_clock else FILETIME.from_timestamp(now_ts)
 
     prefix = f"{save_id}-"
     old_count = len(index.containers)
@@ -333,7 +373,7 @@ def write_gvas_to_container(
             container_name=f"{save_id}-{suffix}",
             cloud_id="", seq=1, flag=5,
             container_uuid=c_uuid,
-            mtime=FILETIME.from_timestamp(now_ts),
+            mtime=write_mtime,
             size=len(data),
         )
 
@@ -359,7 +399,8 @@ def write_gvas_to_container(
             index.containers.append(_create_entry(f"Players-{uid}", pdata))
         print(f'  [write_gvas] {len(players_data)} player entries: {_t.perf_counter()-_t3d:.2f}s')
     _t4 = _t.perf_counter()
-    index.mtime = FILETIME.from_timestamp(now_ts)
+    cleanup_container_path(index, container_path)
+    index.mtime = write_mtime
     index.write_file(container_path)
     _t5 = _t.perf_counter()
     print(f'  [write_gvas] write_file: {_t5-_t4:.2f}s')
@@ -495,19 +536,15 @@ def pick_xgp_world(parent=None, title='Select GamePass Save') -> tuple[str, str,
     (container_path, save_id, index) or None if cancelled."""
     from PySide6.QtWidgets import QDialog, QVBoxLayout, QListWidget, QPushButton, QHBoxLayout
     from PySide6.QtCore import Qt
-    from i18n import t
-    from loading_manager import show_critical, show_warning
     containers = find_container_paths()
     if not containers:
-        show_critical(parent, t('xgp.no_saves_found.title', default='No GamePass Saves Found'),
-                      t('xgp.no_saves_found.msg', default='Could not find any GamePass save files.\n\nPossible reasons:\n• You have not created a world yet on Xbox Game Pass\n• The save files are in an unreadable format\n\nTry logging into your world on Xbox Game Pass and updating to the latest Palworld version, then try again.'))
+        print('[pick_xgp_world] No GamePass save files found.')
         return None
     cpath = containers[0]
     try:
         index = read_container_index(cpath)
-    except Exception:
-        show_critical(parent, t('xgp.save_unreadable.title', default='Save Data Unreadable'),
-                      t('xgp.save_unreadable.msg', default='Your GamePass save data could not be read.\n\nThe container index may be corrupted or from an incompatible version.\n\nTry logging into your world on Xbox Game Pass and updating to the latest Palworld version, then try again.'))
+    except Exception as _e:
+        print(f'[pick_xgp_world] Failed to read container index: {_e}')
         return None
     saves = get_save_names(index, cpath)
     def _has_required(sid):
@@ -521,8 +558,7 @@ def pick_xgp_world(parent=None, title='Select GamePass Save') -> tuple[str, str,
                    if s['save_id'] not in ('UserOption', 'GDKBackupTimestamps')
                    and _has_required(s['save_id'])]
     if not world_saves:
-        show_warning(parent, t('xgp.no_valid_saves.title', default='No Valid Saves Found'),
-                     t('xgp.no_valid_saves.msg', default='Your GamePass save data could not be read.\n\nThe container index may be corrupted or from an incompatible version.\n\nTry logging into your world on Xbox Game Pass and updating to the latest Palworld version, then try again.'))
+        print('[pick_xgp_world] No valid world saves found.')
         return None
     dlg = QDialog(parent)
     dlg.setWindowTitle(title)
@@ -564,12 +600,16 @@ def save_xgp_changes(
     current_save_path: str,
     new_save_id: str | None = None,
     new_world_name: str | None = None,
+    bump_sync_clock: bool = False,
 ) -> str:
-    """Read save files from current_save_path, write containers as a new world entry.
+    """Read save files from current_save_path, write containers.
 
-    Returns the new save_id (uuid4 hex upper).
+    When new_save_id is None, creates a new world entry (new UUID).
+    Pass the original save_id to edit in-place (same world, same containers).
 
-    Any tool can call this — the Source of Truth for XGP container writes."""
+    When bump_sync_clock=True, container mtimes are set to year 2100.
+
+    Returns the save_id written."""
 
     import time as _time, uuid as _uuid
 
@@ -620,8 +660,50 @@ def save_xgp_changes(
         local_data=local_data,
         world_option_data=world_opt,
         players_data=players_data,
+        bump_sync_clock=bump_sync_clock,
     )
 
-    print(f'[save_xgp_changes] written as new world: {new_save_id}')
-    print('[save_xgp_changes] Services left stopped. Launch the game to auto-restart and see changes.')
+    kind = 'in-place' if not bump_sync_clock else 'in-place with bump'
+    print(f'[save_xgp_changes] written {kind}: {new_save_id}')
     return new_save_id
+
+
+def save_and_block_network(
+    container_path: str,
+    current_save_path: str,
+    save_id: str,
+    new_world_name: str | None = None,
+) -> list[str]:
+    """Write save in-place (same save_id) + disable all physical network adapters.
+
+    Call this from a background thread. After it returns on the main thread,
+    call restore_network(adapters, parent) to show the wait dialog and re-enable.
+
+    Returns list of adapter names that were disabled (pass to restore_network)."""
+    _id = save_xgp_changes(container_path, current_save_path, new_save_id=save_id, new_world_name=new_world_name)
+    print(f'[save_and_block_network] saved as {_id}, disabling network...')
+    return toggle_network(False)
+
+
+def restore_network(adapters: list[str], parent=None) -> None:
+    """Show wait dialog, then re-enable network adapters.
+
+    Call this on the main thread after save_and_block_network completes."""
+    if not adapters:
+        return
+    if parent is not None:
+        from PySide6.QtWidgets import QMessageBox
+        _m = QMessageBox(parent)
+        _m.setWindowTitle('Network Blocked')
+        _m.setText(
+            'Network blocked to prevent Xbox cloud sync.\n\n'
+            '1. Launch Palworld\n'
+            '2. Wait for "Network connection unstable" message\n'
+            '3. Click "Ready" below to restore network\n'
+            '4. Click OK in Palworld'
+        )
+        _m.addButton('Ready — restore network', QMessageBox.AcceptRole)
+        _m.exec()
+    else:
+        input('Network blocked. Launch Palworld, wait for "Network connection unstable", then press Enter to restore network...')
+    toggle_network(True, adapters)

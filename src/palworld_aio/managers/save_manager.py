@@ -85,6 +85,8 @@ class SaveManager(QObject):
         self.dps_tasks = []
         self.player_sav_cache = {}
         self._xgp_temp_dir = None
+        self._disabled_adapters: list[str] = []
+
     def _reset_state(self):
         from palobject import MappingCacheObject
         constants.loaded_level_json = None
@@ -309,7 +311,7 @@ class SaveManager(QObject):
             duration = time.perf_counter() - t0
             self.save_finished.emit(duration)
             return duration
-        run_with_loading(lambda _: None, save_task)
+        run_with_loading(lambda _: self._on_save_finished(parent), save_task, parent=parent)
     def load_xgp_save(self, container_path, save_id, parent=None):
         from palworld_xgp_import.gamepass_manager import (
             read_container_index, extract_save_to_temp,
@@ -358,14 +360,18 @@ class SaveManager(QObject):
         run_with_loading(on_finished, load_task)
         return True
     def _save_xgp_container(self):
-        from palworld_xgp_import.gamepass_manager import save_xgp_changes
-        new_id = save_xgp_changes(
+        from palworld_xgp_import.gamepass_manager import save_and_block_network
+        self._disabled_adapters = save_and_block_network(
             container_path=constants.xgp_container_path,
             current_save_path=constants.current_save_path,
-            new_save_id=None,
+            save_id=constants.xgp_save_id,
             new_world_name=self._xgp_new_world_name,
         )
-        constants.xgp_save_id = new_id
+    def _on_save_finished(self, parent):
+        if constants.xgp_loaded and self._disabled_adapters:
+            from palworld_xgp_import.gamepass_manager import restore_network
+            restore_network(self._disabled_adapters, parent)
+            self._disabled_adapters = []
     def load_gps(self, path=None, parent=None):
         if path is None:
             from common import get_preferred_save_path
