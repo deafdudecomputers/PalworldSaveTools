@@ -101,6 +101,14 @@ def _ensure_food_buff_map():
         _FOOD_BUFF_MAP = data.get('food_buffs', {})
     except Exception:
         pass
+    _FOOD_BUFF_MAP['__MAX_BUFF__'] = {
+        'duration': 600,
+        'effects': [
+            {'type': 'WorkSpeed', 'value': 50},
+            {'type': 'Attack', 'value': 25},
+            {'type': 'Defense', 'value': 25},
+        ],
+    }
     return _FOOD_BUFF_MAP
 
 def get_pal_base_data(cid):

@@ -1777,6 +1777,13 @@ class BasePalsContentWidget(QFrame):
         self.max_all_btn.setCursor(Qt.PointingHandCursor)
         self.max_all_btn.clicked.connect(self._max_all_pals)
         page_row.addWidget(self.max_all_btn)
+        self.max_buff_all_btn = QPushButton(t('edit_pals.max_buff_all'))
+        self.max_buff_all_btn.setFixedHeight(22)
+        self.max_buff_all_btn.setStyleSheet('QPushButton { background: rgba(249,115,22,0.12); color: #FB923C; border: 1px solid rgba(249,115,22,0.25); border-radius: 4px; padding: 3px 8px; font-weight: 600; font-size: 10px; } QPushButton:hover { background: rgba(249,115,22,0.25); border-color: rgba(249,115,22,0.5); color: #FFFFFF; }')
+        self.max_buff_all_btn.setCursor(Qt.PointingHandCursor)
+        self.max_buff_all_btn.setToolTip(t('edit_pals.tooltip.max_buff'))
+        self.max_buff_all_btn.clicked.connect(self._max_buff_all_pals)
+        page_row.addWidget(self.max_buff_all_btn)
         self.bulk_clone_btn = QPushButton(t('edit_pals.bulk_clone') if t else 'Bulk Clone')
         self.bulk_clone_btn.setFixedHeight(22)
         self.bulk_clone_btn.setStyleSheet('QPushButton { background: rgba(56,189,248,0.12); color: #38BDF8; border: 1px solid rgba(56,189,248,0.25); border-radius: 4px; padding: 3px 8px; font-weight: 600; font-size: 10px; } QPushButton:hover { background: rgba(56,189,248,0.25); border-color: rgba(56,189,248,0.5); color: #FFFFFF; }')
@@ -1859,6 +1866,9 @@ class BasePalsContentWidget(QFrame):
             self.restore_all_btn.setText(t('base_inventory.restore_all'))
         if hasattr(self, 'max_all_btn'):
             self.max_all_btn.setText(t('base_inventory.max_all'))
+        if hasattr(self, 'max_buff_all_btn'):
+            self.max_buff_all_btn.setText(t('edit_pals.max_buff_all'))
+            self.max_buff_all_btn.setToolTip(t('edit_pals.tooltip.max_buff'))
         if hasattr(self, 'bulk_clone_btn'):
             self.bulk_clone_btn.setText(t('edit_pals.bulk_clone') if t else 'Bulk Clone')
         if hasattr(self, 'bulk_delete_btn'):
@@ -1916,6 +1926,7 @@ class BasePalsContentWidget(QFrame):
                 self.next_page_btn.hide()
                 self.restore_all_btn.hide()
                 self.max_all_btn.hide()
+                self.max_buff_all_btn.hide()
                 self.bulk_clone_btn.hide()
                 self.bulk_delete_btn.hide()
                 self.right_panel.show()
@@ -1933,6 +1944,7 @@ class BasePalsContentWidget(QFrame):
             self.next_page_btn.hide()
             self.restore_all_btn.hide()
             self.max_all_btn.hide()
+            self.max_buff_all_btn.hide()
             self.bulk_clone_btn.hide()
             self.bulk_delete_btn.hide()
             self.right_panel.hide()
@@ -1948,6 +1960,7 @@ class BasePalsContentWidget(QFrame):
         self.next_page_btn.show()
         self.restore_all_btn.show()
         self.max_all_btn.show()
+        self.max_buff_all_btn.show()
         self.bulk_clone_btn.show()
         self.bulk_delete_btn.show()
         self.right_panel.show()
@@ -2733,6 +2746,30 @@ class BasePalsContentWidget(QFrame):
         for icon in self._icons:
             icon.update_display()
         show_information(self, t('edit_pals.ctx.max_all_stats'), t('base_inventory.max_all_success', count=count))
+    def _max_buff_all_pals(self):
+        reply = show_question(self, t('edit_pals.ctx.bulk_max_buff'), t('edit_pals.max_buff_all_confirm'))
+        if not reply:
+            return
+        pals = [p for p in self._pals if p is not None]
+        count = 0
+        for pal_entry in pals:
+            tr = _get_raw_from_item(pal_entry['character_entry'])
+            if not tr:
+                continue
+            tr['FoodWithStatusEffect'] = {'id': None, 'type': 'StrProperty', 'value': '__MAX_BUFF__'}
+            tr.pop('Tiemr_FoodWithStatusEffect', None)
+            tr.pop('FoodRegeneEffectInfo', None)
+            count += 1
+        if self._selected_idx >= 0:
+            prev = self.grid.itemAt(self._selected_idx)
+            if prev and prev.widget():
+                prev.widget().set_selected(False)
+        self._selected_idx = -1
+        self.pal_info.set_clicked_pal(None)
+        self.pal_info._clear_display()
+        for icon in self._icons:
+            icon.update_display()
+        show_information(self, t('edit_pals.ctx.bulk_max_buff'), t('edit_pals.bulk_max_buff_success_all', count=count))
 class BaseInventoryTab(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)

@@ -1988,5 +1988,14 @@
     "pal_editor.bulk_max_confirm": "Максимизировать все характеристики для друзей {n}?",
     "base.palbox_nudge": "Подтолкнуть Палбокса",
     "base.palbox_nudge.success": "Палбокс успешно подтолкнул.",
-    "base.palbox_nudge.warning": "Это перемещает ТОЛЬКО структуру Palbox. Все остальные постройки остаются на месте. Базовый центр сместится.\n\nПродолжать?"
+    "base.palbox_nudge.warning": "Это перемещает ТОЛЬКО структуру Palbox. Все остальные постройки остаются на месте. Базовый центр сместится.\n\nПродолжать?",
+    "edit_pals.ctx.bulk_max_buff": "Макс. усиление (WS+ATK+DEF)",
+    "edit_pals.tooltip.max_buff": "Применить максимальный эффект еды (Скорость работы +50%, Атака +25%, Защита +25%).",
+    "edit_pals.max_buff_all": "Макс Бафф",
+    "edit_pals.max_buff_all_confirm": "Применить максимальный эффект еды (WS+ATK+DEF) ко ВСЕМ друзьям?",
+    "edit_pals.bulk_max_buff_title": "Макс Бафф - {name}",
+    "edit_pals.bulk_max_buff_desc": "Примените максимальный эффект еды (Скорость работы+50%, Атака+25%, Защита+25%).",
+    "edit_pals.bulk_max_buff_success": "Применен максимальный эффект еды к {count} {name}.",
+    "edit_pals.bulk_max_buff_success_all": "Применен максимальный эффект еды к друзьям {count}.",
+    "pal_editor.bulk_max_buff_btn": "Макс Бафф"
 }

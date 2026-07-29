@@ -26,6 +26,15 @@ NEW_TRANSLATIONS = {
     'pal_editor.bulk_max_confirm': 'Max all stats for {n} pals?',
     'pal_editor.gps': 'GPS',
     'pal_editor.gps_count': 'GPS {n}/{m} ({count})',
+    'edit_pals.ctx.bulk_max_buff': 'Max Buff (WS+ATK+DEF)',
+    'edit_pals.tooltip.max_buff': 'Apply max food buff (WorkSpeed +50%, Attack +25%, Defense +25%)',
+    'edit_pals.max_buff_all': 'Max Buff',
+    'edit_pals.max_buff_all_confirm': 'Apply max food buff (WS+ATK+DEF) to ALL pals?',
+    'edit_pals.bulk_max_buff_title': 'Max Buff - {name}',
+    'edit_pals.bulk_max_buff_desc': 'Apply max food buff (WorkSpeed+50%, Attack+25%, Defense+25%)',
+    'edit_pals.bulk_max_buff_success': 'Applied max food buff to {count} {name}',
+    'edit_pals.bulk_max_buff_success_all': 'Applied max food buff to {count} pals',
+    'pal_editor.bulk_max_buff_btn': 'Max Buff',
 }
 OLD_KEYS = []
 def _clean_uv_locks():

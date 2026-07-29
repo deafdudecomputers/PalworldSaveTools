@@ -271,6 +271,7 @@ def build_pal_context_menu(parent, raw):
     popup.add_item('bulk_sync_all', t('edit_pals.ctx.bulk_sync_all'))
     popup.add_item('bulk_rename', t('edit_pals.ctx.bulk_rename'))
     popup.add_item('bulk_heal', t('edit_pals.ctx.bulk_heal'))
+    popup.add_item('bulk_max_buff', t('edit_pals.ctx.bulk_max_buff'))
     popup.add_sep()
     popup.add_item('delete', t('edit_pals.delete'))
     return popup

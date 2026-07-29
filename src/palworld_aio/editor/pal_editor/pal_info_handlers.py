@@ -769,6 +769,15 @@ class PalInfoHandlerMixin:
                 _set_work_suitability(self._raw, k, 10)
         self._set_level(lv_cap)
 
+    def _on_max_buff_click(self):
+        if not self._raw:
+            return
+        self._raw['FoodWithStatusEffect'] = {'id': None, 'type': 'StrProperty', 'value': '__MAX_BUFF__'}
+        self._raw.pop('Tiemr_FoodWithStatusEffect', None)
+        self._raw.pop('FoodRegeneEffectInfo', None)
+        self._raw['FullStomach'] = {'id': None, 'type': 'FloatProperty', 'value': 300.0}
+        self._refresh()
+
     def _refresh(self):
         constants.dirty = True
         if self.last_clicked_data:
@@ -841,6 +850,8 @@ class PalInfoHandlerMixin:
             self.info_cheat_btn.setToolTip(t('edit_pals.tooltip.cheat'))
         if hasattr(self, 'info_max_btn'):
             self.info_max_btn.setToolTip(t('edit_pals.tooltip.max_stats'))
+        if hasattr(self, 'info_max_buff_btn'):
+            self.info_max_buff_btn.setToolTip(t('edit_pals.tooltip.max_buff'))
         if hasattr(self, 'info_dna_btn'):
             self.info_dna_btn.setToolTip(t('edit_pals.tooltip.dna'))
         if hasattr(self, 'info_fav_btn'):

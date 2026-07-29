@@ -1,9 +1,11 @@
 #2.2.6
-- Updated game data to v1.0.2
+- **Max Buff (WorkSpeed+ATK+DEF) for pals** — new button in pal info panel, "Max Buff" header button in pal editor and base pal page, multi-select "Max Buff" toolbar button, and right-click context menu option. Applies all 3 food buffs simultaneously (+50% WorkSpeed, +25% Attack, +25% Defense) by setting `FoodWithStatusEffect` to a synthetic max-buff key. Also available in Global Pal Storage editor (header button + multi-select).
+- **Pal instance ID now shows without "ID:" prefix** — the GUID in the pal info header is now displayed bare, matching the copy-to-clipboard behavior.
 - **Game data updater no longer drops NPCs missing from icon tables** — `update_npc_data()` now has a third pass scanning `DT_PalHumanParameter` for `IsPal=False` entries that lack icon table rows. Icons are recovered by matching `OverrideNameTextID` to NPCs with icon table entries, with word-overlap fallback for Arena NPCs. Fixes Wandering Merchant and Islander being dropped on v1.0.2 data export. All 434 NPCs now have valid icons.
 - **Cheat mode rank cap raised to 255** — the condenser rank in cheat mode was hardcoded to 5 in all Max All Pals/Max Stats paths (pal editor, func manager, GPS editor). Now matches IV/soul/level behavior: `255 if cheat else 5`. All 7 locations fixed. Confirmation dialogs and translations updated to show "rank: 255".
 - **Global Pal Storage: multi-select empty slots + bulk add** — Ctrl/Shift+click now selects empty slots. When one or more empty slots are selected, an "Add New Pal" button appears in the multi-toolbar. Opens the species picker once and fills all selected empty slots with copies of the chosen pal.
 - **Nudge Palbox** — right-click a base marker or base list entry and pick "Nudge Palbox" to move only the PalBox structure without touching any other buildings, workstations, or base data. Uses the same X/Y/Z offset dialog as the base nudge feature. Available on the map, base tree, and bases panel context menus.
+- Updated game data to v1.0.2
 - Bumped version to 2.2.6
 
 #2.2.5

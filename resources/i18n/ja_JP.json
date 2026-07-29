@@ -1990,5 +1990,14 @@
     "pal_editor.bulk_max_confirm": "{n} 友達のすべてのステータスを最大にしますか?",
     "base.palbox_nudge": "ナッジパルボックス",
     "base.palbox_nudge.success": "パルボックスはうまくナッジした。",
-    "base.palbox_nudge.warning": "これは Palbox 構造のみを移動します。他のすべての建物はそのまま残ります。ベースの中心がずれてしまいます。\n\n続く？"
+    "base.palbox_nudge.warning": "これは Palbox 構造のみを移動します。他のすべての建物はそのまま残ります。ベースの中心がずれてしまいます。\n\n続く？",
+    "edit_pals.ctx.bulk_max_buff": "最大バフ(WS+ATK+DEF)",
+    "edit_pals.tooltip.max_buff": "最大の食事バフを適用 (作業速度 +50%、攻撃力 +25%、防御力 +25%)",
+    "edit_pals.max_buff_all": "最大バフ",
+    "edit_pals.max_buff_all_confirm": "すべての仲間に最大食べ物バフ (WS+ATK+DEF) を適用しますか?",
+    "edit_pals.bulk_max_buff_title": "最大バフ - {name}",
+    "edit_pals.bulk_max_buff_desc": "最大食事バフを適用 (作業速度+50%、攻撃力+25%、防御力+25%)",
+    "edit_pals.bulk_max_buff_success": "最大食料バフを {count} {name} に適用しました",
+    "edit_pals.bulk_max_buff_success_all": "{count} 人の仲間に最大の食べ物バフを適用しました",
+    "pal_editor.bulk_max_buff_btn": "最大バフ"
 }

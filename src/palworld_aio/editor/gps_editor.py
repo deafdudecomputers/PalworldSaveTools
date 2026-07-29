@@ -108,6 +108,16 @@ class GpsEditorDialog(FramelessDialog):
         self.max_all_btn.clicked.connect(self._max_all)
         header.addWidget(self.max_all_btn)
 
+        self.max_buff_all_btn = QPushButton(t('edit_pals.max_buff_all'))
+        self.max_buff_all_btn.setFixedHeight(24)
+        self.max_buff_all_btn.setStyleSheet(
+            'QPushButton { background: rgba(249,115,22,0.12); color: #FB923C; border: 1px solid rgba(249,115,22,0.25); border-radius: 5px; padding: 4px 10px; font-weight: 600; font-size: 10px; }'
+            'QPushButton:hover { background: rgba(249,115,22,0.25); border-color: rgba(249,115,22,0.5); color: #FFFFFF; }'
+        )
+        self.max_buff_all_btn.setCursor(Qt.PointingHandCursor)
+        self.max_buff_all_btn.clicked.connect(self._max_buff_all)
+        header.addWidget(self.max_buff_all_btn)
+
         self.multi_toolbar = QFrame()
         self.multi_toolbar.setObjectName('multiToolbar')
         self.multi_toolbar.setStyleSheet('QFrame#multiToolbar { background: transparent; border: none; }')
@@ -128,6 +138,7 @@ class GpsEditorDialog(FramelessDialog):
             btn.clicked.connect(handler)
             mt_layout.addWidget(btn)
         _mt_btn('multi_max_btn', 'pal_editor.bulk_max_btn', self._on_bulk_max_selected, 'A78BFA')
+        _mt_btn('multi_buff_btn', 'pal_editor.bulk_max_buff_btn', self._on_bulk_max_buff_selected, 'F97316')
         _mt_btn('multi_heal_btn', 'pal_editor.bulk_heal_btn', self._on_bulk_heal_selected, '4ADE80')
         _mt_btn('multi_rename_btn', 'pal_editor.bulk_rename_btn', self._on_bulk_rename_selected, 'FBBF24')
         _mt_btn('multi_delete_btn', 'pal_editor.bulk_delete_btn', self._on_bulk_delete_selected, 'FB7185')
@@ -366,11 +377,13 @@ class GpsEditorDialog(FramelessDialog):
             self.multi_toolbar.setVisible(True)
             self.restore_all_btn.setVisible(False)
             self.max_all_btn.setVisible(False)
+            self.max_buff_all_btn.setVisible(False)
             self.save_btn.setVisible(False)
         else:
             self.multi_toolbar.setVisible(False)
             self.restore_all_btn.setVisible(True)
             self.max_all_btn.setVisible(True)
+            self.max_buff_all_btn.setVisible(True)
             self.save_btn.setVisible(True)
 
     def _gather_selected_pals(self):
@@ -509,6 +522,21 @@ class GpsEditorDialog(FramelessDialog):
             tr.pop('PhysicalHealth', None)
             tr.pop('HungerType', None)
             tr.pop('FoodWithStatusEffect', None)
+            tr.pop('Tiemr_FoodWithStatusEffect', None)
+            tr.pop('FoodRegeneEffectInfo', None)
+        self._update_page()
+        self._clear_multi_selection()
+        self._mark_modified()
+
+    def _on_bulk_max_buff_selected(self):
+        pals = self._gather_selected_pals()
+        if not pals:
+            return
+        for pal in pals:
+            tr = _get_raw_from_item(pal)
+            if not tr:
+                continue
+            tr['FoodWithStatusEffect'] = {'id': None, 'type': 'StrProperty', 'value': '__MAX_BUFF__'}
             tr.pop('Tiemr_FoodWithStatusEffect', None)
             tr.pop('FoodRegeneEffectInfo', None)
         self._update_page()
@@ -957,6 +985,17 @@ class GpsEditorDialog(FramelessDialog):
         self._update_page()
         self._mark_modified()
         show_information(self, t('edit_pals.ctx.max_all_stats'), t('edit_pals.max_all_success', count=count))
+
+    def _max_buff_all(self):
+        for pal in self.pals.values():
+            tr = _get_raw_from_item(pal)
+            if not tr:
+                continue
+            tr['FoodWithStatusEffect'] = {'id': None, 'type': 'StrProperty', 'value': '__MAX_BUFF__'}
+            tr.pop('Tiemr_FoodWithStatusEffect', None)
+            tr.pop('FoodRegeneEffectInfo', None)
+        self._update_page()
+        self._mark_modified()
 
     def closeEvent(self, event):
         self._save(force=True)

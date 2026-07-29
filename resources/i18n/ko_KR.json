@@ -1989,5 +1989,14 @@
     "pal_editor.bulk_max_confirm": "{n} 친구의 모든 통계를 최대화하시겠습니까?",
     "base.palbox_nudge": "넛지 팔박스",
     "base.palbox_nudge.success": "Palbox가 성공적으로 넛지를 했습니다.",
-    "base.palbox_nudge.warning": "이는 Palbox 구조만 이동합니다. 다른 모든 건물은 그대로 유지됩니다. 기본 중심이 이동됩니다.\n\n계속하다?"
+    "base.palbox_nudge.warning": "이는 Palbox 구조만 이동합니다. 다른 모든 건물은 그대로 유지됩니다. 기본 중심이 이동됩니다.\n\n계속하다?",
+    "edit_pals.ctx.bulk_max_buff": "최대 버프(WS+ATK+DEF)",
+    "edit_pals.tooltip.max_buff": "최대 음식 버프 적용 (작업속도 +50%, 공격력 +25%, 방어력 +25%)",
+    "edit_pals.max_buff_all": "최대 버프",
+    "edit_pals.max_buff_all_confirm": "모든 친구에게 최대 음식 버프(WS+ATK+DEF)를 적용하시겠습니까?",
+    "edit_pals.bulk_max_buff_title": "최대 버프 - {name}",
+    "edit_pals.bulk_max_buff_desc": "최대 음식 버프 적용(작업속도+50%, 공격력+25%, 방어력+25%)",
+    "edit_pals.bulk_max_buff_success": "{count} {name}에 최대 음식 버프를 적용했습니다.",
+    "edit_pals.bulk_max_buff_success_all": "{count} 친구에게 최대 음식 버프를 적용했습니다.",
+    "pal_editor.bulk_max_buff_btn": "최대 버프"
 }

@@ -1992,5 +1992,14 @@
     "pal_editor.bulk_max_confirm": "最大化 {n} 朋友的所有统计数据？",
     "base.palbox_nudge": "轻推帕尔博克斯",
     "base.palbox_nudge.success": "帕尔博克斯成功地推动了。",
-    "base.palbox_nudge.warning": "这仅移动 Palbox 结构。所有其他建筑物都保留在原地。基地中心将会移动。\n\n继续？"
+    "base.palbox_nudge.warning": "这仅移动 Palbox 结构。所有其他建筑物都保留在原地。基地中心将会移动。\n\n继续？",
+    "edit_pals.ctx.bulk_max_buff": "最大增益 (WS+ATK+DEF)",
+    "edit_pals.tooltip.max_buff": "应用最大食物增益（工作速度+50%，攻击+25%，防御+25%）",
+    "edit_pals.max_buff_all": "最大增益",
+    "edit_pals.max_buff_all_confirm": "对所有好友应用最大食物增益（WS+ATK+DEF）？",
+    "edit_pals.bulk_max_buff_title": "最大增益 - {name}",
+    "edit_pals.bulk_max_buff_desc": "应用最大食物增益（工作速度+50%，攻击+25%，防御+25%）",
+    "edit_pals.bulk_max_buff_success": "将最大食物增益应用于 {count} {name}",
+    "edit_pals.bulk_max_buff_success_all": "对 {count} 朋友应用最大食物增益",
+    "pal_editor.bulk_max_buff_btn": "最大增益"
 }

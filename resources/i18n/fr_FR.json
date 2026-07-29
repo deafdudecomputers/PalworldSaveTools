@@ -1972,5 +1972,14 @@
     "pal_editor.bulk_max_confirm": "Maximiser toutes les statistiques des amis de {n} ?",
     "base.palbox_nudge": "Pousser Palbox",
     "base.palbox_nudge.success": "Palbox a donné un coup de coude avec succès.",
-    "base.palbox_nudge.warning": "Cela déplace UNIQUEMENT la structure Palbox. Tous les autres bâtiments restent en place. Le centre de base se déplacera.\n\nContinuer?"
+    "base.palbox_nudge.warning": "Cela déplace UNIQUEMENT la structure Palbox. Tous les autres bâtiments restent en place. Le centre de base se déplacera.\n\nContinuer?",
+    "edit_pals.ctx.bulk_max_buff": "Buff maximum (WS+ATK+DEF)",
+    "edit_pals.tooltip.max_buff": "Appliquer un buff de nourriture maximum (WorkSpeed ​​+50 %, Attaque +25 %, Défense +25 %)",
+    "edit_pals.max_buff_all": "Buff maximum",
+    "edit_pals.max_buff_all_confirm": "Appliquer le buff alimentaire maximum (WS+ATK+DEF) à TOUS les amis ?",
+    "edit_pals.bulk_max_buff_title": "Buff maximum - {name}",
+    "edit_pals.bulk_max_buff_desc": "Appliquer le buff alimentaire maximum (WorkSpeed+50 %, Attaque+25 %, Défense+25 %)",
+    "edit_pals.bulk_max_buff_success": "Amélioration alimentaire maximale appliquée à {count} {name}",
+    "edit_pals.bulk_max_buff_success_all": "Application d'un buff de nourriture maximum aux copains {count}",
+    "pal_editor.bulk_max_buff_btn": "Buff maximum"
 }

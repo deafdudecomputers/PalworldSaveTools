@@ -2277,5 +2277,14 @@
     "pal_editor.bulk_max_confirm": "Maximizar todas as estatísticas dos amigos {n}?",
     "base.palbox_nudge": "Cutucar Palbox",
     "base.palbox_nudge.success": "Palbox cutucou com sucesso.",
-    "base.palbox_nudge.warning": "Isso move SOMENTE a estrutura do Palbox. Todos os outros edifícios permanecem no lugar. O centro da base mudará.\n\nContinuar?"
+    "base.palbox_nudge.warning": "Isso move SOMENTE a estrutura do Palbox. Todos os outros edifícios permanecem no lugar. O centro da base mudará.\n\nContinuar?",
+    "edit_pals.ctx.bulk_max_buff": "Buff Máximo (WS+ATK+DEF)",
+    "edit_pals.tooltip.max_buff": "Aplique o buff máximo de comida (Velocidade de Trabalho +50%, Ataque +25%, Defesa +25%)",
+    "edit_pals.max_buff_all": "Buff máximo",
+    "edit_pals.max_buff_all_confirm": "Aplicar buff máximo de comida (WS+ATK+DEF) a TODOS os amigos?",
+    "edit_pals.bulk_max_buff_title": "Buff máximo - {name}",
+    "edit_pals.bulk_max_buff_desc": "Aplique o buff máximo de comida (WorkSpeed ​​+ 50%, Attack + 25%, Defense + 25%)",
+    "edit_pals.bulk_max_buff_success": "Aplicado o buff máximo de comida em {count} {name}",
+    "edit_pals.bulk_max_buff_success_all": "Aplicado o buff máximo de comida aos amigos {count}",
+    "pal_editor.bulk_max_buff_btn": "Buff máximo"
 }

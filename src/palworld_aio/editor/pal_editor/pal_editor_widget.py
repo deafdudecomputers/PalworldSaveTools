@@ -141,6 +141,7 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
         self.multi_count_label.setStyleSheet('font-size: 11px; font-weight: 700; color: #38BDF8; background: transparent; border: none; padding: 0 4px;')
         mt_layout.addWidget(self.multi_count_label)
         for btn_cfg in [('multi_max_btn', 'pal_editor.bulk_max_btn', self._on_bulk_max_selected, '#A78BFA', '#A78BFA'),
+                         ('multi_buff_btn', 'pal_editor.bulk_max_buff_btn', self._on_bulk_max_buff_selected, '#F97316', '#F97316'),
                          ('multi_heal_btn', 'pal_editor.bulk_heal_btn', self._on_bulk_heal_selected, '#4ADE80', '#4ADE80'),
                          ('multi_rename_btn', 'pal_editor.bulk_rename_btn', self._on_bulk_rename_selected, '#FBBF24', '#FBBF24'),
                          ('multi_delete_btn', 'pal_editor.bulk_delete_btn', self._on_bulk_delete_selected, '#FB7185', '#FB7185')]:
@@ -182,6 +183,13 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
         self.max_all_btn.setCursor(Qt.PointingHandCursor)
         self.max_all_btn.clicked.connect(self._max_all_pals)
         header_row.addWidget(self.max_all_btn)
+        self.max_buff_all_btn = QPushButton(t('edit_pals.max_buff_all'))
+        self.max_buff_all_btn.setFixedHeight(24)
+        self.max_buff_all_btn.setStyleSheet('QPushButton { background: rgba(249,115,22,0.12); color: #FB923C; border: 1px solid rgba(249,115,22,0.25); border-radius: 5px; padding: 4px 10px; font-weight: 600; font-size: 10px; } QPushButton:hover { background: rgba(249,115,22,0.25); border-color: rgba(249,115,22,0.5); color: #FFFFFF; }')
+        self.max_buff_all_btn.setCursor(Qt.PointingHandCursor)
+        self.max_buff_all_btn.setToolTip(t('edit_pals.tooltip.max_buff'))
+        self.max_buff_all_btn.clicked.connect(self._max_buff_all_pals)
+        header_row.addWidget(self.max_buff_all_btn)
         header_row.addSpacing(4)
         self.bulk_clone_btn = QPushButton(t('edit_pals.bulk_clone') if t else 'Bulk Clone')
         self.bulk_clone_btn.setFixedHeight(24)
@@ -605,6 +613,8 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
             self._bulk_rename_pal(sender)
         elif action == 'bulk_heal':
             self._bulk_heal_pal(sender)
+        elif action == 'bulk_max_buff':
+            self._bulk_max_buff_pal(sender)
     def _delete_dps_pal(self, slot_index):
         abs_idx = (self.current_box_index - 1) * 30 + slot_index
         target = self.dps_pals.get(abs_idx)
@@ -1158,6 +1168,35 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
             self._save_dps(force=True)
         show_information(self, t('edit_pals.ctx.max_all_stats'), t('edit_pals.max_all_success', count=count))
         self._update_dashboard_stats()
+    def _max_buff_all_pals(self):
+        reply = show_question(self, t('edit_pals.ctx.bulk_max_buff'), t('edit_pals.max_buff_all_confirm'))
+        if not reply:
+            return
+        pals = list(self.party_pals.values())
+        for i in sorted(self.palbox_pal_dict.keys()):
+            pals.append(self.palbox_pal_dict[i])
+        if self.dps_pals:
+            for pi in self.dps_pals.values():
+                pals.append(pi)
+        count = 0
+        for pi in pals:
+            tr = _get_raw_from_item(pi)
+            if not tr:
+                continue
+            tr['FoodWithStatusEffect'] = {'id': None, 'type': 'StrProperty', 'value': '__MAX_BUFF__'}
+            tr.pop('Tiemr_FoodWithStatusEffect', None)
+            tr.pop('FoodRegeneEffectInfo', None)
+            count += 1
+        self._clear_party_highlight()
+        self._clear_palbox_highlight()
+        self.selected_pal_slot = None
+        self.pal_info.set_clicked_pal(None)
+        self._update_party_slots()
+        self._update_palbox_page()
+        if self.dps_pals:
+            self._save_dps(force=True)
+        show_information(self, t('edit_pals.ctx.bulk_max_buff'), t('edit_pals.bulk_max_buff_success_all', count=count))
+        self._update_dashboard_stats()
     def _add_new_pal_at_slot(self, slot_index):
         sender = self.sender()
         is_party = sender in self.party_slots
@@ -1507,6 +1546,27 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
         self._update_palbox_page()
         QApplication.processEvents()
         self._update_dashboard_stats()
+    def _on_bulk_max_buff_selected(self):
+        pals = self._gather_selected_pals()
+        if not pals:
+            return
+        for pi in pals:
+            tr = _get_raw_from_item(pi)
+            if not tr:
+                continue
+            tr['FoodWithStatusEffect'] = {'id': None, 'type': 'StrProperty', 'value': '__MAX_BUFF__'}
+            tr.pop('Tiemr_FoodWithStatusEffect', None)
+            tr.pop('FoodRegeneEffectInfo', None)
+        self._clear_multi_selection()
+        self._clicked_pal = None
+        self.selected_pal_slot = None
+        self.pal_info.set_clicked_pal(None)
+        self._clear_party_highlight()
+        self._clear_palbox_highlight()
+        self._update_party_slots()
+        self._update_palbox_page()
+        QApplication.processEvents()
+        self._update_dashboard_stats()
     def _on_bulk_rename_selected(self):
         pals = self._gather_selected_pals()
         if not pals:
@@ -1690,6 +1750,9 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
             self.restore_all_btn.setText(t('edit_pals.restore_all'))
         if hasattr(self, 'max_all_btn'):
             self.max_all_btn.setText(t('edit_pals.max_all'))
+        if hasattr(self, 'max_buff_all_btn'):
+            self.max_buff_all_btn.setText(t('edit_pals.max_buff_all'))
+            self.max_buff_all_btn.setToolTip(t('edit_pals.tooltip.max_buff'))
         if hasattr(self, 'bulk_clone_btn'):
             self.bulk_clone_btn.setText(t('edit_pals.bulk_clone') if t else 'Bulk Clone')
         if hasattr(self, 'bulk_delete_btn'):
@@ -1703,6 +1766,8 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
                 obj = btn.objectName()
                 if obj == 'multi_max_btn':
                     btn.setText(t('pal_editor.bulk_max_btn'))
+                elif obj == 'multi_buff_btn':
+                    btn.setText(t('pal_editor.bulk_max_buff_btn'))
                 elif obj == 'multi_heal_btn':
                     btn.setText(t('pal_editor.bulk_heal_btn'))
                 elif obj == 'multi_rename_btn':

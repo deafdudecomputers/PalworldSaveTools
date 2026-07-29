@@ -2277,5 +2277,14 @@
     "pal_editor.bulk_max_confirm": "Max all stats for {n} pals?",
     "base.palbox_nudge": "Nudge Palbox",
     "base.palbox_nudge.success": "Palbox nudged successfully.",
-    "base.palbox_nudge.warning": "This moves ONLY the Palbox structure. All other buildings stay in place. The base center will shift.\n\nContinue?"
+    "base.palbox_nudge.warning": "This moves ONLY the Palbox structure. All other buildings stay in place. The base center will shift.\n\nContinue?",
+    "edit_pals.ctx.bulk_max_buff": "Max Buff (WS+ATK+DEF)",
+    "edit_pals.tooltip.max_buff": "Apply max food buff (WorkSpeed +50%, Attack +25%, Defense +25%)",
+    "edit_pals.max_buff_all": "Max Buff",
+    "edit_pals.max_buff_all_confirm": "Apply max food buff (WS+ATK+DEF) to ALL pals?",
+    "edit_pals.bulk_max_buff_title": "Max Buff - {name}",
+    "edit_pals.bulk_max_buff_desc": "Apply max food buff (WorkSpeed+50%, Attack+25%, Defense+25%)",
+    "edit_pals.bulk_max_buff_success": "Applied max food buff to {count} {name}",
+    "edit_pals.bulk_max_buff_success_all": "Applied max food buff to {count} pals",
+    "pal_editor.bulk_max_buff_btn": "Max Buff"
 }
