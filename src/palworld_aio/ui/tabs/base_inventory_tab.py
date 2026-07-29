@@ -1552,6 +1552,7 @@ class _BasePalIcon(QFrame):
         for c in list(self._children):
             c.hide()
             c.setParent(None)
+            c.deleteLater()
         self._children = []
         raw = self._get_raw()
         if not raw or not isinstance(raw, dict):

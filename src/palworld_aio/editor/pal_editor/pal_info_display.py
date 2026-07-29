@@ -72,6 +72,7 @@ class PalInfoDisplayMixin:
                 if w:
                     w.hide()
                     w.setParent(None)
+                    w.deleteLater()
             if base:
                 elements = base.get('elements', {})
                 if elements:
@@ -407,6 +408,7 @@ class PalInfoDisplayMixin:
                 if w:
                     w.hide()
                     w.setParent(None)
+                    w.deleteLater()
             as_total = 255 if PalFrame._cheat_mode else 3
             as_pp = 3
             as_pages = max(1, (as_total + as_pp - 1) // as_pp)

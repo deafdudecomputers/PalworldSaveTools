@@ -106,6 +106,7 @@ class PalInfoWidget(PalInfoDisplayMixin, PalInfoHandlerMixin, QFrame):
             if w:
                 w.hide()
                 w.setParent(None)
+                w.deleteLater()
         for fc in self.food_icon_labels:
             fc.setStyleSheet('background: transparent; border: none;')
             foff = _icons._get_ui_icon_pixmap('food_off', 12)
@@ -123,6 +124,7 @@ class PalInfoWidget(PalInfoDisplayMixin, PalInfoHandlerMixin, QFrame):
             if w:
                 w.hide()
                 w.setParent(None)
+                w.deleteLater()
         for s in self.passive_slots:
             s.setText('--')
             s.setStyleSheet('font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.3); background: transparent; border: none;')

@@ -287,6 +287,7 @@ class BreedingTab(QWidget):
             if w:
                 w.hide()
                 w.setParent(None)
+                w.deleteLater()
         self._scroll.verticalScrollBar().setValue(0)
         try:
             if not self._selected_tribe or not self._breeding_data:

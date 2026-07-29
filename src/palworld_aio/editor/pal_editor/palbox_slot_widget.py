@@ -275,6 +275,7 @@ class PalboxSlotWidget(QFrame):
         for c in list(self._children):
             c.hide()
             c.setParent(None)
+            c.deleteLater()
         
         self._children = []
 

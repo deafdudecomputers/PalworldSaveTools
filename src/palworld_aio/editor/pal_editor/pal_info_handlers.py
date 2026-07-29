@@ -602,6 +602,7 @@ class PalInfoHandlerMixin:
                     if lbl is not plbl and lbl is not ri and lbl.parent() is card:
                         lbl.hide()
                         lbl.setParent(None)
+                        lbl.deleteLater()
                 if icon_path:
                     full_path = resource_path(constants.get_base_path(), 'game_data', icon_path.lstrip('/'))
                     pix = _icons._get_cached_pixmap(full_path, 14)

@@ -120,6 +120,7 @@ class PlayerTechnologyActionDialog(QDialog):
             if w:
                 w.hide()
                 w.setParent(None)
+                w.deleteLater()
         groups = self._grouped_techs(technologies)
         for lc, g in groups.items():
             row_w = QWidget()

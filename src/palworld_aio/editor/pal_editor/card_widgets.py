@@ -294,6 +294,7 @@ class PalIcon(QFrame):
                 try:
                     child.hide()
                     child.setParent(None)
+                    child.deleteLater()
                 except RuntimeError:
 
                     pass
@@ -471,6 +472,7 @@ class TribeIcon(QFrame):
             try:
                 child.hide()
                 child.setParent(None)
+                child.deleteLater()
             except RuntimeError:
                 pass
 
@@ -582,6 +584,7 @@ class PalCardWidget(QFrame):
         for child in self.findChildren(QWidget):
             child.hide()
             child.setParent(None)
+            child.deleteLater()
         
         raw = self._get_raw_data()
 

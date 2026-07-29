@@ -175,6 +175,7 @@ def _show_learned_moves_dialog(raw, parent):
             if w:
                 w.hide()
                 w.setParent(None)
+                w.deleteLater()
         mw_data = raw.get('MasteredWaza', {})
         if isinstance(mw_data, dict):
             new_mw_list = mw_data.get('value', {}).get('values', [])
@@ -663,6 +664,7 @@ class BulkSyncAllDialog(FramelessDialog):
                 if w:
                     w.hide()
                     w.setParent(None)
+                    w.deleteLater()
         else:
             clayout = QVBoxLayout(self._pal_list_inner)
             clayout.setContentsMargins(2, 2, 2, 2)
