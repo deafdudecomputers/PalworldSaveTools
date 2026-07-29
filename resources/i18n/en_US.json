@@ -2298,5 +2298,7 @@
     "base.swap.same_base": "Cannot swap a base with itself.",
     "base.swap_bases": "Swap Bases",
     "deletion.menu.fix_invalid_active_skills": "Fix Invalid Active Skills",
-    "deletion.invalid_active_skills_fixed": "Removed {count} invalid active/learned skills from {pals} pals"
+    "deletion.invalid_active_skills_fixed": "Removed {count} invalid active/learned skills from {pals} pals",
+    "edit_pals.learnt_skills_remove_all": "Remove All",
+    "edit_pals.confirm_remove_all_skills": "Remove all learned skills from this pal?"
 }

@@ -2298,5 +2298,7 @@
     "base.swap.same_base": "Não é possível trocar uma base consigo mesma.",
     "base.swap_bases": "Trocar Bases",
     "deletion.menu.fix_invalid_active_skills": "Corrigir habilidades ativas inválidas",
-    "deletion.invalid_active_skills_fixed": "Removidas {count} habilidades ativas/aprendidas inválidas de {pals} amigos"
+    "deletion.invalid_active_skills_fixed": "Removidas {count} habilidades ativas/aprendidas inválidas de {pals} amigos",
+    "edit_pals.learnt_skills_remove_all": "Remover tudo",
+    "edit_pals.confirm_remove_all_skills": "Remover todas as habilidades aprendidas deste amigo?"
 }

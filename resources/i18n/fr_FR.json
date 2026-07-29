@@ -1993,5 +1993,7 @@
     "base.swap.same_base": "Impossible d'échanger une base avec elle-même.",
     "base.swap_bases": "Échanger les bases",
     "deletion.menu.fix_invalid_active_skills": "Corriger les compétences actives invalides",
-    "deletion.invalid_active_skills_fixed": "Suppression des compétences actives/appris invalides {count} des amis {pals}"
+    "deletion.invalid_active_skills_fixed": "Suppression des compétences actives/appris invalides {count} des amis {pals}",
+    "edit_pals.learnt_skills_remove_all": "Supprimer tout",
+    "edit_pals.confirm_remove_all_skills": "Supprimer toutes les compétences acquises à ce copain ?"
 }

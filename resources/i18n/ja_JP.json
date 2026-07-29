@@ -2011,5 +2011,7 @@
     "base.swap.same_base": "ベースをそれ自体と交換することはできません。",
     "base.swap_bases": "スワップベース",
     "deletion.menu.fix_invalid_active_skills": "無効なアクティブスキルを修正する",
-    "deletion.invalid_active_skills_fixed": "{pals} 仲間から {count} の無効なアクティブ/学習済みスキルを削除しました"
+    "deletion.invalid_active_skills_fixed": "{pals} 仲間から {count} の無効なアクティブ/学習済みスキルを削除しました",
+    "edit_pals.learnt_skills_remove_all": "すべて削除",
+    "edit_pals.confirm_remove_all_skills": "この仲間から学んだスキルをすべて削除しますか?"
 }

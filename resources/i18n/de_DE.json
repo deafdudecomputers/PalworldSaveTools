@@ -2035,5 +2035,7 @@
     "base.swap.same_base": "Eine Basis kann nicht mit sich selbst getauscht werden.",
     "base.swap_bases": "Basen tauschen",
     "deletion.menu.fix_invalid_active_skills": "Korrigieren Sie ungültige aktive Fähigkeiten",
-    "deletion.invalid_active_skills_fixed": "{count} ungültige aktive/erlernte Fähigkeiten von {pals} Freunden entfernt"
+    "deletion.invalid_active_skills_fixed": "{count} ungültige aktive/erlernte Fähigkeiten von {pals} Freunden entfernt",
+    "edit_pals.learnt_skills_remove_all": "Alle entfernen",
+    "edit_pals.confirm_remove_all_skills": "Alle erlernten Fähigkeiten von diesem Kumpel entfernen?"
 }

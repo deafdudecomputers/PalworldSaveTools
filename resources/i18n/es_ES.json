@@ -2005,5 +2005,7 @@
     "base.swap.same_base": "No se puede intercambiar una base consigo mismo.",
     "base.swap_bases": "Bases de intercambio",
     "deletion.menu.fix_invalid_active_skills": "Corregir habilidades activas no válidas",
-    "deletion.invalid_active_skills_fixed": "Se eliminaron {count} habilidades activas/aprendidas no válidas de {pals} amigos"
+    "deletion.invalid_active_skills_fixed": "Se eliminaron {count} habilidades activas/aprendidas no válidas de {pals} amigos",
+    "edit_pals.learnt_skills_remove_all": "Quitar todo",
+    "edit_pals.confirm_remove_all_skills": "¿Quitar todas las habilidades aprendidas de este amigo?"
 }

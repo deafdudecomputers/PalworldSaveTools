@@ -2013,5 +2013,7 @@
     "base.swap.same_base": "无法与自身交换底座。",
     "base.swap_bases": "交换基地",
     "deletion.menu.fix_invalid_active_skills": "修复无效主动技能",
-    "deletion.invalid_active_skills_fixed": "从 {pals} 好友中删除了 {count} 无效的主动/习得技能"
+    "deletion.invalid_active_skills_fixed": "从 {pals} 好友中删除了 {count} 无效的主动/习得技能",
+    "edit_pals.learnt_skills_remove_all": "全部删除",
+    "edit_pals.confirm_remove_all_skills": "删除这个朋友所有学到的技能？"
 }

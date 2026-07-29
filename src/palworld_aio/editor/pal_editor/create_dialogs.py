@@ -300,6 +300,17 @@ def _show_learned_moves_dialog(raw, parent):
         _rebuild_list()
     add_skill_btn.clicked.connect(_add_skill_handler)
     btn_row.addWidget(add_skill_btn)
+    remove_all_btn = QPushButton(t('edit_pals.learnt_skills_remove_all'))
+    remove_all_btn.setStyleSheet('QPushButton { background: rgba(239,68,68,0.15); color: #F87171; border: 1px solid rgba(239,68,68,0.3); border-radius: 4px; padding: 6px 20px; font-size: 12px; font-weight: 700; } QPushButton:hover { background: rgba(239,68,68,0.25); color: #FFFFFF; }')
+    remove_all_btn.setCursor(Qt.PointingHandCursor)
+    def _remove_all_skills():
+        confirm = show_question(dlg, t('edit_pals.learnt_skills_title'), t('edit_pals.confirm_remove_all_skills'))
+        if not confirm:
+            return
+        raw['MasteredWaza'] = {'array_type': 'EnumProperty', 'id': None, 'value': {'values': []}, 'type': 'ArrayProperty'}
+        _rebuild_list()
+    remove_all_btn.clicked.connect(_remove_all_skills)
+    btn_row.addWidget(remove_all_btn)
     btn_row.addStretch()
     close_btn = QPushButton('Close')
     close_btn.setStyleSheet('QPushButton { background: rgba(125,211,252,0.1); color: #7DD3FC; border: 1px solid rgba(125,211,252,0.25); border-radius: 4px; padding: 6px 20px; font-size: 12px; font-weight: 600; } QPushButton:hover { background: rgba(125,211,252,0.2); color: #FFFFFF; }')

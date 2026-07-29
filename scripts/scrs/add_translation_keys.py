@@ -49,6 +49,8 @@ NEW_TRANSLATIONS = {
     'base.swap.map_prompt': 'Click on a base on the map to swap guilds with it. Right-click to cancel.',
     'base.swap.same_base': 'Cannot swap a base with itself.',
     'base.swap.success': 'Bases swapped successfully.',
+    'edit_pals.learnt_skills_remove_all': 'Remove All',
+    'edit_pals.confirm_remove_all_skills': 'Remove all learned skills from this pal?',
 }
 OLD_KEYS = []
 def _clean_uv_locks():

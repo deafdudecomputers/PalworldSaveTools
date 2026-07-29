@@ -2010,5 +2010,7 @@
     "base.swap.same_base": "베이스 자체를 교체할 수 없습니다.",
     "base.swap_bases": "스왑 베이스",
     "deletion.menu.fix_invalid_active_skills": "유효하지 않은 활성 스킬 수정",
-    "deletion.invalid_active_skills_fixed": "{pals} 친구에게서 {count} 유효하지 않은 활성/학습된 기술을 제거했습니다."
+    "deletion.invalid_active_skills_fixed": "{pals} 친구에게서 {count} 유효하지 않은 활성/학습된 기술을 제거했습니다.",
+    "edit_pals.learnt_skills_remove_all": "모두 제거",
+    "edit_pals.confirm_remove_all_skills": "이 친구에게서 배운 기술을 모두 삭제하시겠습니까?"
 }
