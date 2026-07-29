@@ -9,6 +9,7 @@ from i18n import t
 from loading_manager import run_with_loading, show_information, show_warning, show_question
 from palworld_aio import constants
 from palworld_aio.ui.chrome.styles import DIALOG_STYLE
+from palworld_aio.ui.chrome.styled_combo import StyledCombo
 from resource_resolver import resource_path
 from palworld_aio.utils import extract_value, json_tools, resolve_name, safe_nested_get
 from . import data as _data
@@ -19,6 +20,7 @@ from .pal_ops import _generate_pal_save_param, _get_raw_from_item, _learn_all_sk
 from .legacy_frame import PalFrame
 from .pal_info_widget import PalInfoWidget
 from .widgets import FramelessDialog, SkillSlotFrame
+from .data import _ensure_food_buff_map
 from .palbox_slot_widget import _PalSlotDelegate
 
 def _show_learned_moves_dialog(raw, parent):
@@ -1534,3 +1536,164 @@ class BulkSpeciesDialog(FramelessDialog):
         if hasattr(pe, '_save_dps'):
             pe._save_dps(force=True)
         return (1, pals_done)
+
+
+def _apply_food_buff(raw, food_id):
+    raw['FoodWithStatusEffect'] = {'id': None, 'type': 'NameProperty', 'value': food_id}
+    fb_map = _data._ensure_food_buff_map()
+    fb = fb_map.get(food_id, {})
+    dur = fb.get('duration', 600)
+    raw['Tiemr_FoodWithStatusEffect'] = {'id': None, 'type': 'IntProperty', 'value': dur}
+    has_regen = any(e.get('type') == 'Regene_Hp' for e in fb.get('effects', []))
+    if has_regen:
+        from palworld_aio.editor.pal_editor.data import _ensure_food_buff_map
+        raw['FoodRegeneEffectInfo'] = {
+            'struct_type': 'PalFoodRegeneInfo',
+            'struct_id': '00000000-0000-0000-0000-000000000000',
+            'id': None,
+            'type': 'StructProperty',
+            'value': {
+                'ItemId': {'id': None, 'value': food_id, 'type': 'NameProperty'},
+                'EffectTime': {'id': None, 'value': dur, 'type': 'IntProperty'},
+                'RemainingTime': {'id': None, 'value': dur, 'type': 'IntProperty'},
+                'RegeneEfectParameters': {'array_type': 'StructProperty', 'id': None, 'value': {'prop_name': 'RegeneEfectParameters', 'prop_type': 'StructProperty', 'values': []}},
+            },
+        }
+    else:
+        raw.pop('FoodRegeneEffectInfo', None)
+
+
+class FoodPickerDialog(FramelessDialog):
+    def __init__(self, parent=None, multi=False):
+        super().__init__('edit_pals.food_picker_title', parent)
+        self.setWindowTitle(t('edit_pals.food_picker_title'))
+        self.setModal(True)
+        self.setMinimumSize(520, 500)
+        self._multi = multi
+        self.selected_food = None
+        self.selected_foods = []
+        self._category_filter = 'All'
+        self._setup_ui()
+
+    def _setup_ui(self):
+        layout = QVBoxLayout(self.content_widget)
+        layout.setContentsMargins(8, 4, 8, 8)
+        layout.setSpacing(6)
+
+        search_row = QHBoxLayout()
+        search_row.setSpacing(4)
+        self._search_edit = QLineEdit()
+        self._search_edit.setPlaceholderText(t('edit_pals.food_search') if t else 'Search food...')
+        self._search_edit.setStyleSheet('QLineEdit { background: rgba(0,0,0,0.4); color: #E2E8F0; border: 1px solid rgba(125,211,252,0.2); border-radius: 4px; padding: 6px 10px; font-size: 12px; } QLineEdit:focus { border-color: #7DD3FC; }')
+        self._search_edit.textChanged.connect(self._filter)
+        search_row.addWidget(self._search_edit, 1)
+
+        self._cat_combo = StyledCombo()
+        cats = ['All', 'WorkSpeed', 'Attack', 'Defense', 'Combo', 'Regene_Hp', 'HungerResist', 'SANResist', 'Exp_Increase']
+        for c in cats:
+            self._cat_combo.addItem(c, c)
+        self._cat_combo.currentIndexChanged.connect(self._filter)
+        search_row.addWidget(self._cat_combo)
+        layout.addLayout(search_row)
+
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll.setStyleSheet('QScrollArea { background: transparent; border: 1px solid rgba(125,211,252,0.12); border-radius: 4px; }')
+        inner = QWidget()
+        inner.setStyleSheet('background: transparent; border: none;')
+        self._list_layout = QVBoxLayout(inner)
+        self._list_layout.setContentsMargins(2, 2, 2, 2)
+        self._list_layout.setSpacing(2)
+        self._list_layout.setAlignment(Qt.AlignTop)
+        scroll.setWidget(inner)
+        layout.addWidget(scroll, 1)
+
+        btn_row = QHBoxLayout()
+        btn_row.addStretch()
+        cancel_btn = QPushButton(t('edit_pals.cancel'))
+        cancel_btn.setStyleSheet('QPushButton { background: rgba(255,255,255,0.05); color: #9CA3AF; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 6px 16px; font-size: 12px; font-weight: 600; } QPushButton:hover { background: rgba(255,255,255,0.1); color: #FFFFFF; }')
+        cancel_btn.clicked.connect(self.reject)
+        btn_row.addWidget(cancel_btn)
+        self._apply_btn = QPushButton(t('edit_pals.food_apply'))
+        self._apply_btn.setStyleSheet('QPushButton { background: rgba(249,115,22,0.15); color: #FB923C; border: 1px solid rgba(249,115,22,0.3); border-radius: 4px; padding: 6px 20px; font-size: 12px; font-weight: 700; } QPushButton:hover { background: rgba(249,115,22,0.25); color: #FFFFFF; } QPushButton:disabled { color: #666; border-color: #444; background: transparent; }')
+        self._apply_btn.setEnabled(False)
+        self._apply_btn.clicked.connect(self.accept)
+        btn_row.addWidget(self._apply_btn)
+        layout.addLayout(btn_row)
+
+        self._populate()
+
+    def _populate(self):
+        fb_map = _ensure_food_buff_map()
+        for food_id, fb in sorted(fb_map.items()):
+            effs = fb.get('effects', [])
+            eff_types = [e.get('type', '') for e in effs]
+            cat = eff_types[0] if eff_types else 'Other'
+            if len(effs) > 1:
+                cat_label = ' + '.join(e.get('type', '') for e in effs)
+                cat_key = 'Combo'
+            else:
+                cat_label = cat
+                cat_key = cat
+            eff_str = ', '.join(f"{e.get('type','')} +{e.get('value','0')}%" for e in effs)
+            dur = fb.get('duration', 0)
+            dur_str = f'{dur//60}m' if dur > 0 else 'Instant'
+
+            row = QWidget()
+            row.setStyleSheet('background: transparent; border: none;')
+            rl = QHBoxLayout(row)
+            rl.setContentsMargins(4, 2, 4, 2)
+            rl.setSpacing(6)
+
+            name_lbl = QLabel(food_id)
+            name_lbl.setStyleSheet('font-size: 11px; font-weight: 600; color: #E2E8F0; background: transparent; border: none;')
+            name_lbl.setFixedWidth(160)
+            rl.addWidget(name_lbl)
+
+            eff_lbl = QLabel(eff_str)
+            eff_lbl.setStyleSheet('font-size: 10px; color: #94A3B8; background: transparent; border: none;')
+            rl.addWidget(eff_lbl, 1)
+
+            cat_lbl = QLabel(cat_label)
+            cat_lbl.setStyleSheet('font-size: 10px; color: #7DD3FC; background: transparent; border: none;')
+            cat_lbl.setFixedWidth(100)
+            rl.addWidget(cat_lbl)
+
+            dur_lbl = QLabel(dur_str)
+            dur_lbl.setStyleSheet('font-size: 10px; color: #94A3B8; background: transparent; border: none;')
+            dur_lbl.setFixedWidth(50)
+            rl.addWidget(dur_lbl)
+
+            cb = ToggleCheckBtn('')
+            cb.setChecked(False)
+            if not self._multi:
+                cb.clicked.connect(lambda checked, fid=food_id: self._on_single_select(fid))
+            rl.addWidget(cb)
+
+            row._food_id = food_id
+            row._cat_key = cat_key
+            row._cb = cb
+            if not self._multi:
+                row.mousePressEvent = lambda e, fid=food_id: self._on_single_select(fid)
+            self._list_layout.addWidget(row)
+        self._list_layout.addStretch()
+
+    def _on_single_select(self, food_id):
+        self.selected_food = food_id
+        self._apply_btn.setEnabled(True)
+        for i in range(self._list_layout.count()):
+            w = self._list_layout.itemAt(i).widget()
+            if w and hasattr(w, '_cb'):
+                w._cb.setChecked(w._food_id == food_id)
+
+    def _filter(self):
+        q = self._search_edit.text().lower() if hasattr(self, '_search_edit') else ''
+        cat = self._cat_combo.currentData() if hasattr(self, '_cat_combo') else 'All'
+        for i in range(self._list_layout.count()):
+            w = self._list_layout.itemAt(i).widget()
+            if w and hasattr(w, '_food_id'):
+                fid = w._food_id.lower()
+                cat_match = cat == 'All' or w._cat_key == cat
+                text_match = not q or q in fid
+                w.setVisible(cat_match and text_match)

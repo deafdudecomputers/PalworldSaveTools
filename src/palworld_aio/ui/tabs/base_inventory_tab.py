@@ -2747,18 +2747,18 @@ class BasePalsContentWidget(QFrame):
             icon.update_display()
         show_information(self, t('edit_pals.ctx.max_all_stats'), t('base_inventory.max_all_success', count=count))
     def _max_buff_all_pals(self):
-        reply = show_question(self, t('edit_pals.ctx.bulk_max_buff'), t('edit_pals.max_buff_all_confirm'))
-        if not reply:
+        from palworld_aio.editor.pal_editor.create_dialogs import FoodPickerDialog, _apply_food_buff
+        dlg = FoodPickerDialog(self.window())
+        if dlg.exec() != QDialog.Accepted or not dlg.selected_food:
             return
+        food_id = dlg.selected_food
         pals = [p for p in self._pals if p is not None]
         count = 0
         for pal_entry in pals:
             tr = _get_raw_from_item(pal_entry['character_entry'])
             if not tr:
                 continue
-            tr['FoodWithStatusEffect'] = {'id': None, 'type': 'StrProperty', 'value': '__MAX_BUFF__'}
-            tr.pop('Tiemr_FoodWithStatusEffect', None)
-            tr.pop('FoodRegeneEffectInfo', None)
+            _apply_food_buff(tr, food_id)
             count += 1
         if self._selected_idx >= 0:
             prev = self.grid.itemAt(self._selected_idx)

@@ -772,11 +772,11 @@ class PalInfoHandlerMixin:
     def _on_max_buff_click(self):
         if not self._raw:
             return
-        self._raw['FoodWithStatusEffect'] = {'id': None, 'type': 'StrProperty', 'value': '__MAX_BUFF__'}
-        self._raw.pop('Tiemr_FoodWithStatusEffect', None)
-        self._raw.pop('FoodRegeneEffectInfo', None)
-        self._raw['FullStomach'] = {'id': None, 'type': 'FloatProperty', 'value': 300.0}
-        self._refresh()
+        from palworld_aio.editor.pal_editor.create_dialogs import FoodPickerDialog, _apply_food_buff
+        dlg = FoodPickerDialog(self.window())
+        if dlg.exec() == QDialog.Accepted and dlg.selected_food:
+            _apply_food_buff(self._raw, dlg.selected_food)
+            self._refresh()
 
     def _refresh(self):
         constants.dirty = True

@@ -3,7 +3,7 @@ import copy
 import uuid
 from functools import partial
 from PySide6.QtWidgets import QDialog, QHBoxLayout, QVBoxLayout, QPushButton, QScrollArea, QGridLayout, QWidget, QLabel, QFileDialog, QFrame, QLineEdit
-from PySide6.QtCore import Qt, QEvent
+from PySide6.QtCore import Qt, QEvent, QSize, QTimer
 from PySide6.QtWidgets import QSizePolicy
 from PySide6.QtGui import QIcon
 from i18n import t
@@ -532,13 +532,16 @@ class GpsEditorDialog(FramelessDialog):
         pals = self._gather_selected_pals()
         if not pals:
             return
+        from palworld_aio.editor.pal_editor.create_dialogs import FoodPickerDialog, _apply_food_buff
+        dlg = FoodPickerDialog(self.window())
+        if dlg.exec() != QDialog.Accepted or not dlg.selected_food:
+            return
+        food_id = dlg.selected_food
         for pal in pals:
             tr = _get_raw_from_item(pal)
             if not tr:
                 continue
-            tr['FoodWithStatusEffect'] = {'id': None, 'type': 'StrProperty', 'value': '__MAX_BUFF__'}
-            tr.pop('Tiemr_FoodWithStatusEffect', None)
-            tr.pop('FoodRegeneEffectInfo', None)
+            _apply_food_buff(tr, food_id)
         self._update_page()
         self._clear_multi_selection()
         self._mark_modified()
@@ -987,13 +990,16 @@ class GpsEditorDialog(FramelessDialog):
         show_information(self, t('edit_pals.ctx.max_all_stats'), t('edit_pals.max_all_success', count=count))
 
     def _max_buff_all(self):
+        from palworld_aio.editor.pal_editor.create_dialogs import FoodPickerDialog, _apply_food_buff
+        dlg = FoodPickerDialog(self.window())
+        if dlg.exec() != QDialog.Accepted or not dlg.selected_food:
+            return
+        food_id = dlg.selected_food
         for pal in self.pals.values():
             tr = _get_raw_from_item(pal)
             if not tr:
                 continue
-            tr['FoodWithStatusEffect'] = {'id': None, 'type': 'StrProperty', 'value': '__MAX_BUFF__'}
-            tr.pop('Tiemr_FoodWithStatusEffect', None)
-            tr.pop('FoodRegeneEffectInfo', None)
+            _apply_food_buff(tr, food_id)
         self._update_page()
         self._mark_modified()
 

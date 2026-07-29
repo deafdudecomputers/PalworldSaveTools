@@ -1169,9 +1169,11 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
         show_information(self, t('edit_pals.ctx.max_all_stats'), t('edit_pals.max_all_success', count=count))
         self._update_dashboard_stats()
     def _max_buff_all_pals(self):
-        reply = show_question(self, t('edit_pals.ctx.bulk_max_buff'), t('edit_pals.max_buff_all_confirm'))
-        if not reply:
+        from palworld_aio.editor.pal_editor.create_dialogs import FoodPickerDialog, _apply_food_buff
+        dlg = FoodPickerDialog(self.window())
+        if dlg.exec() != QDialog.Accepted or not dlg.selected_food:
             return
+        food_id = dlg.selected_food
         pals = list(self.party_pals.values())
         for i in sorted(self.palbox_pal_dict.keys()):
             pals.append(self.palbox_pal_dict[i])
@@ -1183,9 +1185,7 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
             tr = _get_raw_from_item(pi)
             if not tr:
                 continue
-            tr['FoodWithStatusEffect'] = {'id': None, 'type': 'StrProperty', 'value': '__MAX_BUFF__'}
-            tr.pop('Tiemr_FoodWithStatusEffect', None)
-            tr.pop('FoodRegeneEffectInfo', None)
+            _apply_food_buff(tr, food_id)
             count += 1
         self._clear_party_highlight()
         self._clear_palbox_highlight()
@@ -1550,13 +1550,16 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
         pals = self._gather_selected_pals()
         if not pals:
             return
+        from palworld_aio.editor.pal_editor.create_dialogs import FoodPickerDialog, _apply_food_buff
+        dlg = FoodPickerDialog(self.window())
+        if dlg.exec() != QDialog.Accepted or not dlg.selected_food:
+            return
+        food_id = dlg.selected_food
         for pi in pals:
             tr = _get_raw_from_item(pi)
             if not tr:
                 continue
-            tr['FoodWithStatusEffect'] = {'id': None, 'type': 'StrProperty', 'value': '__MAX_BUFF__'}
-            tr.pop('Tiemr_FoodWithStatusEffect', None)
-            tr.pop('FoodRegeneEffectInfo', None)
+            _apply_food_buff(tr, food_id)
         self._clear_multi_selection()
         self._clicked_pal = None
         self.selected_pal_slot = None

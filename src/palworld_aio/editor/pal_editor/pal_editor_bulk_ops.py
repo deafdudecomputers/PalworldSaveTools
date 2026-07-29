@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QPushButton, QScrollArea, QSizePolicy, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QDialog, QHBoxLayout, QLabel, QLineEdit, QPushButton, QScrollArea, QSizePolicy, QVBoxLayout, QWidget
 from palworld_aio.widgets.toggle_check import ToggleCheckBtn
 from PySide6.QtCore import Qt
 from i18n import t
@@ -308,6 +308,11 @@ class BulkOperationMixin:
         raw_orig = _get_raw_from_item(sender.pal_data) if hasattr(sender, 'pal_data') else None
         if not candidates or not raw_orig:
             return
+        from palworld_aio.editor.pal_editor.create_dialogs import FoodPickerDialog, _apply_food_buff
+        food_dlg = FoodPickerDialog(self.window())
+        if food_dlg.exec() != QDialog.Accepted or not food_dlg.selected_food:
+            return
+        food_id = food_dlg.selected_food
         cid = extract_value(raw_orig, 'CharacterID', '')
         pal_name = _strip_prefix_label(resolve_name(cid, PalFrame._NAMEMAP) or cid)
         dlg = FramelessDialog('edit_pals.ctx.bulk_max_buff', self)
@@ -318,7 +323,7 @@ class BulkOperationMixin:
         il = QVBoxLayout(inner)
         il.setContentsMargins(8, 4, 8, 8)
         il.setSpacing(6)
-        info_lbl = QLabel(t('edit_pals.bulk_max_buff_desc'))
+        info_lbl = QLabel(t('edit_pals.bulk_max_buff_desc', food=food_id))
         info_lbl.setStyleSheet('font-size: 11px; color: #94A3B8; background: transparent; border: none; padding: 4px 0;')
         il.addWidget(info_lbl)
         list_lbl = QLabel(t('edit_pals.select_pals_to_sync'))
@@ -382,9 +387,7 @@ class BulkOperationMixin:
                 tr = _get_raw_from_item(pi)
                 if not tr:
                     continue
-                tr['FoodWithStatusEffect'] = {'id': None, 'type': 'StrProperty', 'value': '__MAX_BUFF__'}
-                tr.pop('Tiemr_FoodWithStatusEffect', None)
-                tr.pop('FoodRegeneEffectInfo', None)
+                _apply_food_buff(tr, food_id)
                 count += 1
             self._update_party_slots()
             self._update_palbox_page()
