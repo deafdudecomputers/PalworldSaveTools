@@ -1566,19 +1566,18 @@ def _apply_food_buff(raw, food_id):
 class FoodPickerDialog(FramelessDialog):
     def __init__(self, parent=None, multi=False):
         super().__init__('edit_pals.food_picker_title', parent)
-        self.setWindowTitle(t('edit_pals.food_picker_title'))
         self.setModal(True)
         self.setMinimumSize(520, 500)
         self._multi = multi
         self.selected_food = None
         self.selected_foods = []
         self._category_filter = 'All'
+        self.setMinimumSize(520, 500)
         self._setup_ui()
 
     def _setup_ui(self):
-        layout = QVBoxLayout(self.content_widget)
-        layout.setContentsMargins(8, 4, 8, 8)
-        layout.setSpacing(6)
+        self.content_layout.setContentsMargins(8, 4, 8, 8)
+        self.content_layout.setSpacing(6)
 
         search_row = QHBoxLayout()
         search_row.setSpacing(4)
@@ -1594,7 +1593,7 @@ class FoodPickerDialog(FramelessDialog):
             self._cat_combo.addItem(c, c)
         self._cat_combo.currentIndexChanged.connect(self._filter)
         search_row.addWidget(self._cat_combo)
-        layout.addLayout(search_row)
+        self.content_layout.addLayout(search_row)
 
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
@@ -1607,7 +1606,7 @@ class FoodPickerDialog(FramelessDialog):
         self._list_layout.setSpacing(2)
         self._list_layout.setAlignment(Qt.AlignTop)
         scroll.setWidget(inner)
-        layout.addWidget(scroll, 1)
+        self.content_layout.addWidget(scroll, 1)
 
         btn_row = QHBoxLayout()
         btn_row.addStretch()
@@ -1620,11 +1619,13 @@ class FoodPickerDialog(FramelessDialog):
         self._apply_btn.setEnabled(False)
         self._apply_btn.clicked.connect(self.accept)
         btn_row.addWidget(self._apply_btn)
-        layout.addLayout(btn_row)
+        self.content_layout.addLayout(btn_row)
 
         self._populate()
 
     def _populate(self):
+        from palworld_aio.inventory.inventory_manager import ItemData
+        ItemData.load_item_data()
         fb_map = _ensure_food_buff_map()
         for food_id, fb in sorted(fb_map.items()):
             effs = fb.get('effects', [])
@@ -1640,15 +1641,27 @@ class FoodPickerDialog(FramelessDialog):
             dur = fb.get('duration', 0)
             dur_str = f'{dur//60}m' if dur > 0 else 'Instant'
 
+            item_info = ItemData.get_item_by_asset(food_id)
+            display_name = item_info.get('name', food_id)
+            icon_path = item_info.get('icon', '')
+
             row = QWidget()
             row.setStyleSheet('background: transparent; border: none;')
             rl = QHBoxLayout(row)
             rl.setContentsMargins(4, 2, 4, 2)
             rl.setSpacing(6)
 
-            name_lbl = QLabel(food_id)
+            icon_lbl = QLabel()
+            icon_lbl.setFixedSize(22, 22)
+            if icon_path:
+                pix = ItemData.get_item_icon(icon_path, QSize(22, 22))
+                if pix and not pix.isNull():
+                    icon_lbl.setPixmap(pix)
+            rl.addWidget(icon_lbl)
+
+            name_lbl = QLabel(display_name)
             name_lbl.setStyleSheet('font-size: 11px; font-weight: 600; color: #E2E8F0; background: transparent; border: none;')
-            name_lbl.setFixedWidth(160)
+            name_lbl.setFixedWidth(170)
             rl.addWidget(name_lbl)
 
             eff_lbl = QLabel(eff_str)
@@ -1657,21 +1670,22 @@ class FoodPickerDialog(FramelessDialog):
 
             cat_lbl = QLabel(cat_label)
             cat_lbl.setStyleSheet('font-size: 10px; color: #7DD3FC; background: transparent; border: none;')
-            cat_lbl.setFixedWidth(100)
+            cat_lbl.setFixedWidth(90)
             rl.addWidget(cat_lbl)
 
             dur_lbl = QLabel(dur_str)
             dur_lbl.setStyleSheet('font-size: 10px; color: #94A3B8; background: transparent; border: none;')
-            dur_lbl.setFixedWidth(50)
+            dur_lbl.setFixedWidth(40)
             rl.addWidget(dur_lbl)
 
             cb = ToggleCheckBtn('')
             cb.setChecked(False)
             if not self._multi:
-                cb.clicked.connect(lambda checked, fid=food_id: self._on_single_select(fid))
+                cb.toggled.connect(lambda checked, fid=food_id: self._on_single_toggle(fid, checked))
             rl.addWidget(cb)
 
             row._food_id = food_id
+            row._display_name = display_name
             row._cat_key = cat_key
             row._cb = cb
             if not self._multi:
@@ -1687,6 +1701,13 @@ class FoodPickerDialog(FramelessDialog):
             if w and hasattr(w, '_cb'):
                 w._cb.setChecked(w._food_id == food_id)
 
+    def _on_single_toggle(self, food_id, checked):
+        if checked:
+            self._on_single_select(food_id)
+        elif self.selected_food == food_id:
+            self.selected_food = None
+            self._apply_btn.setEnabled(False)
+
     def _filter(self):
         q = self._search_edit.text().lower() if hasattr(self, '_search_edit') else ''
         cat = self._cat_combo.currentData() if hasattr(self, '_cat_combo') else 'All'
@@ -1694,6 +1715,7 @@ class FoodPickerDialog(FramelessDialog):
             w = self._list_layout.itemAt(i).widget()
             if w and hasattr(w, '_food_id'):
                 fid = w._food_id.lower()
+                display = (w._display_name or fid).lower() if hasattr(w, '_display_name') else fid
                 cat_match = cat == 'All' or w._cat_key == cat
-                text_match = not q or q in fid
+                text_match = not q or q in fid or q in display
                 w.setVisible(cat_match and text_match)
