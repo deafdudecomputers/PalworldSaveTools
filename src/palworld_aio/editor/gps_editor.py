@@ -131,6 +131,7 @@ class GpsEditorDialog(FramelessDialog):
         _mt_btn('multi_heal_btn', 'pal_editor.bulk_heal_btn', self._on_bulk_heal_selected, '4ADE80')
         _mt_btn('multi_rename_btn', 'pal_editor.bulk_rename_btn', self._on_bulk_rename_selected, 'FBBF24')
         _mt_btn('multi_delete_btn', 'pal_editor.bulk_delete_btn', self._on_bulk_delete_selected, 'FB7185')
+        _mt_btn('multi_add_btn', 'edit_pals.add_new_pal', self._on_bulk_add_selected, '38BDF8')
         deselect_btn = QPushButton(t('pal_editor.bulk_deselect_btn'))
         deselect_btn.setObjectName('multi_deselect_btn')
         deselect_btn.setFixedHeight(22)
@@ -282,26 +283,25 @@ class GpsEditorDialog(FramelessDialog):
         has_pal = pal is not None
 
         if mods & Qt.ControlModifier:
-            if not has_pal:
-                return
             if self._selected_slot is not None:
-                sk = ('gps', self._selected_slot)
-                if sk not in self._multi_selected and self._selected_slot is not None and self.pals.get(self._selected_slot):
-                    self._toggle_multi('gps', self._selected_slot, force_add=True)
+                stype = 'gps' if self.pals.get(self._selected_slot) else 'gps_empty'
+                sk = (stype, self._selected_slot)
+                if sk not in self._multi_selected and self._selected_slot is not None:
+                    self._toggle_multi(stype, self._selected_slot, force_add=True)
             if self._selected_slot != abs_idx:
-                self._toggle_multi('gps', abs_idx)
+                stype = 'gps' if has_pal else 'gps_empty'
+                self._toggle_multi(stype, abs_idx)
             self._multi_select_anchor = ('gps', abs_idx)
             return
 
         if mods & Qt.ShiftModifier and self._multi_select_anchor:
             anchor = self._multi_select_anchor
-            if anchor[0] == 'gps':
-                self._clear_multi_selection(update_toolbar=False)
-                lo, hi = min(anchor[1], idx), max(anchor[1], idx)
-                for i in range(lo, hi + 1):
-                    ai = start + i
-                    if self.pals.get(ai):
-                        self._toggle_multi('gps', ai, force_add=True)
+            self._clear_multi_selection(update_toolbar=False)
+            lo, hi = min(anchor[1], idx), max(anchor[1], idx)
+            for i in range(lo, hi + 1):
+                ai = start + i
+                stype = 'gps' if self.pals.get(ai) else 'gps_empty'
+                self._toggle_multi(stype, ai, force_add=True)
             self._multi_select_anchor = ('gps', abs_idx)
             if has_pal:
                 self._selected_pal = pal
@@ -350,7 +350,8 @@ class GpsEditorDialog(FramelessDialog):
         if self._selected_slot is not None:
             if ('gps', self._selected_slot) not in self._multi_selected:
                 count += 1
-        if count >= 2:
+        has_empty = any(k[0] == 'gps_empty' for k in self._multi_selected)
+        if has_empty or count >= 2:
             self.multi_count_label.setText(t('pal_editor.multi_selected', n=count))
             self.multi_toolbar.setVisible(True)
             self.restore_all_btn.setVisible(False)
@@ -573,6 +574,35 @@ class GpsEditorDialog(FramelessDialog):
         self._clear_multi_selection()
         self._clear_selection()
         self._mark_modified()
+
+    def _on_bulk_add_selected(self):
+        start = (self.current_page - 1) * PAGE_SIZE
+        empty_idxs = []
+        for st, ai in self._multi_selected:
+            if st != 'gps_empty':
+                continue
+            if ai not in self.pals:
+                empty_idxs.append(ai)
+        if not empty_idxs:
+            return
+        dlg = PalCreateDialog(self, False, empty_idxs[0], is_dps=True)
+        if dlg.exec() != QDialog.Accepted or not dlg.created_item:
+            return
+        from palworld_aio.managers.func_manager import _restore_one_pal
+        new_raw = _get_raw_from_item(dlg.created_item)
+        if not new_raw:
+            return
+        _restore_one_pal(new_raw)
+        added = 0
+        for ai in empty_idxs:
+            if self._set_gps_slot(ai, copy.deepcopy(new_raw)):
+                self.pals[ai] = {'data': copy.deepcopy(new_raw)}
+                added += 1
+        if added:
+            self._mark_modified()
+            self._update_page()
+        self._clear_multi_selection()
+        self._clear_selection()
 
     def _on_slot_right_clicked(self, slot_idx, action):
         start = (self.current_page - 1) * PAGE_SIZE
