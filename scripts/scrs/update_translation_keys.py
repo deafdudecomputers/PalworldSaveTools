@@ -12,7 +12,12 @@ except ImportError:
     from deep_translator import GoogleTranslator
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 LANGUAGES = {'zh_CN': {'name': 'Simplified Chinese', 'code': 'zh-CN'}, 'de_DE': {'name': 'German', 'code': 'de'}, 'es_ES': {'name': 'Spanish', 'code': 'es'}, 'fr_FR': {'name': 'French', 'code': 'fr'}, 'ru_RU': {'name': 'Russian', 'code': 'ru'}, 'ja_JP': {'name': 'Japanese', 'code': 'ja'}, 'ko_KR': {'name': 'Korean', 'code': 'ko'}, 'pt_BR': {'name': 'Portuguese (Brazil)', 'code': 'pt'}}
-UPDATED_TRANSLATIONS = {'guild.menu.set_level': 'Set Guild Level'}
+UPDATED_TRANSLATIONS = {
+    'guild.menu.set_level': 'Set Guild Level',
+    'edit_pals.max_all_confirm_cheat': 'Max all stats (IVs: 255, souls: 255, rank: 255, level: 255) for all pals in party & all palbox pages?',
+    'base_inventory.max_all_confirm_cheat': 'Max all stats (IVs: 255, souls: 255, rank: 255, level: 255) for all working pals in this base?',
+    'func_manager.max_all_pals.confirm_cheat': 'This will max all stats (level 255, IVs 255, souls 255, rank 255) for ALL pals in the save. Continue?',
+}
 def translate_text(text: str, target_lang: str) -> str:
     translator = GoogleTranslator(source='en', target=target_lang)
     return translator.translate(text)

@@ -405,7 +405,7 @@ class GpsEditorDialog(FramelessDialog):
             tr['Rank_Attack'] = {'id': None, 'type': 'ByteProperty', 'value': {'type': 'None', 'value': soul_cap}}
             tr['Rank_Defence'] = {'id': None, 'type': 'ByteProperty', 'value': {'type': 'None', 'value': soul_cap}}
             tr['Rank_CraftSpeed'] = {'id': None, 'type': 'ByteProperty', 'value': {'type': 'None', 'value': soul_cap}}
-            tr['Rank'] = {'id': None, 'type': 'ByteProperty', 'value': {'type': 'None', 'value': 5}}
+            tr['Rank'] = {'id': None, 'type': 'ByteProperty', 'value': {'type': 'None', 'value': 255 if cheat else 5}}
             tr['FriendshipPoint'] = {'id': None, 'type': 'IntProperty', 'value': 200000}
             tr['bIsAwakening'] = {'id': None, 'type': 'BoolProperty', 'value': True}
             ws_base = base.get('work_suitabilities', {}) if base else {}
@@ -863,7 +863,7 @@ class GpsEditorDialog(FramelessDialog):
             tr['Rank_Attack'] = {'id': None, 'type': 'ByteProperty', 'value': {'type': 'None', 'value': soul_cap}}
             tr['Rank_Defence'] = {'id': None, 'type': 'ByteProperty', 'value': {'type': 'None', 'value': soul_cap}}
             tr['Rank_CraftSpeed'] = {'id': None, 'type': 'ByteProperty', 'value': {'type': 'None', 'value': soul_cap}}
-            tr['Rank'] = {'id': None, 'type': 'ByteProperty', 'value': {'type': 'None', 'value': 5}}
+            tr['Rank'] = {'id': None, 'type': 'ByteProperty', 'value': {'type': 'None', 'value': 255 if cheat else 5}}
             tr['FriendshipPoint'] = {'id': None, 'type': 'IntProperty', 'value': 200000}
             tr['bIsAwakening'] = {'id': None, 'type': 'BoolProperty', 'value': True}
             ws_base = base.get('work_suitabilities', {}) if base else {}

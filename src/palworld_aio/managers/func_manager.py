@@ -2271,7 +2271,7 @@ def _max_one_pal(raw):
     iv_cap = 255 if cheat else 100
     soul_cap = 255 if cheat else 20
     lv_cap = 255 if cheat else 80
-    rank_cap = 5
+    rank_cap = 255 if cheat else 5
     cid = extract_value(raw, 'CharacterID', '')
     base = get_pal_base_data(cid)
     raw['Level'] = {'id': None, 'type': 'ByteProperty', 'value': {'type': 'None', 'value': lv_cap}}

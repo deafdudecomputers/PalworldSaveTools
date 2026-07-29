@@ -1,6 +1,7 @@
 #2.2.6
 - Updated game data to v1.0.2
 - **Game data updater no longer drops NPCs missing from icon tables** — `update_npc_data()` now has a third pass scanning `DT_PalHumanParameter` for `IsPal=False` entries that lack icon table rows. Icons are recovered by matching `OverrideNameTextID` to NPCs with icon table entries, with word-overlap fallback for Arena NPCs. Fixes Wandering Merchant and Islander being dropped on v1.0.2 data export. All 434 NPCs now have valid icons.
+- **Cheat mode rank cap raised to 255** — the condenser rank in cheat mode was hardcoded to 5 in all Max All Pals/Max Stats paths (pal editor, func manager, GPS editor). Now matches IV/soul/level behavior: `255 if cheat else 5`. All 7 locations fixed. Confirmation dialogs and translations updated to show "rank: 255".
 - Bumped version to 2.2.6
 
 #2.2.5

@@ -216,7 +216,7 @@ def _max_stats_raw(raw):
     cap = 255 if PalFrame._cheat_mode else 100
     soul_cap = 255 if PalFrame._cheat_mode else 20
     lv_cap = 255 if PalFrame._cheat_mode else 80
-    rank_cap = 5
+    rank_cap = 255 if PalFrame._cheat_mode else 5
     raw['Talent_HP'] = {'id': None, 'type': 'ByteProperty', 'value': {'type': 'None', 'value': cap}}
     raw['Talent_Shot'] = {'id': None, 'type': 'ByteProperty', 'value': {'type': 'None', 'value': cap}}
     raw['Talent_Defense'] = {'id': None, 'type': 'ByteProperty', 'value': {'type': 'None', 'value': cap}}
