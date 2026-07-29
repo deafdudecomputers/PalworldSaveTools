@@ -1,3 +1,8 @@
+#2.2.6
+- Updated game data to v1.0.2
+- **Game data updater no longer drops NPCs missing from icon tables** — `update_npc_data()` now has a third pass scanning `DT_PalHumanParameter` for `IsPal=False` entries that lack icon table rows. Icons are recovered by matching `OverrideNameTextID` to NPCs with icon table entries, with word-overlap fallback for Arena NPCs. Fixes Wandering Merchant and Islander being dropped on v1.0.2 data export. All 434 NPCs now have valid icons.
+- Bumped version to 2.2.6
+
 #2.2.5
 - **macOS Gatekeeper 2min prompt delay fixed** — root cause: `create_dmg()` was changed from `shutil.copytree` to `cp -a` in PR #229, which preserved ad-hoc code-sign extended attributes through DMG packaging. macOS then performed OCSP/notarization checks on the signed app, timing out at ~2min. Restored `shutil.copytree` (strips code-sign attrs), removed `--ad-hoc` from all CI workflows, and removed `--macos-signed-app-name` Nuitka flag. DMG now contains an unsigned app matching v2.2.1 behavior — Gatekeeper prompt appears instantly.
 - **Bulk clone dialog text color fixed** — pal names and qty spinbox in BulkSpeciesDialog now use explicit `color: #e2e8f0` (matching stats panel style) instead of inheriting the system palette, which gave black text on dark background for some Windows configs.

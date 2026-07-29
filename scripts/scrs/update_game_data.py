@@ -695,6 +695,19 @@ def _make_npc_name_fallback(npc_id):
         return npc_id
     return cleaned[0].upper() + cleaned[1:]
 
+def _search_npc_icon(npc_id, npc_icon_subdirs):
+    for name in [
+        f'T_{npc_id}_icon_normal', f'T_{npc_id}_icon', f'{npc_id}_icon_normal',
+        f'T_{npc_id}', npc_id,
+    ]:
+        icon = find_and_copy_icon(name, 'npcs', npc_icon_subdirs)
+        if icon:
+            return icon
+    base = re.sub(r'^(BOSS_|NPC_|PREDATOR_|GYM_|RAID_|SUMMON_|QUEST_|POLICE_)', '', npc_id, flags=re.IGNORECASE)
+    if base != npc_id:
+        return _search_npc_icon(base, npc_icon_subdirs)
+    return None
+
 def _make_npc_entry(npc_id, row_data, human_rows, human_rows_ci, npc_name_l10n, npc_l10n_lower, npc_icon_subdirs):
     npc_id_lower = npc_id.lower()
     icon_data = row_data.get('Icon', {})
@@ -703,6 +716,8 @@ def _make_npc_entry(npc_id, row_data, human_rows, human_rows_ci, npc_name_l10n, 
     if icon_path:
         icon_filename = icon_path.split('/')[-1].split('.')[0] if '.' in icon_path else icon_path.split('/')[-1]
         copied_icon = find_and_copy_icon(icon_filename, 'npcs', npc_icon_subdirs)
+    if not copied_icon:
+        copied_icon = _search_npc_icon(npc_id, npc_icon_subdirs)
     hrow = human_rows.get(npc_id) or human_rows_ci.get(npc_id_lower)
     if not hrow:
         base_id = re.sub(r'_v\d+$', '', npc_id)
@@ -796,6 +811,38 @@ def update_npc_data():
         # pal, so treat it as an NPC rather than dropping it or leaking it into pals.
         if npc_id not in monster_rows and npc_id_lower not in monster_rows_ci:
             seen.add(npc_id_lower)
+            updated_npcs.append(_make_npc_entry(npc_id, row_data, human_rows, human_rows_ci, npc_name_l10n, npc_l10n_lower, npc_icon_subdirs))
+    # Third pass: human rows with IsPal=False that have no icon table entry
+    def _npc_words(name):
+        return set(re.sub(r'(?<=[a-z])(?=[A-Z])', '_', name).lower().split('_')) - {'', 'npc', 'boss', 'predator', 'gym', 'raid', 'summon', 'quest', 'police', 'arena', 'palpassive'}
+    for npc_id in sorted(human_rows.keys()):
+        npc_id_lower = npc_id.lower()
+        if npc_id_lower in seen:
+            continue
+        hrow = human_rows[npc_id]
+        if not isinstance(hrow, dict):
+            continue
+        is_pal = hrow.get('IsPal', True)
+        if isinstance(is_pal, dict):
+            is_pal = is_pal.get('value', True)
+        if not is_pal:
+            seen.add(npc_id_lower)
+            ov_tid = hrow.get('OverrideNameTextID', '')
+            tgt_words = _npc_words(npc_id)
+            best_id, best_score = None, -1
+            for src_id in sorted(char_rows.keys()):
+                src_hr = human_rows.get(src_id) or human_rows_ci.get(src_id.lower())
+                ov = src_hr.get('OverrideNameTextID', '') if isinstance(src_hr, dict) else ''
+                if ov == ov_tid:
+                    score = len(tgt_words & _npc_words(src_id))
+                    if score > best_score:
+                        best_score, best_id = score, src_id
+            if not best_id:
+                for src_id in sorted(char_rows.keys()):
+                    score = len(tgt_words & _npc_words(src_id))
+                    if score > best_score:
+                        best_score, best_id = score, src_id
+            row_data = {'Icon': char_rows[best_id].get('Icon', {})} if best_id else {}
             updated_npcs.append(_make_npc_entry(npc_id, row_data, human_rows, human_rows_ci, npc_name_l10n, npc_l10n_lower, npc_icon_subdirs))
     result = {'npcs': updated_npcs}
     save_resource_json('npcdata.json', result)
