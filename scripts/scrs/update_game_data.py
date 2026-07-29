@@ -814,7 +814,7 @@ def update_npc_data():
             updated_npcs.append(_make_npc_entry(npc_id, row_data, human_rows, human_rows_ci, npc_name_l10n, npc_l10n_lower, npc_icon_subdirs))
     # Third pass: human rows with IsPal=False that have no icon table entry
     def _npc_words(name):
-        return set(re.sub(r'(?<=[a-z])(?=[A-Z])', '_', name).lower().split('_')) - {'', 'npc', 'boss', 'predator', 'gym', 'raid', 'summon', 'quest', 'police', 'arena', 'palpassive'}
+        return {w for w in re.sub(r'(?<=[a-z])(?=[A-Z])', '_', name).lower().split('_') if w and not w.isdigit()} - {'npc', 'boss', 'predator', 'gym', 'raid', 'summon', 'quest', 'police', 'arena', 'palpassive'}
     for npc_id in sorted(human_rows.keys()):
         npc_id_lower = npc_id.lower()
         if npc_id_lower in seen:
@@ -839,9 +839,19 @@ def update_npc_data():
                         best_score, best_id = score, src_id
             if not best_id:
                 for src_id in sorted(char_rows.keys()):
+                    src_hr = human_rows.get(src_id) or human_rows_ci.get(src_id.lower())
+                    if not isinstance(src_hr, dict):
+                        continue
+                    is_pal = src_hr.get('IsPal', True)
+                    if isinstance(is_pal, dict):
+                        is_pal = is_pal.get('value', True)
+                    if is_pal:
+                        continue
                     score = len(tgt_words & _npc_words(src_id))
                     if score > best_score:
                         best_score, best_id = score, src_id
+                if best_id and best_score < 1:
+                    best_id = None
             row_data = {'Icon': char_rows[best_id].get('Icon', {})} if best_id else {}
             updated_npcs.append(_make_npc_entry(npc_id, row_data, human_rows, human_rows_ci, npc_name_l10n, npc_l10n_lower, npc_icon_subdirs))
     result = {'npcs': updated_npcs}

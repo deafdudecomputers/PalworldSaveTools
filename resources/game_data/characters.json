@@ -57145,7 +57145,7 @@
         {
             "name": "Arena Legend 1",
             "asset": "Arena_Legend_1",
-            "icon": "/icons/npcs/T_LegendDeer_icon_normal.webp",
+            "icon": "/icons/npcs/Arena_Legend_1_icon_normal.webp",
             "stats": {
                 "hp": 100,
                 "melee_attack": 20,
@@ -57177,7 +57177,7 @@
         {
             "name": "Arena Legend 10",
             "asset": "Arena_Legend_10",
-            "icon": "/icons/npcs/T_LegendDeer_icon_normal.webp",
+            "icon": "/icons/npcs/Arena_Legend_10_icon_normal.webp",
             "stats": {
                 "hp": 100,
                 "melee_attack": 20,
@@ -57209,7 +57209,7 @@
         {
             "name": "Arena Legend 11",
             "asset": "Arena_Legend_11",
-            "icon": "/icons/npcs/T_LegendDeer_icon_normal.webp",
+            "icon": "/icons/npcs/Arena_Legend_11_icon_normal.webp",
             "stats": {
                 "hp": 100,
                 "melee_attack": 20,
@@ -57241,7 +57241,7 @@
         {
             "name": "Arena Legend 12",
             "asset": "Arena_Legend_12",
-            "icon": "/icons/npcs/T_LegendDeer_icon_normal.webp",
+            "icon": "/icons/npcs/Arena_Legend_12_icon_normal.webp",
             "stats": {
                 "hp": 100,
                 "melee_attack": 20,
@@ -57273,7 +57273,7 @@
         {
             "name": "Arena Legend 13",
             "asset": "Arena_Legend_13",
-            "icon": "/icons/npcs/T_LegendDeer_icon_normal.webp",
+            "icon": "/icons/npcs/Arena_Legend_13_icon_normal.webp",
             "stats": {
                 "hp": 100,
                 "melee_attack": 20,
@@ -57305,7 +57305,7 @@
         {
             "name": "Arena Legend 14",
             "asset": "Arena_Legend_14",
-            "icon": "/icons/npcs/T_LegendDeer_icon_normal.webp",
+            "icon": "/icons/npcs/Arena_Legend_14_icon_normal.webp",
             "stats": {
                 "hp": 100,
                 "melee_attack": 20,
@@ -57337,7 +57337,7 @@
         {
             "name": "Arena Legend 15",
             "asset": "Arena_Legend_15",
-            "icon": "/icons/npcs/T_LegendDeer_icon_normal.webp",
+            "icon": "/icons/npcs/Arena_Legend_15_icon_normal.webp",
             "stats": {
                 "hp": 100,
                 "melee_attack": 20,
@@ -57369,7 +57369,7 @@
         {
             "name": "Arena Legend 16",
             "asset": "Arena_Legend_16",
-            "icon": "/icons/npcs/T_LegendDeer_icon_normal.webp",
+            "icon": "/icons/npcs/Arena_Legend_16_icon_normal.webp",
             "stats": {
                 "hp": 100,
                 "melee_attack": 20,
@@ -57401,7 +57401,7 @@
         {
             "name": "Arena Legend 17",
             "asset": "Arena_Legend_17",
-            "icon": "/icons/npcs/T_LegendDeer_icon_normal.webp",
+            "icon": "/icons/npcs/Arena_Legend_17_icon_normal.webp",
             "stats": {
                 "hp": 100,
                 "melee_attack": 20,
@@ -57433,7 +57433,7 @@
         {
             "name": "Arena Legend 18",
             "asset": "Arena_Legend_18",
-            "icon": "/icons/npcs/T_LegendDeer_icon_normal.webp",
+            "icon": "/icons/npcs/Arena_Legend_18_icon_normal.webp",
             "stats": {
                 "hp": 100,
                 "melee_attack": 20,
@@ -57465,7 +57465,7 @@
         {
             "name": "Arena Legend 19",
             "asset": "Arena_Legend_19",
-            "icon": "/icons/npcs/T_LegendDeer_icon_normal.webp",
+            "icon": "/icons/npcs/Arena_Legend_19_icon_normal.webp",
             "stats": {
                 "hp": 100,
                 "melee_attack": 20,
@@ -57497,7 +57497,7 @@
         {
             "name": "Arena Legend 2",
             "asset": "Arena_Legend_2",
-            "icon": "/icons/npcs/T_LegendDeer_icon_normal.webp",
+            "icon": "/icons/npcs/Arena_Legend_2_icon_normal.webp",
             "stats": {
                 "hp": 100,
                 "melee_attack": 20,
@@ -57529,7 +57529,7 @@
         {
             "name": "Arena Legend 20",
             "asset": "Arena_Legend_20",
-            "icon": "/icons/npcs/T_LegendDeer_icon_normal.webp",
+            "icon": "/icons/npcs/Arena_Legend_20_icon_normal.webp",
             "stats": {
                 "hp": 100,
                 "melee_attack": 20,
@@ -57561,7 +57561,7 @@
         {
             "name": "Arena Legend 3",
             "asset": "Arena_Legend_3",
-            "icon": "/icons/npcs/T_LegendDeer_icon_normal.webp",
+            "icon": "/icons/npcs/Arena_Legend_3_icon_normal.webp",
             "stats": {
                 "hp": 100,
                 "melee_attack": 20,
@@ -57593,7 +57593,7 @@
         {
             "name": "Arena Legend 4",
             "asset": "Arena_Legend_4",
-            "icon": "/icons/npcs/T_LegendDeer_icon_normal.webp",
+            "icon": "/icons/npcs/Arena_Legend_4_icon_normal.webp",
             "stats": {
                 "hp": 100,
                 "melee_attack": 20,
@@ -57625,7 +57625,7 @@
         {
             "name": "Arena Legend 5",
             "asset": "Arena_Legend_5",
-            "icon": "/icons/npcs/T_LegendDeer_icon_normal.webp",
+            "icon": "/icons/npcs/Arena_Legend_5_icon_normal.webp",
             "stats": {
                 "hp": 100,
                 "melee_attack": 20,
@@ -57657,7 +57657,7 @@
         {
             "name": "Arena Legend 6",
             "asset": "Arena_Legend_6",
-            "icon": "/icons/npcs/T_LegendDeer_icon_normal.webp",
+            "icon": "/icons/npcs/Arena_Legend_6_icon_normal.webp",
             "stats": {
                 "hp": 100,
                 "melee_attack": 20,
@@ -57689,7 +57689,7 @@
         {
             "name": "Arena Legend 7",
             "asset": "Arena_Legend_7",
-            "icon": "/icons/npcs/T_LegendDeer_icon_normal.webp",
+            "icon": "/icons/npcs/Arena_Legend_7_icon_normal.webp",
             "stats": {
                 "hp": 100,
                 "melee_attack": 20,
@@ -57721,7 +57721,7 @@
         {
             "name": "Arena Legend 8",
             "asset": "Arena_Legend_8",
-            "icon": "/icons/npcs/T_LegendDeer_icon_normal.webp",
+            "icon": "/icons/npcs/Arena_Legend_8_icon_normal.webp",
             "stats": {
                 "hp": 100,
                 "melee_attack": 20,
@@ -57753,7 +57753,7 @@
         {
             "name": "Arena Legend 9",
             "asset": "Arena_Legend_9",
-            "icon": "/icons/npcs/T_LegendDeer_icon_normal.webp",
+            "icon": "/icons/npcs/Arena_Legend_9_icon_normal.webp",
             "stats": {
                 "hp": 100,
                 "melee_attack": 20,
@@ -58073,7 +58073,7 @@
         {
             "name": "Sweet-Smelling Hunter",
             "asset": "Arena_Ranger04",
-            "icon": "/icons/npcs/T_Alpaca_icon_normal.webp",
+            "icon": "/icons/npcs/Arena_Ranger04_icon_normal.webp",
             "stats": {
                 "hp": 100,
                 "melee_attack": 20,
@@ -58393,7 +58393,7 @@
         {
             "name": "Electric Boss",
             "asset": "ElectricBoss",
-            "icon": "/icons/npcs/T_FengyunDeeper_Electric_icon_normal.webp",
+            "icon": "/icons/npcs/ElectricBoss_icon_normal.webp",
             "stats": {
                 "hp": 100,
                 "melee_attack": 100,
@@ -58425,7 +58425,7 @@
         {
             "name": "Forest Boss",
             "asset": "ForestBoss",
-            "icon": "/icons/npcs/T_Alpaca_icon_normal.webp",
+            "icon": "/icons/npcs/T_itemicon_Weapon_Spear_ForestBoss2.webp",
             "stats": {
                 "hp": 100,
                 "melee_attack": 100,
@@ -58649,7 +58649,7 @@
         {
             "name": "Attack Chopper",
             "asset": "SecurityDrone",
-            "icon": "/icons/npcs/T_Alpaca_icon_normal.webp",
+            "icon": "/icons/npcs/SecurityDrone_icon_normal.webp",
             "stats": {
                 "hp": 100,
                 "melee_attack": 100,
@@ -58681,7 +58681,7 @@
         {
             "name": "Attack Chopper",
             "asset": "SecurityDrone_Field",
-            "icon": "/icons/npcs/T_Alpaca_icon_normal.webp",
+            "icon": "/icons/npcs/SecurityDrone_Field_icon_normal.webp",
             "stats": {
                 "hp": 100,
                 "melee_attack": 100,
@@ -58841,7 +58841,7 @@
         {
             "name": "Patrol Drone",
             "asset": "WildlifeSanctuaryDrone",
-            "icon": "/icons/npcs/T_Alpaca_icon_normal.webp",
+            "icon": "/icons/npcs/WildlifeSanctuaryDrone_icon_normal.webp",
             "stats": {
                 "hp": 100,
                 "melee_attack": 100,
