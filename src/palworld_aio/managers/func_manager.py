@@ -1428,6 +1428,137 @@ def _remove_invalid_passives_from_dps(valid_passives, players_dir):
             return 0
     with ThreadPoolExecutor(max_workers=min(os.cpu_count() or 4, 8)) as ex:
         return sum(ex.map(_clean, dps_files))
+def _get_pal_learnset_set(cid, learnset, learnset_ci):
+    import re
+    if not cid:
+        return set()
+    result = set()
+    ls = learnset.get(cid) or learnset_ci.get(cid.lower())
+    if ls:
+        result.update(m.get('WazaID', '') for m in ls if m.get('WazaID'))
+    stripped_suffix = re.sub(r'_v\d+$', '', cid)
+    if stripped_suffix != cid:
+        ls = learnset.get(stripped_suffix) or learnset_ci.get(stripped_suffix.lower())
+        if ls:
+            result.update(m.get('WazaID', '') for m in ls if m.get('WazaID'))
+    for prefix in ('BOSS_', 'PREDATOR_', 'GYM_', 'RAID_', 'POLICE_', 'SUMMON_', 'QUEST_'):
+        if cid.upper().startswith(prefix):
+            base = cid[len(prefix):]
+            if base:
+                ls = learnset.get(base) or learnset_ci.get(base.lower())
+                if ls:
+                    result.update(m.get('WazaID', '') for m in ls if m.get('WazaID'))
+    return result
+
+def _build_skill_name_map():
+    try:
+        base_dir = constants.get_base_path()
+        fp = resource_path(base_dir, 'game_data', 'skills.json')
+        sdata = json_tools.load(fp)
+        return {s.get('asset', '').lower(): s.get('name', '') for s in sdata.get('skills', []) if s.get('asset')}
+    except Exception:
+        return {}
+
+def _is_skill_invalid_for_pal(skill_full, pal_learnset_set, skill_name_map, exclusion_patterns, exclusion_names):
+    if not skill_full or not skill_full.strip():
+        return False
+    asset = skill_full.split('::', 1)[1] if '::' in skill_full else skill_full
+    if skill_full in pal_learnset_set:
+        return False
+    asset_lower = asset.lower()
+    for pat in exclusion_patterns:
+        if pat.lower() in asset_lower:
+            return True
+    skill_name = skill_name_map.get(asset_lower, '')
+    for excl in exclusion_names:
+        if excl in skill_name:
+            return True
+    return False
+
+def fix_invalid_pal_active_skills(parent=None):
+    if not constants.loaded_level_json:
+        return {'removed': 0, 'details': []}
+    learnset = {}
+    try:
+        base_dir = constants.get_base_path()
+        fp = resource_path(base_dir, 'game_data', 'pals_learnset.json')
+        learnset = json_tools.load(fp).get('learnset', {})
+    except Exception:
+        pass
+    learnset_ci = {k.lower(): v for k, v in learnset.items()}
+    skill_name_map = _build_skill_name_map()
+    PALMAP = load_game_data_map('characters.json', 'pals')
+    NPCMAP = load_game_data_map('characters.json', 'npcs')
+    NAMEMAP = {**PALMAP, **NPCMAP}
+    from palworld_aio.managers.data_manager import _SKILL_EXCLUSION_NAMES, _SKILL_EXCLUSION_PATTERNS
+    from palworld_aio.utils import resolve_name
+    wsd = constants.loaded_level_json['properties']['worldSaveData']['value']
+    cmap = wsd.get('CharacterSaveParameterMap', {}).get('value', [])
+    removed_count = 0
+    details = []
+    for entry in cmap:
+        try:
+            raw = entry['value']['RawData']['value']['object']['SaveParameter']['value']
+            cid = extract_value(raw, 'CharacterID', '')
+            pal_learnset_set = _get_pal_learnset_set(cid, learnset, learnset_ci)
+            pal_name = resolve_name(cid, NAMEMAP) or cid
+            nick = extract_value(raw, 'NickName', '')
+            inst_id = str(entry.get('key', {}).get('InstanceId', {}).get('value', '')).replace('-', '').lower()
+            removed_from_pal = []
+            for skill_key in ('EquipWaza', 'MasteredWaza'):
+                if skill_key not in raw:
+                    continue
+                eq_raw = raw[skill_key]
+                eq_val = eq_raw.get('value')
+                skills = eq_val.get('values', []) if isinstance(eq_val, dict) else (eq_val if isinstance(eq_val, list) else [])
+                if not isinstance(skills, list):
+                    continue
+                new_skills = []
+                for s in skills:
+                    if _is_skill_invalid_for_pal(s, pal_learnset_set, skill_name_map, _SKILL_EXCLUSION_PATTERNS, _SKILL_EXCLUSION_NAMES):
+                        asset = s.split('::', 1)[1] if '::' in s else s
+                        display = skill_name_map.get(asset.lower(), asset)
+                        removed_from_pal.append(f'{skill_key}:{display}')
+                    else:
+                        new_skills.append(s)
+                if len(new_skills) != len(skills):
+                    removed_count += len(skills) - len(new_skills)
+                    if isinstance(eq_val, dict):
+                        raw[skill_key]['value']['values'] = new_skills
+                    else:
+                        raw[skill_key]['value'] = new_skills
+            if removed_from_pal:
+                display_name = f'{pal_name} ({nick})' if nick and nick != 'Unknown' else pal_name
+                details.append({'pal': display_name, 'character_id': cid, 'instance_id': inst_id[:8] if len(inst_id) > 8 else inst_id, 'removed_skills': removed_from_pal})
+        except Exception:
+            continue
+    log_path = None
+    try:
+        from resource_resolver import get_data_base
+        log_dir = os.path.join(get_data_base(), 'Logs', 'Fix Invalid Skills')
+        os.makedirs(log_dir, exist_ok=True)
+        log_path = os.path.join(log_dir, 'fix_invalid_active_skills.log')
+        with open(log_path, 'w', encoding='utf-8') as f:
+            f.write('=' * 80 + '\n')
+            f.write('  FIX INVALID ACTIVE SKILLS REPORT\n')
+            f.write('=' * 80 + '\n\n')
+            f.write(f'Total invalid skills removed: {removed_count}\n')
+            f.write(f'Total pals affected: {len(details)}\n\n')
+            if details:
+                for d in details:
+                    f.write(f'  Pal: {d["pal"]} (ID: {d["character_id"]})\n')
+                    f.write(f'  Instance: {d["instance_id"]}\n')
+                    for skill in d['removed_skills']:
+                        f.write(f'    Removed: {skill}\n')
+                    f.write('\n')
+            else:
+                f.write('  No invalid skills found.\n')
+            f.write('=' * 80 + '\n')
+    except Exception as e:
+        log_path = None
+    result = {'removed': removed_count, 'details': details, 'log_path': log_path}
+    return result
+
 def unlock_all_technologies_for_player(player_uid, parent=None):
     if not constants.current_save_path:
         return False
