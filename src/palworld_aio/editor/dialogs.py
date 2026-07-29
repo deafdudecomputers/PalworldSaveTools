@@ -1184,7 +1184,7 @@ class ZoneManagementDialog(ThemedDialog):
             return dialog.result_action
         return None
 class NudgeInputDialog(ThemedDialog):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, current_coords=None):
         super().__init__(parent)
         self.setWindowTitle(t('base.nudge') if t else 'Nudge Base')
         self.setModal(True)
@@ -1192,6 +1192,7 @@ class NudgeInputDialog(ThemedDialog):
         if os.path.exists(constants.ICON_PATH):
             self.setWindowIcon(QIcon(constants.ICON_PATH))
         self.result_value = None
+        self.current_coords = current_coords
         layout = QVBoxLayout(self)
         layout.setSpacing(12)
         label = QLabel((t('base.nudge.prompt') if t else 'Enter offset values for each axis.\nPositive = right/up/raise, Negative = left/down/lower.\nRotation angle rotates the base camp around its center (Z axis).'))
@@ -1221,15 +1222,58 @@ class NudgeInputDialog(ThemedDialog):
         self.rotate_spin.setSuffix('\u00b0')
         form.addRow((t('base.nudge.rotate') if t else 'Rotation') + ':', self.rotate_spin)
         layout.addLayout(form)
-        btn_layout = QHBoxLayout()
+        btn_area = QVBoxLayout()
+        btn_area.setSpacing(4)
+        row1 = QHBoxLayout()
+        row1.setSpacing(8)
+        self.current_coords_btn = QPushButton()
+        self.current_coords_btn.setFlat(True)
+        self.current_coords_btn.setStyleSheet('QPushButton { font-size: 11px; color: #94A3B8; background: transparent; border: none; text-align: left; padding: 0; } QPushButton:hover { color: #7DD3FC; }')
+        self.current_coords_btn.setCursor(Qt.PointingHandCursor)
+        self.current_coords_btn.setToolTip((t('base.nudge.copy_current') if t else 'Click to copy current coordinates'))
+        row1.addWidget(self.current_coords_btn)
+        row1.addStretch()
         ok_btn = QPushButton((t('button.ok') if t else 'OK'))
         ok_btn.clicked.connect(self.accept)
         cancel_btn = QPushButton((t('button.cancel') if t else 'Cancel'))
         cancel_btn.clicked.connect(self.reject)
-        btn_layout.addStretch()
-        btn_layout.addWidget(ok_btn)
-        btn_layout.addWidget(cancel_btn)
-        layout.addLayout(btn_layout)
+        row1.addWidget(ok_btn)
+        row1.addWidget(cancel_btn)
+        btn_area.addLayout(row1)
+        row2 = QHBoxLayout()
+        row2.setSpacing(8)
+        self.result_coords_btn = QPushButton()
+        self.result_coords_btn.setFlat(True)
+        self.result_coords_btn.setStyleSheet('QPushButton { font-size: 11px; color: #94A3B8; background: transparent; border: none; text-align: left; padding: 0; } QPushButton:hover { color: #7DD3FC; }')
+        self.result_coords_btn.setCursor(Qt.PointingHandCursor)
+        self.result_coords_btn.setToolTip((t('base.nudge.copy_result') if t else 'Click to copy resulting coordinates'))
+        row2.addWidget(self.result_coords_btn)
+        row2.addStretch()
+        btn_area.addLayout(row2)
+        layout.addLayout(btn_area)
+        self.current_coords_btn.clicked.connect(lambda: (QApplication.clipboard().setText(self.current_coords_btn._copy_value), None))
+        self.result_coords_btn.clicked.connect(lambda: (QApplication.clipboard().setText(self.result_coords_btn._copy_value), None))
+        self.x_spin.valueChanged.connect(self._update_preview)
+        self.y_spin.valueChanged.connect(self._update_preview)
+        self.z_spin.valueChanged.connect(self._update_preview)
+        self._update_preview()
+    def _update_preview(self):
+        cur_label = (t('base.nudge.current') if t else 'Current') + ': '
+        res_label = (t('base.nudge.result') if t else 'Result') + ': '
+        if self.current_coords:
+            cx, cy, cz = self.current_coords
+            rx = cx + self.x_spin.value()
+            ry = cy + self.y_spin.value()
+            rz = cz + self.z_spin.value()
+            self.current_coords_btn.setText(f'{cur_label}{cx}, {cy}, {cz}')
+            self.current_coords_btn._copy_value = f'{cx}, {cy}, {cz}'
+            self.result_coords_btn.setText(f'{res_label}{rx}, {ry}, {rz}')
+            self.result_coords_btn._copy_value = f'{rx}, {ry}, {rz}'
+        else:
+            self.current_coords_btn.setText(f'{cur_label}\u2014')
+            self.current_coords_btn._copy_value = ''
+            self.result_coords_btn.setText(f'{res_label}{self.x_spin.value()}, {self.y_spin.value()}, {self.z_spin.value()}')
+            self.result_coords_btn._copy_value = f'{self.x_spin.value()}, {self.y_spin.value()}, {self.z_spin.value()}'
     def accept(self):
         self.result_value = (self.x_spin.value(), self.y_spin.value(), self.z_spin.value(), self.rotate_spin.value())
         super().accept()

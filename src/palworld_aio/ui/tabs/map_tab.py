@@ -18,7 +18,7 @@ from palworld_aio.editor.dialogs import RadiusInputDialog, InputDialog, ZoneMana
 from palworld_aio.utils import sav_to_gvasfile
 from palworld_aio.managers.save_manager import save_manager
 from ..map_view.map_markers import BaseMarker, PlayerMarker
-from ..map_view.map_effects import ImportEffect, CalibrationEffect
+from ..map_view.map_effects import ImportEffect, SwapSourceEffect, CalibrationEffect
 from ..map_view.map_items import ExclusionZoneItem, PolygonExclusionZoneItem, BaseRadiusRing, ZonePreviewItem
 from ..map_view.map_view import MapGraphicsView
 _SORT_ROLE = Qt.UserRole + 1
@@ -49,6 +49,10 @@ class MapTab(QWidget):
         self.current_radius_ring = None
         self._coord_picker_active = False
         self._coord_picker_base = None
+        self._swap_picker_active = False
+        self._swap_picker_src_base = None
+        self._swap_source_effect = None
+        self._swap_source_marker = None
         self.all_radius_rings = []
         self.exclusion_zones = []
         self._zone_drawing_mode = False
@@ -1230,6 +1234,9 @@ class MapTab(QWidget):
         if url.startswith('copy://'):
             QApplication.clipboard().setText(url[7:])
     def _on_marker_clicked(self, data, marker=None):
+        if self._swap_picker_active and 'player_uid' not in data:
+            self._on_swap_picker_click(data)
+            return
         if 'player_uid' in data:
             self._update_player_info(data)
             self._hide_radius_ring()
@@ -1290,6 +1297,9 @@ class MapTab(QWidget):
         else:
             self._show_all_radius_rings()
     def _on_marker_right_clicked(self, data, global_pos):
+        if self._swap_picker_active and 'player_uid' not in data:
+            self._on_swap_picker_click(data)
+            return
         menu = QMenu(self)
         menu.setStyleSheet('\n            QMenu {\n                background-color: rgba(18,20,24,0.95);\n                border: 1px solid rgba(125,211,252,0.3);\n                border-radius: 4px;\n                color: #e2e8f0;\n                padding: 4px;\n            }\n            QMenu::item {\n                padding: 6px 12px;\n                border-radius: 3px;\n            }\n            QMenu::item:selected {\n                background-color: rgba(59,142,208,0.3);\n            }\n        ')
         if 'player_uid' in data:
@@ -1317,6 +1327,7 @@ class MapTab(QWidget):
             palbox_nudge_action = menu.addAction(t('base.palbox_nudge') if t else 'Nudge Palbox')
             menu.addSeparator()
             reassign_action = menu.addAction(t('base.reassign_guild') if t else 'Reassign to Guild')
+            swap_base_action = menu.addAction(t('base.swap_bases') if t else 'Swap Bases')
             action = menu.exec(global_pos.toPoint())
             if not action:
                 return
@@ -1337,6 +1348,8 @@ class MapTab(QWidget):
                 self._nudge_palbox(data)
             elif action == reassign_action:
                 self._reassign_base(data)
+            elif action == swap_base_action:
+                self._swap_base_guild(data)
     def _on_empty_space_right_clicked(self, global_pos):
         from palworld_aio.editor.dialogs import ScrollableGuildSelectionDialog
         menu = QMenu(self)
@@ -1465,6 +1478,7 @@ class MapTab(QWidget):
             palbox_nudge_action = menu.addAction(t('base.palbox_nudge') if t else 'Nudge Palbox')
             menu.addSeparator()
             reassign_action = menu.addAction(t('base.reassign_guild') if t else 'Reassign to Guild')
+            swap_base_action = menu.addAction(t('base.swap_bases') if t else 'Swap Bases')
             action = menu.exec(tree.viewport().mapToGlobal(pos))
             if not action:
                 return
@@ -1485,6 +1499,8 @@ class MapTab(QWidget):
                 self._nudge_palbox(item_data)
             elif action == reassign_action:
                 self._reassign_base(item_data)
+            elif action == swap_base_action:
+                self._swap_base_guild(item_data)
         elif item_type == 'guild':
             rename_action = menu.addAction(t('guild.rename.title') if t else 'Rename Guild')
             delete_action = menu.addAction(t('delete.guild') if t else 'Delete Guild')
@@ -1736,6 +1752,175 @@ class MapTab(QWidget):
         def on_error(err):
             show_critical(self, t('error.title') if t else 'Error', f'Failed to reassign base: {str(err)}')
         run_with_loading(on_finished, task, on_error=on_error)
+    def _swap_base_guild(self, base_data):
+        self._swap_picker_active = True
+        self._swap_picker_src_base = base_data
+        self.view.setCursor(Qt.CrossCursor)
+        self.info_label.setText(t('base.swap.map_prompt') if t else 'Click a second base on the map to swap with this one. Right-click to cancel.')
+        img_x, img_y = base_data['img_coords']
+        self.view.animate_to_coords(img_x, img_y, zoom_level=1.0)
+        self.view.empty_space_right_clicked.connect(self._on_swap_picker_cancel)
+        for marker in self.base_markers:
+            if hasattr(marker, 'base_data') and str(marker.base_data.get('base_id', '')).replace('-', '').lower() == str(base_data.get('base_id', '')).replace('-', '').lower():
+                marker.start_glow()
+                self._swap_source_marker = marker
+                break
+        effect = SwapSourceEffect(img_x, img_y)
+        self.scene.addItem(effect)
+        self._swap_source_effect = effect
+    def _on_swap_picker_click(self, target_data):
+        if not self._swap_picker_active or not self._swap_picker_src_base:
+            return
+        src_base = self._swap_picker_src_base
+        if str(src_base.get('base_id', '')).replace('-', '').lower() == str(target_data.get('base_id', '')).replace('-', '').lower():
+            show_information(self, t('info.title') if t else 'Info', t('base.swap.same_base') if t else 'Cannot swap a base with itself.')
+            return
+        self._cleanup_swap_picker()
+        def task():
+            import math
+            bid_a = str(src_base['base_id']).replace('-', '').lower()
+            bid_b = str(target_data['base_id']).replace('-', '').lower()
+            wsd = constants.loaded_level_json['properties']['worldSaveData']['value']
+            base_camp_data = wsd.get('BaseCampSaveData', {}).get('value', [])
+            src_entry = next((b for b in base_camp_data if str(b['key']).replace('-', '').lower() == bid_a), None)
+            tgt_entry = next((b for b in base_camp_data if str(b['key']).replace('-', '').lower() == bid_b), None)
+            if not src_entry or not tgt_entry:
+                return ('not_found',)
+            def get_trans(entry):
+                return entry['value']['RawData']['value']['transform']['translation']
+            src_t = get_trans(src_entry)
+            tgt_t = get_trans(tgt_entry)
+            dx_a = tgt_t['x'] - src_t['x']
+            dy_a = tgt_t['y'] - src_t['y']
+            dz_a = tgt_t['z'] - src_t['z']
+            dx_b = -dx_a
+            dy_b = -dy_a
+            dz_b = -dz_a
+            def _apply_delta(entry, dx, dy, dz):
+                t = get_trans(entry)
+                t['x'] += dx
+                t['y'] += dy
+                t['z'] += dz
+            _apply_delta(src_entry, dx_a, dy_a, dz_a)
+            _apply_delta(tgt_entry, dx_b, dy_b, dz_b)
+            cx_a = src_t['x'] + dx_a
+            cy_a = src_t['y'] + dy_a
+            cx_b = tgt_t['x'] + dx_b
+            cy_b = tgt_t['y'] + dy_b
+            def _apply_to_structures(bid, dx, dy, dz, cx, cy):
+                map_objs = wsd.get('MapObjectSaveData', {}).get('value', {}).get('values', [])
+                for obj in map_objs:
+                    try:
+                        mr = obj.get('Model', {}).get('value', {}).get('RawData', {}).get('value', {})
+                        if str(mr.get('base_camp_id_belong_to', '')).replace('-', '').lower() != bid:
+                            continue
+                        itc = mr.get('initital_transform_cache', {})
+                        if 'translation' in itc:
+                            itc['translation']['x'] += dx
+                            itc['translation']['y'] += dy
+                            itc['translation']['z'] += dz
+                        if 'transform' in itc:
+                            t2 = itc['transform'].get('translation', {})
+                            if t2:
+                                t2['x'] += dx
+                                t2['y'] += dy
+                                t2['z'] += dz
+                    except:
+                        pass
+                wd_entry = next((b for b in [src_entry, tgt_entry] if str(b['key']).replace('-', '').lower() == bid), None)
+                if wd_entry:
+                    try:
+                        wd = wd_entry['value']['WorkerDirector']['value']['RawData']['value']['spawn_transform']
+                        wd['translation']['x'] += dx
+                        wd['translation']['y'] += dy
+                        wd['translation']['z'] += dz
+                    except:
+                        pass
+                work_root = wsd.get('WorkSaveData', {})
+                if isinstance(work_root, dict):
+                    work_entries = work_root.get('value', {}).get('values', []) if isinstance(work_root.get('value'), dict) else []
+                    for we in work_entries:
+                        try:
+                            wr = we.get('RawData', {}).get('value', {})
+                            if str(wr.get('base_camp_id_belong_to', '')).replace('-', '').lower() != bid:
+                                continue
+                            tr = wr.get('transform', {})
+                            if 'translation' in tr and tr['translation']:
+                                tr['translation']['x'] += dx
+                                tr['translation']['y'] += dy
+                                tr['translation']['z'] += dz
+                        except:
+                            pass
+            _apply_to_structures(bid_a, dx_a, dy_a, dz_a, cx_a, cy_a)
+            _apply_to_structures(bid_b, dx_b, dy_b, dz_b, cx_b, cy_b)
+            is_diff_guild = str(src_base['guild_id']).replace('-', '').lower() != str(target_data['guild_id']).replace('-', '').lower()
+            if is_diff_guild:
+                src_raw = src_entry['value']['RawData']['value']
+                tgt_raw = tgt_entry['value']['RawData']['value']
+                src_old_gid = str(src_raw.get('group_id_belong_to', '')).replace('-', '').lower()
+                tgt_old_gid = str(tgt_raw.get('group_id_belong_to', '')).replace('-', '').lower()
+                tgt_gid_obj = tgt_raw['group_id_belong_to']
+                src_gid_obj = src_raw['group_id_belong_to']
+                src_raw['group_id_belong_to'] = tgt_gid_obj
+                tgt_raw['group_id_belong_to'] = src_gid_obj
+                group_map = wsd.get('GroupSaveDataMap', {}).get('value', [])
+                for g in group_map:
+                    try:
+                        if g['value']['GroupType']['value']['value'] != 'EPalGroupType::Guild':
+                            continue
+                        raw = g['value']['RawData']['value']
+                        gid = str(g['key']).replace('-', '').lower()
+                        if gid == src_old_gid:
+                            raw['base_ids'] = [b for b in raw.get('base_ids', []) if str(b).replace('-', '').lower() != bid_a]
+                            if bid_b not in [str(b).replace('-', '').lower() for b in raw.get('base_ids', [])]:
+                                raw['base_ids'].append(UUID.from_str(str(tgt_entry['key'])))
+                        elif gid == tgt_old_gid:
+                            raw['base_ids'] = [b for b in raw.get('base_ids', []) if str(b).replace('-', '').lower() != bid_b]
+                            if bid_a not in [str(b).replace('-', '').lower() for b in raw.get('base_ids', [])]:
+                                raw['base_ids'].append(UUID.from_str(str(src_entry['key'])))
+                    except:
+                        pass
+            constants.invalidate_container_lookup()
+            return ('success',)
+        def on_finished(result):
+            status = result[0]
+            if status == 'not_found':
+                show_warning(self, t('error.title') if t else 'Error', 'One or both bases not found in save data')
+            elif status == 'success':
+                if self.parent_window and hasattr(self.parent_window, 'base_inventory_tab'):
+                    self.parent_window.base_inventory_tab.manager.invalidate_cache()
+                self.refresh()
+                if self.parent_window:
+                    self.parent_window.refresh_all()
+                self._hide_all_radius_rings()
+                if hasattr(self, 'toggle_base_radius_rings') and self.toggle_base_radius_rings.isChecked():
+                    self._show_all_radius_rings()
+                self._play_effect(ImportEffect, src_base['img_coords'][0], src_base['img_coords'][1])
+                self._play_effect(ImportEffect, target_data['img_coords'][0], target_data['img_coords'][1])
+                show_information(self, t('success.title') if t else 'Success', t('base.swap.success') if t else 'Bases swapped successfully.')
+        def on_error(err):
+            show_critical(self, t('error.title') if t else 'Error', f'Failed to swap bases: {str(err)}')
+        run_with_loading(on_finished, task, on_error=on_error)
+    def _cleanup_swap_picker(self):
+        self._swap_picker_active = False
+        self._swap_picker_src_base = None
+        if self._swap_source_effect:
+            self._swap_source_effect.stop()
+            self._swap_source_effect = None
+        if self._swap_source_marker:
+            try:
+                self._swap_source_marker.glow_alpha = 0
+            except:
+                pass
+            self._swap_source_marker = None
+        self.view.setCursor(Qt.ArrowCursor)
+        try:
+            self.view.empty_space_right_clicked.disconnect(self._on_swap_picker_cancel)
+        except:
+            pass
+    def _on_swap_picker_cancel(self):
+        self._cleanup_swap_picker()
+        self.info_label.setText(t('map.info.select_base') if t else 'Click on a base marker or list item to view details')
     def _move_base_coords(self, base_data):
         reply = show_question(self, t('base.move_coords.title') if t else 'Change Base Coordinates', t('base.move_coords.warning') if t else 'WARNING: Moving a base to different coordinates can negatively impact your game.\n\nThe base may:\n- Evaluate incorrectly (weird AI behavior)\n- Collide with rocks, trees, structures, or terrain\n- Have foundation/clipping issues\n- Cause Pal pathfinding problems\n\nThis tool cannot detect terrain, collisions, or world geometry.\nProceed only if you understand these risks.\n\nContinue?')
         if not reply:
@@ -1846,7 +2031,7 @@ class MapTab(QWidget):
         self.view.setCursor(Qt.ArrowCursor)
     def _nudge_base(self, base_data):
         from palworld_aio.editor.dialogs import NudgeInputDialog
-        dialog = NudgeInputDialog(self)
+        dialog = NudgeInputDialog(self, current_coords=(base_data['raw_x'], base_data['raw_y'], base_data['z']))
         if dialog.exec() != QDialog.Accepted:
             return
         dx, dy, dz, angle = dialog.result_value
@@ -1961,7 +2146,7 @@ class MapTab(QWidget):
         reply = show_question(self, t('confirm.title') if t else 'Confirm', t('base.palbox_nudge.warning') if t else 'This moves ONLY the Palbox structure. All other buildings stay in place. The base center will shift.\n\nContinue?')
         if not reply:
             return
-        dialog = NudgeInputDialog(self)
+        dialog = NudgeInputDialog(self, current_coords=(base_data['raw_x'], base_data['raw_y'], base_data['z']))
         dialog.setWindowTitle(t('base.palbox_nudge') if t else 'Nudge Palbox')
         if dialog.exec() != QDialog.Accepted:
             return

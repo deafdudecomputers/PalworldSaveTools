@@ -39,6 +39,14 @@ NEW_TRANSLATIONS = {
     'edit_pals.bulk_max_buff_success': 'Fed {count} {name}',
     'edit_pals.bulk_max_buff_success_all': 'Fed {count} pals',
     'pal_editor.bulk_max_buff_btn': 'Feed Food',
+    'base.nudge.current': 'Current',
+    'base.nudge.result': 'Result',
+    'base.nudge.copy_current': 'Click to copy current coordinates',
+    'base.nudge.copy_result': 'Click to copy resulting coordinates',
+    'base.swap_bases': 'Swap Bases',
+    'base.swap.map_prompt': 'Click on a base on the map to swap guilds with it. Right-click to cancel.',
+    'base.swap.same_base': 'Cannot swap a base with itself.',
+    'base.swap.success': 'Bases swapped successfully.',
 }
 OLD_KEYS = []
 def _clean_uv_locks():

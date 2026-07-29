@@ -1,3 +1,8 @@
+#2.2.7
+- **Swap Bases** — right-click a base marker on the map and pick "Swap Bases", then click a second base. The two bases exchange positions with all their structures (map objects, work stations, worker spawns) and guild assignments. Uses the same map-click picker pattern as Change Coordinates.
+- **Nudge dialog shows current and resulting coordinates** — the Nudge Base dialog now displays "Current: x, y, z" on the same row as OK/Cancel and "Result: x', y', z'" below. Both labels are clickable to copy the coordinate values, matching the pal instance ID copy pattern. Live preview updates as you adjust the offset spinners.
+- Bumped version to 2.2.7
+
 #2.2.6
 - **Feed Food for pals** — new bread-icon button in pal info panel, "Feed Food" header button in pal editor and base pal page, multi-select toolbar button, and right-click context menu option. Opens a food picker dialog with category filter (WorkSpeed/Attack/Defense/Combo) and search. Applies the selected food as `NameProperty` with proper duration timer, matching how the game stores food buffs. Also available in Global Pal Storage editor.
 - **Pal instance ID now shows without "ID:" prefix** — the GUID in the pal info header is now displayed bare, matching the copy-to-clipboard behavior.

@@ -130,6 +130,44 @@ class CoordChangeEffect(QGraphicsObject):
             painter.setBrush(QColor(100, 200, 255, da))
             painter.setPen(Qt.NoPen)
             painter.drawEllipse(QPointF(dx, dy), 4, 4)
+class SwapSourceEffect(QGraphicsObject):
+    def __init__(self, x, y):
+        super().__init__()
+        self.setPos(x, y)
+        self._phase = 0.0
+        self._timer = QTimer()
+        self._timer.timeout.connect(self._tick)
+        self._timer.start(30)
+    def _tick(self):
+        self._phase = (self._phase + 0.035) % 1.0
+        self.update()
+    def stop(self):
+        self._timer.stop()
+        if self.scene():
+            self.scene().removeItem(self)
+    def boundingRect(self):
+        return QRectF(-140, -140, 280, 280)
+    def paint(self, painter, option, widget=None):
+        painter.setRenderHint(QPainter.Antialiasing)
+        outer_r = 30 + self._phase * 80
+        outer_a = int(200 * (1 - self._phase))
+        painter.setPen(QPen(QColor(255, 180, 50, outer_a), 4))
+        painter.setBrush(Qt.NoBrush)
+        painter.drawEllipse(QPointF(0, 0), outer_r, outer_r)
+        inner_r = 30 + (1 - self._phase) * 80
+        inner_a = int(200 * self._phase)
+        painter.setPen(QPen(QColor(255, 220, 100, inner_a), 3))
+        painter.drawEllipse(QPointF(0, 0), inner_r, inner_r)
+        dot_angle = self._phase * 360
+        for i in range(3):
+            a = math.radians(dot_angle + i * 120)
+            d = 20 + self._phase * 50
+            dx = math.cos(a) * d
+            dy = math.sin(a) * d
+            da = int(220 * (1 - abs(self._phase - 0.5) * 2))
+            painter.setBrush(QColor(255, 200, 80, da))
+            painter.setPen(Qt.NoPen)
+            painter.drawEllipse(QPointF(dx, dy), 5, 5)
 class ExportEffect(EffectItem):
     def paint(self, painter, option, widget=None):
         painter.setRenderHint(QPainter.Antialiasing)
