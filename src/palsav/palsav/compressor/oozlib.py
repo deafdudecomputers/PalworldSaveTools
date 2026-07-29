@@ -66,7 +66,10 @@ class OozLib(Compressor):
         if save_type != SaveType.PLM.value:
             raise ValueError(f'Unhandled compression type: 0x{save_type:02X}, only 0x31 (PLM) is supported')
         logger.debug('Compressing data...')
-        compressed_data = self.palooz.compress(OodleCompressor.Kraken, OodleLevel.Normal, data, uncompressed_len)
+        # Palworld itself writes PlM saves with Mermaid, not Kraken: recompressing
+        # an untouched official save with Mermaid/Normal reproduces it byte-for-byte,
+        # while Kraken yields a smaller but different (still valid) stream.
+        compressed_data = self.palooz.compress(OodleCompressor.Mermaid, OodleLevel.Normal, data, uncompressed_len)
         if not compressed_data:
             raise RuntimeError(f'palooz compress failed or returned empty result (code: {compressed_data})')
         compressed_len = len(compressed_data)
