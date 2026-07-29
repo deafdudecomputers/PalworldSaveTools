@@ -1237,6 +1237,7 @@ class MainWindow(QMainWindow):
         menu.add_action(self._create_action(t('base.radius.menu') if t else 'Adjust Radius', lambda: self._adjust_base_radius(item.text(0))))
         menu.add_action(self._create_action(t('import.base'), lambda: self._import_base(item.text(1))))
         menu.add_action(self._create_action(t('clone.base'), lambda: self._clone_base(item.text(0), item.text(1))))
+        menu.add_action(self._create_action(t('base.palbox_nudge') if t else 'Nudge Palbox', lambda: self._nudge_palbox(item.text(0))))
         menu.exec(self.bases_panel.tree.viewport().mapToGlobal(pos))
     def _show_exclusion_context_menu(self, pos, excl_type):
         panel = getattr(self, f'excl_{excl_type}_panel')
@@ -2134,6 +2135,57 @@ class MainWindow(QMainWindow):
         def on_finished(fixed):
             self.refresh_all()
             self._show_info(t('done') if t else 'Done', t('deletion.trimmed_inventories', fixed=fixed) if t else f'Trimmed {fixed} overfilled inventories')
+        run_with_loading(on_finished, task)
+    def _nudge_palbox(self, bid):
+        if not constants.loaded_level_json:
+            self._show_warning(t('Error') if t else 'Error', t('error.no_save_loaded') if t else 'No save file loaded.')
+            return
+        from palworld_aio.editor.dialogs import NudgeInputDialog
+        reply = show_question(self, t('confirm.title') if t else 'Confirm', t('base.palbox_nudge.warning') if t else 'This moves ONLY the Palbox structure. All other buildings stay in place. The base center will shift.\n\nContinue?')
+        if not reply:
+            return
+        dialog = NudgeInputDialog(self)
+        dialog.setWindowTitle(t('base.palbox_nudge') if t else 'Nudge Palbox')
+        if dialog.exec() != QDialog.Accepted:
+            return
+        dx, dy, dz, _ = dialog.result_value
+        if dx == 0 and dy == 0 and dz == 0:
+            return
+        def task():
+            wsd = constants.loaded_level_json['properties']['worldSaveData']['value']
+            bid_norm = bid.replace('-', '').lower()
+            map_objs = wsd.get('MapObjectSaveData', {}).get('value', {}).get('values', [])
+            found = False
+            for obj in map_objs:
+                try:
+                    if str(obj.get('MapObjectId', {}).get('value', '')) != 'PalBoxV2':
+                        continue
+                    mr = obj.get('Model', {}).get('value', {}).get('RawData', {}).get('value', {})
+                    if str(mr.get('base_camp_id_belong_to', '')).replace('-', '').lower() != bid_norm:
+                        continue
+                    itc = mr.get('initital_transform_cache', {})
+                    if 'translation' in itc:
+                        itc['translation']['x'] += dx
+                        itc['translation']['y'] += dy
+                        itc['translation']['z'] += dz
+                    if 'transform' in itc:
+                        t2 = itc['transform'].get('translation', {})
+                        if t2:
+                            t2['x'] += dx
+                            t2['y'] += dy
+                            t2['z'] += dz
+                    found = True
+                    break
+                except:
+                    continue
+            constants.invalidate_container_lookup()
+            return found
+        def on_finished(found):
+            if not found:
+                self._show_warning(t('error.title') if t else 'Error', t('base.export.not_found') if t else 'Palbox not found for this base.')
+                return
+            self.refresh_all()
+            self._show_info(t('success.title') if t else 'Success', t('base.palbox_nudge.success') if t else 'Palbox nudged successfully.')
         run_with_loading(on_finished, task)
     def _clone_base(self, bid, gid):
         def task():

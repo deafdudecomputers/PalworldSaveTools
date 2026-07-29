@@ -1314,6 +1314,7 @@ class MapTab(QWidget):
             radius_action = menu.addAction(t('base.radius.menu') if t else 'Adjust Radius')
             move_coords_action = menu.addAction(t('base.move_coords') if t else 'Change Coordinates')
             nudge_action = menu.addAction(t('base.nudge') if t else 'Nudge Base')
+            palbox_nudge_action = menu.addAction(t('base.palbox_nudge') if t else 'Nudge Palbox')
             menu.addSeparator()
             reassign_action = menu.addAction(t('base.reassign_guild') if t else 'Reassign to Guild')
             action = menu.exec(global_pos.toPoint())
@@ -1332,6 +1333,8 @@ class MapTab(QWidget):
                 self._move_base_coords(data)
             elif action == nudge_action:
                 self._nudge_base(data)
+            elif action == palbox_nudge_action:
+                self._nudge_palbox(data)
             elif action == reassign_action:
                 self._reassign_base(data)
     def _on_empty_space_right_clicked(self, global_pos):
@@ -1459,6 +1462,7 @@ class MapTab(QWidget):
             radius_action = menu.addAction(t('base.radius.menu') if t else 'Adjust Radius')
             move_coords_action = menu.addAction(t('base.move_coords') if t else 'Change Coordinates')
             nudge_action = menu.addAction(t('base.nudge') if t else 'Nudge Base')
+            palbox_nudge_action = menu.addAction(t('base.palbox_nudge') if t else 'Nudge Palbox')
             menu.addSeparator()
             reassign_action = menu.addAction(t('base.reassign_guild') if t else 'Reassign to Guild')
             action = menu.exec(tree.viewport().mapToGlobal(pos))
@@ -1477,6 +1481,8 @@ class MapTab(QWidget):
                 self._move_base_coords(item_data)
             elif action == nudge_action:
                 self._nudge_base(item_data)
+            elif action == palbox_nudge_action:
+                self._nudge_palbox(item_data)
             elif action == reassign_action:
                 self._reassign_base(item_data)
         elif item_type == 'guild':
@@ -1949,6 +1955,56 @@ class MapTab(QWidget):
             if self.parent_window:
                 self.parent_window.refresh_all()
             show_information(self, t('success.title') if t else 'Success', t('base.nudge.success') if t else 'Base nudged successfully.')
+        run_with_loading(on_finished, task)
+    def _nudge_palbox(self, base_data):
+        from palworld_aio.editor.dialogs import NudgeInputDialog
+        reply = show_question(self, t('confirm.title') if t else 'Confirm', t('base.palbox_nudge.warning') if t else 'This moves ONLY the Palbox structure. All other buildings stay in place. The base center will shift.\n\nContinue?')
+        if not reply:
+            return
+        dialog = NudgeInputDialog(self)
+        dialog.setWindowTitle(t('base.palbox_nudge') if t else 'Nudge Palbox')
+        if dialog.exec() != QDialog.Accepted:
+            return
+        dx, dy, dz, _ = dialog.result_value
+        if dx == 0 and dy == 0 and dz == 0:
+            return
+        def task():
+            bid = str(base_data['base_id']).replace('-', '').lower()
+            wsd = constants.loaded_level_json['properties']['worldSaveData']['value']
+            map_objs = wsd.get('MapObjectSaveData', {}).get('value', {}).get('values', [])
+            for obj in map_objs:
+                try:
+                    if str(obj.get('MapObjectId', {}).get('value', '')) != 'PalBoxV2':
+                        continue
+                    mr = obj.get('Model', {}).get('value', {}).get('RawData', {}).get('value', {})
+                    if str(mr.get('base_camp_id_belong_to', '')).replace('-', '').lower() != bid:
+                        continue
+                    itc = mr.get('initital_transform_cache', {})
+                    if 'translation' in itc:
+                        itc['translation']['x'] += dx
+                        itc['translation']['y'] += dy
+                        itc['translation']['z'] += dz
+                    if 'transform' in itc:
+                        t2 = itc['transform'].get('translation', {})
+                        if t2:
+                            t2['x'] += dx
+                            t2['y'] += dy
+                            t2['z'] += dz
+                    break
+                except:
+                    continue
+            constants.invalidate_container_lookup()
+            return True
+        def on_finished(success):
+            if not success:
+                show_warning(self, t('error.title') if t else 'Error', t('base.export.not_found') if t else 'Base not found')
+                return
+            img_x, img_y = base_data['img_coords']
+            self._play_effect(ImportEffect, img_x, img_y)
+            self.refresh()
+            if self.parent_window:
+                self.parent_window.refresh_all()
+            show_information(self, t('success.title') if t else 'Success', t('base.palbox_nudge.success') if t else 'Palbox nudged successfully.')
         run_with_loading(on_finished, task)
     def _rename_guild(self, guild_id):
         current_name = self.guilds_data.get(guild_id, {}).get('guild_name', '')
