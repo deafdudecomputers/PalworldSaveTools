@@ -29,7 +29,7 @@ from palworld_aio.managers.base_manager import export_base_json, import_base_jso
 from palworld_aio.managers.backup_manager import export_base_backup, load_base_file, compress_to_pst3
 from palworld_aio.managers.player_manager import rename_player
 from palworld_aio.map.map_generator import generate_world_map
-from palworld_aio.editor.dialogs import InputDialog, DaysInputDialog, LevelInputDialog, RadiusInputDialog, PalDefenderDialog, GameDaysInputDialog
+from palworld_aio.editor.dialogs import InputDialog, DaysInputDialog, LevelInputDialog, RadiusInputDialog, PalDefenderDialog, GameDaysInputDialog, InactiveFilterDialog
 from palworld_aio.widgets import SearchPanel, StatsPanel, ScrollableContextMenu
 from resource_resolver import resource_path
 from palworld_aio.ui.dialogs.player_item_dialog import PlayerItemActionDialog
@@ -1412,17 +1412,24 @@ class MainWindow(QMainWindow):
         if not constants.loaded_level_json:
             self._show_warning(t('Error'), t('error.no_save_loaded'))
             return
-        days = DaysInputDialog.get_days(t('deletion.inactive_bases.title'), t('deletion.inactive_bases.prompt'), self)
-        if days:
+        params = InactiveFilterDialog.get_filter(self)
+        if params:
             def task():
-                return delete_inactive_bases(days, self)
-            def on_finished(removed):
-                if removed > 0:
+                return delete_inactive_bases(params, self)
+            def on_finished(result):
+                if result['count'] > 0:
                     constants.invalidate_container_lookup()
                     if 'base_inventory_tab' in self.__dict__:
                         self.base_inventory_tab.manager.invalidate_cache()
                 self.refresh_all()
-                self._show_info(t('Done'), t('inactive_bases_deleted', count=removed))
+                if result['details']:
+                    from resource_resolver import get_data_base
+                    log_dir = os.path.join(get_data_base(), 'Logs', 'DeleteInactive')
+                    os.makedirs(log_dir, exist_ok=True)
+                    log_path = os.path.join(log_dir, 'inactive_bases.log')
+                    with open(log_path, 'w', encoding='utf-8') as f:
+                        f.write('\n'.join(result['details']))
+                self._show_info(t('Done'), t('inactive_bases_deleted', count=result['count']))
             run_with_loading(on_finished, task)
     def _delete_duplicate_players(self):
         if not constants.loaded_level_json:
@@ -1442,13 +1449,20 @@ class MainWindow(QMainWindow):
         if not constants.loaded_level_json:
             self._show_warning(t('Error'), t('error.no_save_loaded'))
             return
-        days = DaysInputDialog.get_days(t('deletion.inactive_days_title'), t('deletion.inactive_days_prompt'), self)
-        if days:
+        params = InactiveFilterDialog.get_filter(self)
+        if params:
             def task():
-                return delete_inactive_players(days, self)
-            def on_finished(removed):
+                return delete_inactive_players(params, self)
+            def on_finished(result):
                 self.refresh_all()
-                self._show_info(t('Done'), t('deletion.inactive_players_removed', count=removed))
+                if result['details']:
+                    from resource_resolver import get_data_base
+                    log_dir = os.path.join(get_data_base(), 'Logs', 'DeleteInactive')
+                    os.makedirs(log_dir, exist_ok=True)
+                    log_path = os.path.join(log_dir, 'inactive_players.log')
+                    with open(log_path, 'w', encoding='utf-8') as f:
+                        f.write('\n'.join(result['details']))
+                self._show_info(t('Done'), t('deletion.inactive_players_removed', count=result['count']))
             run_with_loading(on_finished, task)
     def _delete_unreferenced(self):
         if not constants.loaded_level_json:
@@ -1648,7 +1662,7 @@ class MainWindow(QMainWindow):
             return
         count = reset_anti_air_turrets(self)
         self.refresh_all()
-        self._show_info(t('Done'), t('anti_air_reset_count', count=count))
+        self._show_info(t('Done'), t('anti_air_reset_all'))
     def _reset_dungeons(self):
         if not constants.loaded_level_json:
             self._show_warning(t('Error'), t('error.no_save_loaded'))

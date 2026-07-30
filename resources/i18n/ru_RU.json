@@ -2016,5 +2016,21 @@
     "xgp.network_blocked.text": "Сеть заблокирована, чтобы предотвратить синхронизацию с облаком Xbox.\n\n1. Запустите Palworld\n2. Дождитесь сообщения «Сетевое соединение нестабильно».\n3. Нажмите «Готово» ниже, чтобы восстановить сеть.\n4. Нажмите «ОК» в Palworld.",
     "xgp.network_blocked.btn_ready": "Готово — восстановить сеть",
     "edit_pals.rank_title": "Установить ранг",
-    "edit_pals.rank_prompt": "Введите значение ранга (1-255):"
+    "edit_pals.rank_prompt": "Введите значение ранга (1-255):",
+    "anti_air_reset_all": "Зенитные турели полностью перезагружены.",
+    "deletion.inactive_filter.title": "Удалить неактивных игроков — Фильтровать",
+    "deletion.inactive_filter.mode": "Режим фильтра:",
+    "deletion.inactive_filter.inactivity": "Неактивные дни",
+    "deletion.inactive_filter.max_level": "Максимальный уровень",
+    "deletion.inactive_filter.both": "Оба (Дни неактивности + Уровень)",
+    "deletion.inactive_filter.days": "Неактивно ≥ дней",
+    "deletion.inactive_filter.level": "Максимальный уровень ≤",
+    "deletion.inactive_reason.inactive": "Неактивно ≥ {дней}д",
+    "deletion.inactive_reason.invalid_level": "Неверный уровень",
+    "deletion.inactive_reason.level_below": "Уровень ≤ {max_level}",
+    "deletion.inactive_detail.player": "{name}({uid}) Ур. {level}{duration} - {reasons}",
+    "deletion.inactive_detail.duration": "- Неактивен в течение {duration}",
+    "deletion.inactive_detail.guild_empty": "{guild}({gid}) – участников не осталось.",
+    "deletion.inactive_detail.guild_deleted": "{guild}({gid}) – участников: {count}: {players}",
+    "deletion.inactive_detail.guild_player": "{name}({uid}) Ур.{уровень}"
 }

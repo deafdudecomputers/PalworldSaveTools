@@ -17,6 +17,22 @@ UPDATED_TRANSLATIONS = {
     'edit_pals.max_all_confirm_cheat': 'Max all stats (IVs: 255, souls: 255, rank: 255, level: 255) for all pals in party & all palbox pages?',
     'base_inventory.max_all_confirm_cheat': 'Max all stats (IVs: 255, souls: 255, rank: 255, level: 255) for all working pals in this base?',
     'func_manager.max_all_pals.confirm_cheat': 'This will max all stats (level 255, IVs 255, souls 255, rank 255) for ALL pals in the save. Continue?',
+    'anti_air_reset_all': 'Anti-air turrets have been fully reset',
+    'deletion.inactive_filter.title': 'Delete Inactive Players — Filter',
+    'deletion.inactive_filter.mode': 'Filter mode:',
+    'deletion.inactive_filter.inactivity': 'Inactive Days',
+    'deletion.inactive_filter.max_level': 'Max Level',
+    'deletion.inactive_filter.both': 'Both (Inactive Days + Level)',
+    'deletion.inactive_filter.days': 'Inactive \u2265 Days',
+    'deletion.inactive_filter.level': 'Max Level ≤',
+    'deletion.inactive_reason.inactive': 'Inactive \u2265 {days}d',
+    'deletion.inactive_reason.invalid_level': 'Invalid level',
+    'deletion.inactive_reason.level_below': 'Level ≤ {max_level}',
+    'deletion.inactive_detail.player': '{name}({uid}) Lv.{level}{duration} - {reasons}',
+    'deletion.inactive_detail.duration': ' - Inactive for {duration}',
+    'deletion.inactive_detail.guild_empty': '{guild}({gid}) - No members remaining',
+    'deletion.inactive_detail.guild_deleted': '{guild}({gid}) - {count} members: {players}',
+    'deletion.inactive_detail.guild_player': '{name}({uid}) Lv.{level}',
 }
 def translate_text(text: str, target_lang: str) -> str:
     translator = GoogleTranslator(source='en', target=target_lang)
@@ -32,7 +48,7 @@ def update_english_keys():
         else:
             print(f'  [UPDATE] {key}')
     with open(lang_file, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+        json.dump(data, f, ensure_ascii=False, indent=4)
 def update_language_file(lang_code: str, lang_info: dict) -> bool:
     try:
         lang_file = PROJECT_ROOT / 'resources' / 'i18n' / f'{lang_code}.json'
@@ -42,7 +58,7 @@ def update_language_file(lang_code: str, lang_info: dict) -> bool:
             translated = translate_text(english_text, lang_info['code'])
             data[key] = translated
         with open(lang_file, 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+            json.dump(data, f, ensure_ascii=False, indent=4)
         return True
     except Exception as e:
         print(f'  [ERROR] Failed: {e}')

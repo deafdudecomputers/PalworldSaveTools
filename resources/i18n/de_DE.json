@@ -2042,5 +2042,21 @@
     "xgp.network_blocked.text": "Netzwerk blockiert, um die Xbox-Cloud-Synchronisierung zu verhindern.\n\n1. Starten Sie Palworld\n2. Warten Sie auf die Meldung „Netzwerkverbindung instabil“.\n3. Klicken Sie unten auf „Bereit“, um das Netzwerk wiederherzustellen\n4. Klicken Sie in Palworld auf OK",
     "xgp.network_blocked.btn_ready": "Bereit – Netzwerk wiederherstellen",
     "edit_pals.rank_title": "Rang festlegen",
-    "edit_pals.rank_prompt": "Geben Sie den Rangwert ein (1-255):"
+    "edit_pals.rank_prompt": "Geben Sie den Rangwert ein (1-255):",
+    "anti_air_reset_all": "Die Luftabwehrtürme wurden vollständig zurückgesetzt",
+    "deletion.inactive_filter.title": "Inaktive Spieler löschen – Filter",
+    "deletion.inactive_filter.mode": "Filtermodus:",
+    "deletion.inactive_filter.inactivity": "Inaktive Tage",
+    "deletion.inactive_filter.max_level": "Maximales Level",
+    "deletion.inactive_filter.both": "Beide (inaktive Tage + Level)",
+    "deletion.inactive_filter.days": "Inaktiv ≥ Tage",
+    "deletion.inactive_filter.level": "Maximales Level ≤",
+    "deletion.inactive_reason.inactive": "Inaktiv ≥ {Tage}d",
+    "deletion.inactive_reason.invalid_level": "Ungültige Ebene",
+    "deletion.inactive_reason.level_below": "Level ≤ {max_level}",
+    "deletion.inactive_detail.player": "{name}({uid}) Lv.{level}{duration} - {reasons}",
+    "deletion.inactive_detail.duration": "- Inaktiv für {duration}",
+    "deletion.inactive_detail.guild_empty": "{guild}({gid}) – Keine Mitglieder mehr übrig",
+    "deletion.inactive_detail.guild_deleted": "{guild}({gid}) – {count} Mitglieder: {players}",
+    "deletion.inactive_detail.guild_player": "{name}({uid}) Lv.{level}"
 }

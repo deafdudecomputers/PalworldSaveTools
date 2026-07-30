@@ -1,6 +1,8 @@
 #2.2.8
 - **Add All Key Items now sets boss defeat flags for bounty tokens** — adding `BossDefeatReward_` items via Add All Key Items previously bypassed `inventory_manager.add_item()` and called `std_container.add_item()` directly, leaving the player's `NormalBossDefeatFlag`, `BossDefeatExpBonusTableIndex`, and `bossTechnologyPoint` flags unset. The game could then spawn world bosses that grant duplicate bounty tokens. Now these items route through the correct flag-setting logic, matching single-item add behavior.
 - **GPS editor save not persisting edits after adding a pal** — edits made via PalInfoWidget only modified the in-memory cache (`self.pals`), while `_save()` serialized the original gvas array copy. Newly added pals had a separate deep copy in the cache that never synced back to the array. Fixed by writing the cache back to the gvas array before serializing, with an identity check to avoid rewriting existing pals whose cache and array already share the same dict object.
+- **Reset Anti-Air Turrets message no longer shows a count** — the function deletes all anti-air turret tracking data at once, but the success message showed "Reset X anti-air turrets" (often "Reset 1 anti-air turret"), which falsely implied only one was reset. Now shows "Anti-air turrets have been fully reset" in all languages.
+- **Delete Inactive Players / Delete Inactive Bases now filter by level too** — both functions now show a filter dialog with three modes: Inactivity only, Max Level only, or Both. Set a max level threshold alongside inactivity days to target low-level inactive players. Details are written to `Logs/DeleteInactive/` as log files, same pattern as PalDefender. Confirmation message shows only the count.
 - Bumped version to 2.2.8
 
 #2.2.7

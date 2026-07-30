@@ -2020,5 +2020,21 @@
     "xgp.network_blocked.text": "网络被阻止以阻止 Xbox 云同步。\n\n1.启动友世界\n2. 等待“网络连接不稳定”消息\n3.点击下方“准备就绪”即可恢复网络\n4.在Palworld中点击确定",
     "xgp.network_blocked.btn_ready": "就绪 — 恢复网络",
     "edit_pals.rank_title": "设置排名",
-    "edit_pals.rank_prompt": "输入排名值 (1-255)："
+    "edit_pals.rank_prompt": "输入排名值 (1-255)：",
+    "anti_air_reset_all": "防空炮塔已完全重置",
+    "deletion.inactive_filter.title": "删除不活跃的玩家 - 过滤器",
+    "deletion.inactive_filter.mode": "过滤方式：",
+    "deletion.inactive_filter.inactivity": "不活跃天数",
+    "deletion.inactive_filter.max_level": "最高等级",
+    "deletion.inactive_filter.both": "两者（不活跃天数 + 级别）",
+    "deletion.inactive_filter.days": "不活跃 ≥ 天数",
+    "deletion.inactive_filter.level": "最大等级≤",
+    "deletion.inactive_reason.inactive": "不活动 ≥ {天}d",
+    "deletion.inactive_reason.invalid_level": "无效级别",
+    "deletion.inactive_reason.level_below": "级别 ≤ {max_level}",
+    "deletion.inactive_detail.player": "{名称}({uid}) Lv.{等级}{持续时间} - {原因}",
+    "deletion.inactive_detail.duration": "- 处于非活动状态 {duration}",
+    "deletion.inactive_detail.guild_empty": "{guild}({gid}) - 没有剩余成员",
+    "deletion.inactive_detail.guild_deleted": "{guild}({gid}) - {count} 名成员：{players}",
+    "deletion.inactive_detail.guild_player": "{名称}({uid}) Lv.{等级}"
 }

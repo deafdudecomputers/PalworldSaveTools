@@ -136,6 +136,73 @@ class DaysInputDialog(ThemedDialog):
         if dialog.exec() == QDialog.Accepted:
             return dialog.result_value
         return None
+class InactiveFilterDialog(ThemedDialog):
+    FILTER_INACTIVITY = 0
+    FILTER_MAXLEVEL = 1
+    FILTER_BOTH = 2
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(t('deletion.inactive_filter.title') if t else 'Delete Inactive Players — Filter')
+        self.setModal(True)
+        self.setMinimumWidth(400)
+        if os.path.exists(constants.ICON_PATH):
+            self.setWindowIcon(QIcon(constants.ICON_PATH))
+        layout = QVBoxLayout(self)
+        layout.setSpacing(12)
+        mode_label = QLabel(t('deletion.inactive_filter.mode') if t else 'Filter mode:')
+        mode_label.setFont(QFont(constants.FONT_FAMILY, constants.FONT_SIZE, QFont.Bold))
+        layout.addWidget(mode_label)
+        self.filter_group = QButtonGroup(self)
+        self.radio_inactivity = QRadioButton(t('deletion.inactive_filter.inactivity') if t else 'Inactive Days')
+        self.radio_maxlevel = QRadioButton(t('deletion.inactive_filter.max_level') if t else 'Max Level')
+        self.radio_both = QRadioButton(t('deletion.inactive_filter.both') if t else 'Both')
+        self.filter_group.addButton(self.radio_inactivity, self.FILTER_INACTIVITY)
+        self.filter_group.addButton(self.radio_maxlevel, self.FILTER_MAXLEVEL)
+        self.filter_group.addButton(self.radio_both, self.FILTER_BOTH)
+        self.radio_inactivity.setChecked(True)
+        mode_row = QHBoxLayout()
+        mode_row.addWidget(self.radio_inactivity)
+        mode_row.addWidget(self.radio_maxlevel)
+        mode_row.addWidget(self.radio_both)
+        mode_row.addStretch()
+        layout.addLayout(mode_row)
+        params_frame = QFrame()
+        params_frame.setFrameShape(QFrame.StyledPanel)
+        params_layout = QFormLayout(params_frame)
+        self.days_spin = QSpinBox()
+        self.days_spin.setMinimum(1)
+        self.days_spin.setMaximum(9999)
+        self.days_spin.setValue(30)
+        params_layout.addRow(t('deletion.inactive_filter.days') if t else 'Inactive \u2265 Days', self.days_spin)
+        self.level_spin = QSpinBox()
+        self.level_spin.setMinimum(1)
+        self.level_spin.setMaximum(100)
+        self.level_spin.setValue(10)
+        params_layout.addRow(t('deletion.inactive_filter.level') if t else 'Max Level \u2264', self.level_spin)
+        layout.addWidget(params_frame)
+        button_layout = QHBoxLayout()
+        ok_btn = QPushButton(t('button.ok') if t else 'OK')
+        ok_btn.setMinimumHeight(36)
+        ok_btn.clicked.connect(self.accept)
+        cancel_btn = QPushButton(t('button.cancel') if t else 'Cancel')
+        cancel_btn.setMinimumHeight(36)
+        cancel_btn.clicked.connect(self.reject)
+        button_layout.addWidget(ok_btn)
+        button_layout.addWidget(cancel_btn)
+        layout.addLayout(button_layout)
+        self.result = None
+    def accept(self):
+        mode = self.filter_group.checkedId()
+        days = self.days_spin.value()
+        level = self.level_spin.value()
+        self.result = {'mode': mode, 'days': days, 'level': level}
+        super().accept()
+    @staticmethod
+    def get_filter(parent=None):
+        dialog = InactiveFilterDialog(parent)
+        if dialog.exec() == QDialog.Accepted:
+            return dialog.result
+        return None
 class LevelInputDialog(ThemedDialog):
     def __init__(self, title, prompt, current_level, parent=None, minimum=1, maximum=80):
         super().__init__(parent)

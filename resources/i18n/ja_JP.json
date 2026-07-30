@@ -2018,5 +2018,21 @@
     "xgp.network_blocked.text": "Xbox クラウド同期を防ぐためにネットワークがブロックされました。\n\n1.パルワールドを起動する\n2.「ネットワーク接続が不安定です」というメッセージが表示されるまで待ちます。\n3. 下の「準備完了」をクリックしてネットワークを復元します\n4.パルワールドで「OK」をクリックします",
     "xgp.network_blocked.btn_ready": "準備完了 — ネットワークを復元します",
     "edit_pals.rank_title": "ランクを設定する",
-    "edit_pals.rank_prompt": "ランク値を入力してください (1 ～ 255):"
+    "edit_pals.rank_prompt": "ランク値を入力してください (1 ～ 255):",
+    "anti_air_reset_all": "対空砲塔が完全にリセットされました",
+    "deletion.inactive_filter.title": "非アクティブなプレーヤーの削除 — フィルター",
+    "deletion.inactive_filter.mode": "フィルターモード:",
+    "deletion.inactive_filter.inactivity": "非アクティブな日",
+    "deletion.inactive_filter.max_level": "最大レベル",
+    "deletion.inactive_filter.both": "両方 (非アクティブな日 + レベル)",
+    "deletion.inactive_filter.days": "非アクティブ ≥ 日",
+    "deletion.inactive_filter.level": "最大レベル ≤",
+    "deletion.inactive_reason.inactive": "非アクティブ ≥ {days} 日",
+    "deletion.inactive_reason.invalid_level": "無効なレベル",
+    "deletion.inactive_reason.level_below": "レベル ≤ {max_level}",
+    "deletion.inactive_detail.player": "{名前}({uid}) Lv.{レベル}{期間} - {理由}",
+    "deletion.inactive_detail.duration": "- {期間}の間非アクティブです",
+    "deletion.inactive_detail.guild_empty": "{guild}({gid}) - メンバーが残っていない",
+    "deletion.inactive_detail.guild_deleted": "{ギルド}({gid}) - {count} 人のメンバー: {players}",
+    "deletion.inactive_detail.guild_player": "{名前}({uid}) Lv.{レベル}"
 }

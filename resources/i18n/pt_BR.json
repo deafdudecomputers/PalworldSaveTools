@@ -2305,5 +2305,21 @@
     "xgp.network_blocked.text": "Rede bloqueada para impedir a sincronização na nuvem do Xbox.\n\n1. Inicie o Palworld\n2. Aguarde a mensagem \"Conexão de rede instável\"\n3. Clique em \"Pronto\" abaixo para restaurar a rede\n4. Clique em OK no Palworld",
     "xgp.network_blocked.btn_ready": "Pronto – restaurar rede",
     "edit_pals.rank_title": "Definir classificação",
-    "edit_pals.rank_prompt": "Insira o valor da classificação (1-255):"
+    "edit_pals.rank_prompt": "Insira o valor da classificação (1-255):",
+    "anti_air_reset_all": "As torres antiaéreas foram totalmente reiniciadas",
+    "deletion.inactive_filter.title": "Excluir jogadores inativos — Filtro",
+    "deletion.inactive_filter.mode": "Modo de filtro:",
+    "deletion.inactive_filter.inactivity": "Dias Inativos",
+    "deletion.inactive_filter.max_level": "Nível máximo",
+    "deletion.inactive_filter.both": "Ambos (dias inativos + nível)",
+    "deletion.inactive_filter.days": "Inativo ≥ Dias",
+    "deletion.inactive_filter.level": "Nível máximo ≤",
+    "deletion.inactive_reason.inactive": "Inativo ≥ {dias}d",
+    "deletion.inactive_reason.invalid_level": "Nível inválido",
+    "deletion.inactive_reason.level_below": "Nível ≤ {max_level}",
+    "deletion.inactive_detail.player": "{nome}({uid}) Nv.{nível}{duração} - {motivos}",
+    "deletion.inactive_detail.duration": "- Inativo por {duration}",
+    "deletion.inactive_detail.guild_empty": "{guild}({gid}) - Nenhum membro restante",
+    "deletion.inactive_detail.guild_deleted": "{guild}({gid}) - {count} membros: {players}",
+    "deletion.inactive_detail.guild_player": "{nome}({uid}) Nv.{nível}"
 }

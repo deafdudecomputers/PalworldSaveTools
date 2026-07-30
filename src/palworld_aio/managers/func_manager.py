@@ -185,17 +185,19 @@ def delete_empty_guilds(parent=None):
                 delete_base_camp(b, gid)
         group_data.remove(g)
     return len(to_delete)
-def delete_inactive_players(days_threshold, parent=None):
+def delete_inactive_players(filter_params, parent=None):
     if not constants.loaded_level_json:
-        return 0
+        return {'count': 0, 'details': []}
     from palworld_aio.managers.save_manager import build_player_levels
     build_player_levels()
+    mode = filter_params['mode']
+    days_threshold = filter_params.get('days')
+    max_level = filter_params.get('level')
     wsd = constants.loaded_level_json['properties']['worldSaveData']['value']
     tick_now = wsd['GameTimeSaveData']['value']['RealDateTimeTicks']['value']
     group_data_list = wsd['GroupSaveDataMap']['value']
     deleted_info = []
     to_delete_uids = set()
-    total_players_before = sum((len(g['value']['RawData']['value'].get('players', [])) for g in group_data_list if g['value']['GroupType']['value']['value'] == 'EPalGroupType::Guild'))
     excluded_players = {ex.replace('-', '') for ex in constants.exclusions.get('players', [])}
     for group in group_data_list[:]:
         if group['value']['GroupType']['value']['value'] != 'EPalGroupType::Guild':
@@ -215,12 +217,28 @@ def delete_inactive_players(days_threshold, parent=None):
                 continue
             player_name = player.get('player_info', {}).get('player_name', 'Unknown')
             last_online = player.get('player_info', {}).get('last_online_real_time')
-            level = constants.player_levels.get(uid)
-            inactive = last_online is not None and (tick_now - last_online) / 864000000000 >= days_threshold
-            if inactive or not is_valid_level(level):
-                reason = 'Inactive' if inactive else 'Invalid level'
-                extra = f' - Inactive for {format_duration((tick_now - last_online) / 10000000.0)}' if inactive and last_online else ''
-                deleted_info.append(f'{player_name}({uid})- {reason}{extra}')
+            level = constants.player_levels.get(uid, 1)
+            inactive = last_online is not None and days_threshold and (tick_now - last_online) / 864000000000 >= days_threshold
+            below_max_level = isinstance(level, int) and max_level and level <= max_level
+            matches = False
+            if mode == 0:
+                matches = inactive
+            elif mode == 1:
+                matches = below_max_level
+            elif mode == 2:
+                matches = inactive and below_max_level
+            reasons = []
+            if inactive and mode in (0, 2):
+                reasons.append(t('deletion.inactive_reason.inactive', days=days_threshold))
+            if below_max_level and mode in (1, 2):
+                reasons.append(t('deletion.inactive_reason.level_below', max_level=max_level))
+            if not is_valid_level(level):
+                reasons.append(t('deletion.inactive_reason.invalid_level'))
+            if matches or not is_valid_level(level):
+                duration_str = ''
+                if inactive and last_online:
+                    duration_str = t('deletion.inactive_detail.duration', duration=format_duration((tick_now - last_online) / 10000000.0))
+                deleted_info.append(t('deletion.inactive_detail.player', name=player_name, uid=uid, level=level, duration=duration_str, reasons=', '.join(reasons)))
                 to_delete_uids.add(uid)
             else:
                 keep_players.append(player)
@@ -244,30 +262,60 @@ def delete_inactive_players(days_threshold, parent=None):
         removed_pals = delete_player_pals(wsd, to_delete_uids)
         char_map = wsd.get('CharacterSaveParameterMap', {}).get('value', [])
         char_map[:] = [entry for entry in char_map if str(entry.get('key', {}).get('PlayerUId', {}).get('value', '')).replace('-', '') not in to_delete_uids and str(entry.get('value', {}).get('RawData', {}).get('value', {}).get('object', {}).get('SaveParameter', {}).get('value', {}).get('OwnerPlayerUId', {}).get('value', '')).replace('-', '') not in to_delete_uids]
-        total_players_after = sum((len(g['value']['RawData']['value'].get('players', [])) for g in group_data_list if g['value']['GroupType']['value']['value'] == 'EPalGroupType::Guild'))
-    return len(to_delete_uids)
-def delete_inactive_bases(days_threshold, parent=None):
+    return {'count': len(to_delete_uids), 'details': deleted_info}
+def delete_inactive_bases(filter_params, parent=None):
     if not constants.loaded_level_json:
-        return 0
+        return {'count': 0, 'details': []}
+    from palworld_aio.managers.save_manager import build_player_levels
+    build_player_levels()
+    mode = filter_params['mode']
+    days_threshold = filter_params.get('days')
+    max_level = filter_params.get('level')
     wsd = constants.loaded_level_json['properties']['worldSaveData']['value']
     tick = wsd['GameTimeSaveData']['value']['RealDateTimeTicks']['value']
-    inactive_guild_ids = []
+    excluded_guilds = {ex.replace('-', '').lower() for ex in constants.exclusions.get('guilds', [])}
+    deleted_info = []
+    deleted_guild_ids = []
     for g in wsd['GroupSaveDataMap']['value']:
         if g['value']['GroupType']['value']['value'] != 'EPalGroupType::Guild':
             continue
         gid = as_uuid(g['key'])
+        gid_clean = gid.replace('-', '').lower()
+        if gid_clean in excluded_guilds:
+            continue
+        guild_name = g['value']['RawData']['value'].get('guild_name', 'Unknown')
         players = g['value']['RawData']['value'].get('players', [])
         if not players:
-            inactive_guild_ids.append(gid)
+            deleted_guild_ids.append(gid)
+            deleted_info.append(t('deletion.inactive_detail.guild_empty', guild=guild_name, gid=gid_clean))
             continue
-        all_inactive = True
+        all_match = True
+        player_levels_in_guild = []
         for p in players:
+            uid_obj = p.get('player_uid', '')
+            uid = str(uid_obj.get('value', '') if isinstance(uid_obj, dict) else uid_obj).replace('-', '')
             last_online = p.get('player_info', {}).get('last_online_real_time')
-            if last_online is None or (tick - last_online) / 10000000.0 / 86400 < days_threshold:
-                all_inactive = False
+            level = constants.player_levels.get(uid, 1)
+            inactive = False
+            below_level = False
+            if last_online is not None and days_threshold:
+                inactive = (tick - last_online) / 10000000.0 / 86400 >= days_threshold
+            if isinstance(level, int) and max_level:
+                below_level = level <= max_level
+            if mode == 0:
+                player_match = inactive
+            elif mode == 1:
+                player_match = below_level
+            else:
+                player_match = inactive and below_level
+            if not player_match:
+                all_match = False
                 break
-        if all_inactive:
-            inactive_guild_ids.append(gid)
+            player_levels_in_guild.append({'uid': uid, 'name': p.get('player_info', {}).get('player_name', 'Unknown'), 'level': level, 'inactive': inactive})
+        if all_match:
+            deleted_guild_ids.append(gid)
+            player_summary = ', '.join((t('deletion.inactive_detail.guild_player', name=pl['name'], uid=pl['uid'], level=pl['level']) for pl in player_levels_in_guild))
+            deleted_info.append(t('deletion.inactive_detail.guild_deleted', guild=guild_name, gid=gid_clean, count=len(players), players=player_summary))
     base_list = wsd.get('BaseCampSaveData', {}).get('value', [])
     removed = 0
     excluded_bases = {ex.replace('-', '').lower() for ex in constants.exclusions.get('bases', [])}
@@ -276,7 +324,7 @@ def delete_inactive_bases(days_threshold, parent=None):
         base_id = as_uuid(b['key'])
         if base_id.replace('-', '').lower() in excluded_bases:
             continue
-        if gid in inactive_guild_ids:
+        if gid in deleted_guild_ids:
             delete_base_camp(b, gid)
             removed += 1
     if removed > 0:
@@ -285,7 +333,7 @@ def delete_inactive_bases(days_threshold, parent=None):
         manager = BaseInventoryManager.get_instance()
         if manager:
             manager.invalidate_cache()
-    return removed
+    return {'count': removed, 'details': deleted_info}
 def delete_duplicated_players(parent=None):
     if not constants.current_save_path or not constants.loaded_level_json:
         return 0

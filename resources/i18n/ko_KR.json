@@ -2017,5 +2017,21 @@
     "xgp.network_blocked.text": "Xbox 클라우드 동기화를 방지하기 위해 네트워크가 차단되었습니다.\n\n1. 팔월드 실행\n2. \"네트워크 연결이 불안정합니다\" 메시지를 기다립니다.\n3. 네트워크를 복원하려면 아래의 \"준비\"를 클릭하세요.\n4. Palworld에서 확인을 클릭하세요.",
     "xgp.network_blocked.btn_ready": "준비 - 네트워크 복원",
     "edit_pals.rank_title": "순위 설정",
-    "edit_pals.rank_prompt": "순위 값 입력(1-255):"
+    "edit_pals.rank_prompt": "순위 값 입력(1-255):",
+    "anti_air_reset_all": "대공 포탑이 완전히 재설정되었습니다.",
+    "deletion.inactive_filter.title": "비활성 플레이어 삭제 - 필터",
+    "deletion.inactive_filter.mode": "필터 모드:",
+    "deletion.inactive_filter.inactivity": "비활성 일수",
+    "deletion.inactive_filter.max_level": "최대 레벨",
+    "deletion.inactive_filter.both": "둘 다(비활성 일수 + 수준)",
+    "deletion.inactive_filter.days": "비활성 ≥ 일수",
+    "deletion.inactive_filter.level": "최대 레벨 ≤",
+    "deletion.inactive_reason.inactive": "비활성 ≥ {일}일",
+    "deletion.inactive_reason.invalid_level": "잘못된 수준",
+    "deletion.inactive_reason.level_below": "레벨 ≤ {max_level}",
+    "deletion.inactive_detail.player": "{name}({uid}) Lv.{level}{duration} - {이유}",
+    "deletion.inactive_detail.duration": "- {duration} 동안 비활성 상태",
+    "deletion.inactive_detail.guild_empty": "{guild}({gid}) - 남은 회원 없음",
+    "deletion.inactive_detail.guild_deleted": "{길드}({gid}) - {count}명의 회원: {players}",
+    "deletion.inactive_detail.guild_player": "{name}({uid}) Lv.{레벨}"
 }
