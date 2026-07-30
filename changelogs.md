@@ -1,5 +1,6 @@
 #2.2.8
 - **Add All Key Items now sets boss defeat flags for bounty tokens** — adding `BossDefeatReward_` items via Add All Key Items previously bypassed `inventory_manager.add_item()` and called `std_container.add_item()` directly, leaving the player's `NormalBossDefeatFlag`, `BossDefeatExpBonusTableIndex`, and `bossTechnologyPoint` flags unset. The game could then spawn world bosses that grant duplicate bounty tokens. Now these items route through the correct flag-setting logic, matching single-item add behavior.
+- **GPS editor save not persisting edits after adding a pal** — edits made via PalInfoWidget only modified the in-memory cache (`self.pals`), while `_save()` serialized the original gvas array copy. Newly added pals had a separate deep copy in the cache that never synced back to the array. Fixed by writing the cache back to the gvas array before serializing, with an identity check to avoid rewriting existing pals whose cache and array already share the same dict object.
 - Bumped version to 2.2.8
 
 #2.2.7

@@ -850,6 +850,15 @@ class GpsEditorDialog(FramelessDialog):
         if not force and not self._modified:
             return
         self._modified = False
+        arr = constants.gps_gvas.properties.get('SaveParameterArray', {}).get('value', {}).get('values', [])
+        for abs_idx, pal in self.pals.items():
+            raw = pal.get('data')
+            if not raw or abs_idx >= len(arr) or not isinstance(arr[abs_idx], dict):
+                continue
+            sp = arr[abs_idx].get('SaveParameter', {}).get('value', {})
+            if isinstance(sp, dict) and sp is not raw:
+                sp.clear()
+                sp.update(copy.deepcopy(raw))
         from palworld_aio.managers.save_manager import save_manager
         save_manager.save_gps(constants.gps_path)
 
