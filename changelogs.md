@@ -1,3 +1,7 @@
+#2.2.8
+- **Add All Key Items now sets boss defeat flags for bounty tokens** — adding `BossDefeatReward_` items via Add All Key Items previously bypassed `inventory_manager.add_item()` and called `std_container.add_item()` directly, leaving the player's `NormalBossDefeatFlag`, `BossDefeatExpBonusTableIndex`, and `bossTechnologyPoint` flags unset. The game could then spawn world bosses that grant duplicate bounty tokens. Now these items route through the correct flag-setting logic, matching single-item add behavior.
+- Bumped version to 2.2.8
+
 #2.2.7
 - **XGP saves no longer clone to new worlds** — GamePass saves now save back to the original world (same save_id, same containers). Xbox cloud sync prevented by disabling all physical network adapters during the write. After saving, PST shows a dialog to launch Palworld, wait for "Network connection unstable", then confirm to restore network — sync never starts, edits stay.
 - **Fix Host Save, Character Transfer, Slot Injector, Restore Map** — all GamePass paths now use in-place writes with network block instead of creating cloned worlds.

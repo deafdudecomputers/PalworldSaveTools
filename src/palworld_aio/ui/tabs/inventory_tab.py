@@ -2334,7 +2334,10 @@ class PlayerInventoryTab(QWidget):
                 for item_id in missing_unlocks:
                     std_container.add_item(item_id, 1)
                 for item in to_add:
-                    std_container.add_item(item['asset'], 1)
+                    if item['asset'].startswith('BossDefeatReward_'):
+                        self.inventory.add_item(item_id=item['asset'], quantity=1)
+                    else:
+                        std_container.add_item(item['asset'], 1)
                 self.inventory.save()
                 return total
             def on_finished(count):
