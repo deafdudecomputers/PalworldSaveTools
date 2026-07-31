@@ -26,10 +26,10 @@ jobs:
             asset_glob: "PST_standalone_v*.zip"
             file_id: "7648655"
           - variant: linux
-            asset_glob: "PalworldSaveTools-V*-linux.AppImage"
+            asset_glob: "PalworldSaveTools-v*-linux.AppImage"
             file_id: "7648652"
           - variant: macos
-            asset_glob: "PalworldSaveTools-V*-macos.dmg"
+            asset_glob: "PalworldSaveTools-v*-macos.dmg"
             file_id: "7648646"
     steps:
       - name: Checkout repository
@@ -108,5 +108,11 @@ jobs:
           esac
 
       - name: Upload to Nexus Mods
-        run: echo "Nexus Mods upload is disabled — see .github/workflows/nexus-upload.yml"
-        shell: bash
+        uses: Nexus-Mods/upload-action@v1.0.0-beta.8
+        with:
+          api_key: ${{ secrets.NEXUSMODS_API_KEY }}
+          file_id: ${{ matrix.file_id }}
+          filename: ${{ steps.package.outputs.upload_file }}
+          version: ${{ steps.meta.outputs.version }}
+          display_name: ${{ steps.meta.outputs.tag }}_${{ matrix.variant }}
+          archive_existing_version: true

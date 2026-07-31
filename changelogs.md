@@ -3,6 +3,7 @@
 - **Character Transfer now fully replaces the old character** — transferring a character into a slot that already has one no longer leaves both bodies behind. The old character is removed and the guild keeps pointing at the transferred one, so the game can no longer spawn a duplicate fresh character.
 - **Delete Duplicated Players now cleans duplicate character bodies too** — previously it only caught the same player listed in two guilds. It now also removes leftover duplicate bodies for one player and fixes the stale guild references left behind by character transfers.
 - **Character Transfer, Fix Host Save, and Slot Injector show consistent player info** — all of them use the same canonical player resolution, so a save with duplicate bodies shows the same correct data everywhere.
+- **Nexus Mods uploads are working again** — automatic uploads to Nexus on release were failing: Linux and macOS assets were being looked up with the wrong name casing (so the workflow never found them), and the upload step itself had been disabled. Asset detection and the upload are both restored, so published releases now sync all three platform files to Nexus automatically.
 - Bumped version to 2.2.9
 
 #2.2.8
