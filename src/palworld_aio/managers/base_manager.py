@@ -75,13 +75,32 @@ def _get_concrete_raw(map_obj):
         return map_obj['ConcreteModel']['value']['RawData']['value']
     except:
         return None
-def _remap_connector_links(map_obj, instance_id_map):
+def _remap_connector_links(map_obj, instance_id_map, id_bytemap=None):
     try:
-        conn = map_obj['Model']['value']['Connector']['value']['RawData']['value']['connect']
+        conn_raw = map_obj['Model']['value']['Connector']['value']['RawData']['value']
+        conn = conn_raw.get('connect')
         for entry in conn.get('any_place', []) or []:
             old_id = _s(entry.get('connect_to_model_instance_id', ''))
             if old_id in instance_id_map:
                 entry['connect_to_model_instance_id'] = instance_id_map[old_id]
+        ub = conn_raw.get('unknown_bytes')
+        if isinstance(ub, list) and id_bytemap:
+            try:
+                b = bytearray(ub)
+                i = 0
+                changed = 0
+                while i + 16 <= len(b):
+                    w = bytes(b[i:i+16])
+                    if w in id_bytemap:
+                        b[i:i+16] = id_bytemap[w]
+                        changed += 1
+                        i += 16
+                    else:
+                        i += 1
+                if changed:
+                    conn_raw['unknown_bytes'] = list(b)
+            except Exception:
+                pass
     except:
         pass
 def _get_connector_connect(map_obj):
@@ -521,6 +540,12 @@ def import_base_json(loaded_level_json, exported_data, target_guild_id, offset=(
                 concrete_id_map[old_conc] = _new_uuid()
     if palbox_model_id and palbox_model_id not in instance_id_map:
         instance_id_map[palbox_model_id] = _new_uuid()
+    id_bytemap = {}
+    for _old, _new in instance_id_map.items():
+        try:
+            id_bytemap[PalUUID.from_str(str(_old)).raw_bytes] = PalUUID.from_str(str(_new)).raw_bytes
+        except Exception:
+            continue
     new_base_id = _new_uuid()
     new_worker_container_id = _new_uuid()
     new_palbox_inst_id = instance_id_map.get(palbox_model_id, palbox_model_id) if palbox_model_id else None
@@ -718,7 +743,7 @@ def import_base_json(loaded_level_json, exported_data, target_guild_id, offset=(
         rw = _s(nmr.get('repair_work_id', ''))
         if rw and rw != _s(z) and rw in work_id_map:
             nmr['repair_work_id'] = work_id_map[rw]
-        _remap_connector_links(no, instance_id_map)
+        _remap_connector_links(no, instance_id_map, id_bytemap)
         try:
             _offset_translation(nmr['initital_transform_cache']['translation'], total_offset)
         except:
@@ -823,29 +848,11 @@ def import_base_json(loaded_level_json, exported_data, target_guild_id, offset=(
     return True
 def _run_post_import_validation(loaded_level_json, base_id):
     global last_import_audit
-    import logging
-    logger = logging.getLogger('base_manager')
     try:
         report = validate_imported_base(loaded_level_json, base_id)
         last_import_audit = report
-        n_issues = len(report['issues'])
-        n_warnings = len(report['warnings'])
-        print('[import audit] base %s: %d issues, %d warnings' % (report.get('base_id'), n_issues, n_warnings))
-        for issue in report['issues'][:20]:
-            print('[import audit] ISSUE: ' + issue)
-            logger.warning('[import audit] %s', issue)
-        if n_issues > 20:
-            print('[import audit] ... and %d more issues' % (n_issues - 20))
-        for warning in report['warnings'][:20]:
-            print('[import audit] warning: ' + warning)
-            logger.info('[import audit] %s', warning)
-        logger.info('[import audit] base %s: %d issues, %d warnings, %d world objects',
-                    report.get('base_id'), n_issues, n_warnings, report.get('object_count'))
     except Exception as exc:
-        report = {'base_id': _s(base_id) if base_id else None, 'object_count': 0, 'issues': ['validation failed: %r' % exc], 'warnings': []}
-        last_import_audit = report
-        print('[import audit] ISSUE: validation failed: %r' % exc)
-        logger.warning('[import audit] validation failed: %r', exc)
+        last_import_audit = {'base_id': _s(base_id) if base_id else None, 'object_count': 0, 'issues': ['validation failed: %r' % exc], 'warnings': []}
 def clone_base_complete(loaded_level_json, source_base_id, target_guild_id, offset=(8000, 0, 0)):
     exported = export_base_json(loaded_level_json, source_base_id)
     if not exported:

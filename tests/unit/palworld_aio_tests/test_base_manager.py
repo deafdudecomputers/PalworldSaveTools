@@ -71,6 +71,48 @@ def test_import_base_json_remaps_connector_links():
     assert new_id in live_ids, 'connector ref dangles at an id absent from the imported copy'
 
 
+def test_import_base_json_remaps_connector_raw_bytes():
+    palbox = _map_object('PalBoxV2', SRC_A, SRC_A + 'c', [])
+    src_bytes = PalUUID.from_str(SRC_A).raw_bytes
+    chest = {
+        'MapObjectId': {'id': None, 'value': 'ItemChest', 'type': 'NameProperty'},
+        'Model': {'value': {
+            'RawData': {'value': {
+                'instance_id': SRC_B,
+                'concrete_model_instance_id': SRC_B + 'c',
+                'base_camp_id_belong_to': 'ffffffff-ffff-ffff-ffff-ffffffffffff',
+                'group_id_belong_to': GID,
+                'initital_transform_cache': dict(TRANSFORM),
+            }},
+            'Connector': {'value': {'RawData': {'value': {
+                'connect': {'index': 0, 'any_place': []},
+                'unknown_bytes': list(b'\x00\x00\x00\x00' + src_bytes + b'\x01\x00\x00\x00\x00\x00\x00\x00'),
+            }}}},
+        }},
+        'ConcreteModel': {'value': {'ModuleMap': {'value': []}, 'RawData': {'value': {}}}},
+    }
+    loaded = {'properties': {'worldSaveData': {'value': {}}}}
+    exported = {
+        'base_camp': {'key': 'ffffffff-ffff-ffff-ffff-ffffffffffff',
+                      'value': {'RawData': {'value': {'transform': TRANSFORM}}}},
+        'base_camp_level': 1,
+        'map_objects': [palbox, chest],
+        'characters': [],
+        'item_containers': [],
+        'char_containers': [],
+        'works': [],
+        'dynamic_items': [],
+    }
+    assert _bm.import_base_json(loaded, exported, GID), 'import failed'
+    objs = loaded['properties']['worldSaveData']['value']['MapObjectSaveData']['value']['values']
+    chest_out = next(o for o in objs if o['MapObjectId']['value'] == 'ItemChest')
+    ub = bytes(chest_out['Model']['value']['Connector']['value']['RawData']['value']['unknown_bytes'])
+    assert src_bytes not in ub, 'source id leaked into connector raw bytes'
+    live_ids = {str(o['Model']['value']['RawData']['value']['instance_id']).lower() for o in objs}
+    found = any(PalUUID.from_str(iid).raw_bytes in ub for iid in live_ids)
+    assert found, 'no live (fresh) id present in connector raw bytes'
+
+
 SRC_C = 'cccccccc-cccc-cccc-cccc-cccccccccccc'
 
 
@@ -107,7 +149,7 @@ def test_validate_imported_base_clean_after_remap():
 
 
 def test_validate_imported_base_flags_unremapped_connector_refs(monkeypatch):
-    monkeypatch.setattr(_bm, '_remap_connector_links', lambda map_obj, instance_id_map: None)
+    monkeypatch.setattr(_bm, '_remap_connector_links', lambda map_obj, instance_id_map, id_bytemap=None: None)
     loaded = {'properties': {'worldSaveData': {'value': {}}}}
     assert _bm.import_base_json(loaded, _linked_base_export(), GID), 'import failed'
     report = _bm.validate_imported_base(loaded)
