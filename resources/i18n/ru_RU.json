@@ -1973,7 +1973,7 @@
     "base.nudge.rotate": "Вращение",
     "deletion.menu.reset_lock_gimmick": "Сброс башен мини-игр",
     "loading.reset_lock_gimmick": "Сброс башен мини-игры...",
-    "lock_gimmick_reset_count": "Сбросить башни мини-игры {count}",
+    "lock_gimmick_reset_count": "Сбросить {count} башни мини-игры",
     "map.header.base_pals": "Базовые приятели",
     "deletion.col.members": "Члены",
     "guild.assign.role": "Роль",
@@ -1988,7 +1988,7 @@
     "base.palbox_nudge.success": "Палбокс успешно подтолкнул.",
     "base.palbox_nudge.warning": "Это перемещает ТОЛЬКО структуру Palbox. Все остальные постройки остаются на месте. Базовый центр сместится.\n\nПродолжать?",
     "edit_pals.ctx.bulk_max_buff": "Кормовая еда",
-    "edit_pals.tooltip.max_buff": "Накормите едой этого приятеля",
+    "edit_pals.tooltip.max_buff": "Накормите этим приятелем едой",
     "edit_pals.max_buff_all": "Кормовая еда",
     "edit_pals.bulk_max_buff_title": "Кормовая пища - {name}",
     "edit_pals.bulk_max_buff_desc": "Отправьте {food} выбранным друзьям",
@@ -2032,5 +2032,7 @@
     "deletion.inactive_detail.duration": "- Неактивен в течение {duration}",
     "deletion.inactive_detail.guild_empty": "{guild}({gid}) – участников не осталось.",
     "deletion.inactive_detail.guild_deleted": "{guild}({gid}) – участников: {count}: {players}",
-    "deletion.inactive_detail.guild_player": "{name}({uid}) Ур.{уровень}"
+    "deletion.inactive_detail.guild_player": "{name}({uid}) Ур.{уровень}",
+    "deletion.menu.fix_connectors": "Исправить сломанные разъемы",
+    "deletion.connectors_fixed": "Исправлены неработающие ссылки {fixed} (остаются неразрешённые {remaining})."
 }

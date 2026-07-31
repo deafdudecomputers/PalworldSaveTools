@@ -2016,5 +2016,7 @@
     "deletion.inactive_detail.duration": "- Inactif pendant {durée}",
     "deletion.inactive_detail.guild_empty": "{guild}({gid}) – Aucun membre restant",
     "deletion.inactive_detail.guild_deleted": "{guild}({gid}) - {count} membres : {players}",
-    "deletion.inactive_detail.guild_player": "{name}({uid}) Niv.{niveau}"
+    "deletion.inactive_detail.guild_player": "{name}({uid}) Niv.{niveau}",
+    "deletion.menu.fix_connectors": "Réparer les connecteurs cassés",
+    "deletion.connectors_fixed": "Correction des références brisées {fixed} ({remaining} restent non résolues)"
 }

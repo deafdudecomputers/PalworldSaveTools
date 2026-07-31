@@ -2321,5 +2321,7 @@
     "deletion.inactive_detail.duration": " - Inactive for {duration}",
     "deletion.inactive_detail.guild_empty": "{guild}({gid}) - No members remaining",
     "deletion.inactive_detail.guild_deleted": "{guild}({gid}) - {count} members: {players}",
-    "deletion.inactive_detail.guild_player": "{name}({uid}) Lv.{level}"
+    "deletion.inactive_detail.guild_player": "{name}({uid}) Lv.{level}",
+    "deletion.menu.fix_connectors": "Fix Broken Connectors",
+    "deletion.connectors_fixed": "Fixed {fixed} broken references ({remaining} unresolved remain)"
 }

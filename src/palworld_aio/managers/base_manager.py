@@ -9,6 +9,7 @@ from i18n import t
 from palworld_aio import constants
 from palworld_aio.utils import fast_deepcopy, are_equal_uuids, as_uuid
 from palworld_aio.managers.data_manager import delete_base_camp
+last_import_audit = None
 def _s(x):
     return str(x).lower()
 def _new_uuid():
@@ -74,6 +75,285 @@ def _get_concrete_raw(map_obj):
         return map_obj['ConcreteModel']['value']['RawData']['value']
     except:
         return None
+def _remap_connector_links(map_obj, instance_id_map):
+    try:
+        conn = map_obj['Model']['value']['Connector']['value']['RawData']['value']['connect']
+        for entry in conn.get('any_place', []) or []:
+            old_id = _s(entry.get('connect_to_model_instance_id', ''))
+            if old_id in instance_id_map:
+                entry['connect_to_model_instance_id'] = instance_id_map[old_id]
+    except:
+        pass
+def _get_connector_connect(map_obj):
+    try:
+        return map_obj['Model']['value']['Connector']['value']['RawData']['value']['connect']
+    except:
+        return None
+def validate_imported_base(loaded_level_json, base_id=None):
+    """Post-import audit of a base camp's structure connector/support network.
+
+    Runs against the mutated world AFTER import_base_json has appended the
+    imported objects. Checks, for every base camp (or just the one identified
+    by base_id):
+
+      - duplicate instance_ids / concrete_model_instance_ids
+      - Connector.connect.any_place refs that dangle (point at an id that is
+        not a live map object), point at another camp's object (cross-link),
+        or have no matching reverse link (one-sided edge)
+      - objects that carry connector links but are unreachable from the
+        palbox through the connector graph (the game reads these as
+        "not enough support")
+      - base camp -> palbox binding (owner_map_object_instance_id)
+      - model/concrete id cross-consistency
+
+    Never raises; returns a report dict.
+    """
+    report = {'base_id': _s(base_id) if base_id else None, 'object_count': 0, 'issues': [], 'warnings': []}
+    try:
+        raw_prop = loaded_level_json['properties']['worldSaveData']['value']
+        data = raw_prop if isinstance(raw_prop, dict) else {}
+        map_objs = data.get('MapObjectSaveData', {}).get('value', {}).get('values', [])
+        base_camps = data.get('BaseCampSaveData', {}).get('value', [])
+    except:
+        report['issues'].append('worldSaveData structure unreadable')
+        return report
+    report['object_count'] = len(map_objs)
+    zero = _s(_zero())
+    # Index live model/concrete ids, flag duplicates.
+    model_owner = {}
+    concrete_owner = {}
+    for obj in map_objs:
+        mr = _get_model_raw(obj)
+        if not isinstance(mr, dict):
+            continue
+        iid = _s(mr.get('instance_id', ''))
+        cid = _s(mr.get('concrete_model_instance_id', ''))
+        if iid and iid != zero:
+            if iid in model_owner:
+                report['issues'].append('duplicate instance_id %s (%s vs %s)' % (iid, model_owner[iid].get('MapObjectId', {}).get('value'), obj.get('MapObjectId', {}).get('value')))
+            else:
+                model_owner[iid] = obj
+        if cid and cid != zero:
+            if cid in concrete_owner:
+                report['issues'].append('duplicate concrete_model_instance_id %s' % cid)
+            else:
+                concrete_owner[cid] = obj
+    camps = [c for c in base_camps] if not base_id else [c for c in base_camps if _s(c.get('key')) == _s(base_id)]
+    for camp in camps:
+        camp_id = _s(camp.get('key', ''))
+        camp_objs = [o for o in map_objs if _s((_get_model_raw(o) or {}).get('base_camp_id_belong_to', '')) == camp_id]
+        # connector graph over model ids
+        edges = {}
+        for obj in camp_objs:
+            iid = _s((_get_model_raw(obj) or {}).get('instance_id', ''))
+            conn = _get_connector_connect(obj)
+            if not conn:
+                continue
+            for entry in conn.get('any_place', []) or []:
+                ref = _s(entry.get('connect_to_model_instance_id', ''))
+                if not ref or ref == zero:
+                    continue
+                edges.setdefault(iid, set()).add(ref)
+                if ref not in model_owner:
+                    report['issues'].append('camp %s: %s (%s) connector ref %s dangles (no live object)' % (camp_id, iid, obj.get('MapObjectId', {}).get('value'), ref))
+                else:
+                    ref_camp = _s((_get_model_raw(model_owner[ref]) or {}).get('base_camp_id_belong_to', ''))
+                    if ref_camp != camp_id:
+                        report['warnings'].append('camp %s: %s links to %s which belongs to another camp (%s)' % (camp_id, iid, ref, ref_camp))
+        # bidirectionality
+        for src, refs in edges.items():
+            for ref in refs:
+                if ref not in edges or src not in edges.get(ref, set()):
+                    report['warnings'].append('camp %s: one-sided connector %s <-> %s' % (camp_id, src, ref))
+        # reachability from the palbox
+        palbox = next((o for o in camp_objs if str(o.get('MapObjectId', {}).get('value', '')) == 'PalBoxV2'), None)
+        palbox_id = _s((_get_model_raw(palbox) or {}).get('instance_id', '')) if palbox else ''
+        if palbox_id and palbox_id in edges:
+            seen = {palbox_id}
+            stack = [palbox_id]
+            while stack:
+                cur = stack.pop()
+                for nb in edges.get(cur, set()):
+                    if nb in edges and nb not in seen:
+                        seen.add(nb)
+                        stack.append(nb)
+            for iid, refs in edges.items():
+                if iid not in seen:
+                    report['issues'].append('camp %s: %s (%s) is not connected to the palbox through any connector link (unsupported)' % (camp_id, iid, (model_owner.get(iid) or {}).get('MapObjectId', {}).get('value')))
+        elif camp_objs and not palbox:
+            report['issues'].append('camp %s: no PalBoxV2 among its %d objects' % (camp_id, len(camp_objs)))
+        # base camp -> palbox binding
+        try:
+            owner = _s(camp['value']['RawData']['value'].get('owner_map_object_instance_id', ''))
+            if palbox_id and owner != palbox_id:
+                report['issues'].append('camp %s: owner_map_object_instance_id %s does not match palbox instance_id %s' % (camp_id, owner, palbox_id))
+        except:
+            pass
+        # model/concrete cross-consistency
+        for obj in camp_objs:
+            mr = _get_model_raw(obj)
+            cr = _get_concrete_raw(obj)
+            if not isinstance(mr, dict) or not isinstance(cr, dict) or 'values' in cr:
+                continue
+            m_conc = _s(mr.get('concrete_model_instance_id', ''))
+            c_inst = _s(cr.get('instance_id', ''))
+            c_model = _s(cr.get('model_instance_id', ''))
+            if m_conc and c_inst and m_conc != c_inst:
+                report['issues'].append('camp %s: %s model.concrete_model_instance_id %s != concrete.instance_id %s' % (camp_id, obj.get('MapObjectId', {}).get('value'), m_conc, c_inst))
+            if c_model and c_model != _s(mr.get('instance_id', '')):
+                report['issues'].append('camp %s: %s concrete.model_instance_id %s != model.instance_id %s' % (camp_id, obj.get('MapObjectId', {}).get('value'), c_model, _s(mr.get('instance_id', ''))))
+    return report
+def repair_base_references(loaded_level_json):
+    """Scan the whole save and fix every broken reference in place.
+
+    Runs against the mutated world (typically after import_base_json). Fixes:
+
+      - Connector.connect.any_place refs to non-existent objects  -> dropped
+      - map object repair_work_id to a missing work               -> zeroed
+      - module target_container_id / target_work_id to missing    -> zeroed
+      - module work_ids entries that are not live works           -> pruned
+      - orphan works (owner object missing from the world)        -> removed
+      - base camp WorkCollection.work_ids to missing works        -> pruned
+      - base camp owner_map_object_instance_id not matching the
+        camp's PalBox                                            -> corrected
+
+    Never raises. Returns a report dict.
+    """
+    report = {'fixed': [], 'remaining': []}
+    try:
+        raw_prop = loaded_level_json['properties']['worldSaveData']['value']
+        data = raw_prop if isinstance(raw_prop, dict) else {}
+        map_objs = data.get('MapObjectSaveData', {}).get('value', {}).get('values', [])
+        base_camps = data.get('BaseCampSaveData', {}).get('value', [])
+        work_root = data.get('WorkSaveData')
+        works = _iter_work_savedata_entries(work_root)
+        containers = []
+        for k in ('ItemContainerSaveData', 'CharacterContainerSaveData'):
+            v = data.get(k, {}).get('value', [])
+            if isinstance(v, list):
+                containers += v
+    except:
+        report['remaining'].append('worldSaveData structure unreadable')
+        return report
+    zero = _s(_zero())
+    # live-id index
+    live_obj = set()
+    live_concrete = set()
+    for o in map_objs:
+        mr = _get_model_raw(o)
+        if not isinstance(mr, dict):
+            continue
+        iid = _s(mr.get('instance_id', ''))
+        if iid and iid != zero:
+            live_obj.add(iid)
+        cid = _s(mr.get('concrete_model_instance_id', ''))
+        if cid and cid != zero:
+            live_concrete.add(cid)
+    live_work = set()
+    for we in works:
+        wr = _get_work_raw(we)
+        if isinstance(wr, dict) and 'id' in wr:
+            wid = _s(wr['id'])
+            if wid and wid != zero:
+                live_work.add(wid)
+    live_container = set()
+    for c in containers:
+        try:
+            cid = _s(c['key']['ID']['value'])
+            if cid and cid != zero:
+                live_container.add(cid)
+        except:
+            pass
+    # 1. connector refs + repair_work_id + module refs per map object
+    for o in map_objs:
+        mr = _get_model_raw(o)
+        if not isinstance(mr, dict):
+            continue
+        oid = str(o.get('MapObjectId', {}).get('value', ''))
+        iid = _s(mr.get('instance_id', ''))
+        tag = oid + (':' + iid[:8] if iid else '')
+        # repair_work_id
+        rw = _s(mr.get('repair_work_id', ''))
+        if rw and rw != zero and rw not in live_work:
+            mr['repair_work_id'] = _zero()
+            report['fixed'].append('%s: zeroed repair_work_id (no such work)' % tag)
+        # connector any_place
+        conn = _get_connector_connect(o)
+        if conn:
+            kept = []
+            for e in conn.get('any_place', []) or []:
+                r = _s(e.get('connect_to_model_instance_id', ''))
+                if r and r != zero and r not in live_obj:
+                    report['fixed'].append('%s: dropped dangling connector ref %s' % (tag, r))
+                    continue
+                kept.append(e)
+            conn['any_place'] = kept
+        # module refs
+        try:
+            mm = o['ConcreteModel']['value']['ModuleMap']['value']
+            for mod in mm:
+                rm = mod.get('value', {}).get('RawData', {}).get('value', {})
+                if not isinstance(rm, dict):
+                    continue
+                tc = _s(rm.get('target_container_id', ''))
+                if tc and tc != zero and tc not in live_container:
+                    rm['target_container_id'] = _zero()
+                    report['fixed'].append('%s: zeroed dangling target_container_id' % tag)
+                tw = _s(rm.get('target_work_id', ''))
+                if tw and tw != zero and tw not in live_work:
+                    rm['target_work_id'] = _zero()
+                    report['fixed'].append('%s: zeroed dangling target_work_id' % tag)
+                if 'work_ids' in rm and isinstance(rm['work_ids'], list):
+                    kept_w = [w for w in rm['work_ids'] if _s(w) == zero or _s(w) in live_work]
+                    if len(kept_w) != len(rm['work_ids']):
+                        report['fixed'].append('%s: pruned %d dangling work_ids' % (tag, len(rm['work_ids']) - len(kept_w)))
+                    rm['work_ids'] = kept_w
+        except:
+            pass
+    # 2. orphan works
+    orphans = []
+    for we in works:
+        wr = _get_work_raw(we)
+        if not isinstance(wr, dict) or 'id' not in wr:
+            continue
+        om = _s(wr.get('owner_map_object_model_id', ''))
+        oc = _s(wr.get('owner_map_object_concrete_model_id', ''))
+        if (om and om != zero and om not in live_obj) or (oc and oc != zero and oc not in live_concrete):
+            orphans.append(we)
+    if orphans:
+        orphan_ids = {_s((_get_work_raw(w) or {}).get('id', '')) for w in orphans}
+        try:
+            work_vals = work_root['value']['values']
+            work_vals[:] = [w for w in work_vals if w not in orphans]
+        except:
+            pass
+        report['fixed'].append('removed %d orphan works (owner object missing)' % len(orphans))
+    # 3. base camp WorkCollection pruning + palbox binding
+    for camp in base_camps:
+        camp_id = _s(camp.get('key', ''))
+        try:
+            wc = camp['value']['WorkCollection']['value']['RawData']['value']
+            wids = [w for w in wc.get('work_ids', []) if _s(w) == zero or _s(w) in live_work]
+            if len(wids) != len(wc.get('work_ids', [])):
+                report['fixed'].append('camp %s: pruned %d WorkCollection ids' % (camp_id, len(wc.get('work_ids', [])) - len(wids)))
+            wc['work_ids'] = wids
+        except:
+            pass
+        palbox = next((o for o in map_objs
+                       if str(o.get('MapObjectId', {}).get('value', '')) == 'PalBoxV2'
+                       and _s((_get_model_raw(o) or {}).get('base_camp_id_belong_to', '')) == camp_id), None)
+        palbox_id = _s((_get_model_raw(palbox) or {}).get('instance_id', '')) if palbox else ''
+        try:
+            rd = camp['value']['RawData']['value']
+            owner = _s(rd.get('owner_map_object_instance_id', ''))
+            if palbox_id and owner != palbox_id:
+                rd['owner_map_object_instance_id'] = (palbox['Model']['value']['RawData']['value']).get('instance_id', '')
+                report['fixed'].append('camp %s: corrected owner_map_object_instance_id to palbox %s' % (camp_id, palbox_id))
+            elif not palbox_id:
+                report['remaining'].append('camp %s: no PalBoxV2 found among its objects' % camp_id)
+        except:
+            pass
+    return report
 def _offset_translation(t_vec, final_offset):
     try:
         t_vec['x'] += final_offset[0]
@@ -435,6 +715,10 @@ def import_base_json(loaded_level_json, exported_data, target_guild_id, offset=(
         nmr['concrete_model_instance_id'] = new_conc
         nmr['base_camp_id_belong_to'] = new_base_id
         nmr['group_id_belong_to'] = target_guild_id
+        rw = _s(nmr.get('repair_work_id', ''))
+        if rw and rw != _s(z) and rw in work_id_map:
+            nmr['repair_work_id'] = work_id_map[rw]
+        _remap_connector_links(no, instance_id_map)
         try:
             _offset_translation(nmr['initital_transform_cache']['translation'], total_offset)
         except:
@@ -444,7 +728,7 @@ def import_base_json(loaded_level_json, exported_data, target_guild_id, offset=(
             is_raw_fallback = 'values' in cr
             if is_raw_fallback:
                 raw = cr.get('values')
-                if isinstance(raw, (bytes, bytearray, list)):
+                if isinstance(raw, (bytes, bytearray, list)) and len(raw) >= 32:
                     cr['values'] = _patch_raw_concrete_bytes(raw, 0, new_conc)
                     cr['values'] = _patch_raw_concrete_bytes(cr['values'], 16, new_inst)
             else:
@@ -535,7 +819,33 @@ def import_base_json(loaded_level_json, exported_data, target_guild_id, offset=(
             except:
                 pass
         map_objs.append(no)
+    _run_post_import_validation(loaded_level_json, new_base_id)
     return True
+def _run_post_import_validation(loaded_level_json, base_id):
+    global last_import_audit
+    import logging
+    logger = logging.getLogger('base_manager')
+    try:
+        report = validate_imported_base(loaded_level_json, base_id)
+        last_import_audit = report
+        n_issues = len(report['issues'])
+        n_warnings = len(report['warnings'])
+        print('[import audit] base %s: %d issues, %d warnings' % (report.get('base_id'), n_issues, n_warnings))
+        for issue in report['issues'][:20]:
+            print('[import audit] ISSUE: ' + issue)
+            logger.warning('[import audit] %s', issue)
+        if n_issues > 20:
+            print('[import audit] ... and %d more issues' % (n_issues - 20))
+        for warning in report['warnings'][:20]:
+            print('[import audit] warning: ' + warning)
+            logger.info('[import audit] %s', warning)
+        logger.info('[import audit] base %s: %d issues, %d warnings, %d world objects',
+                    report.get('base_id'), n_issues, n_warnings, report.get('object_count'))
+    except Exception as exc:
+        report = {'base_id': _s(base_id) if base_id else None, 'object_count': 0, 'issues': ['validation failed: %r' % exc], 'warnings': []}
+        last_import_audit = report
+        print('[import audit] ISSUE: validation failed: %r' % exc)
+        logger.warning('[import audit] validation failed: %r', exc)
 def clone_base_complete(loaded_level_json, source_base_id, target_guild_id, offset=(8000, 0, 0)):
     exported = export_base_json(loaded_level_json, source_base_id)
     if not exported:

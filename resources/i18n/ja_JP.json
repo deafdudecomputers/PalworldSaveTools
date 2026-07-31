@@ -2034,5 +2034,7 @@
     "deletion.inactive_detail.duration": "- {期間}の間非アクティブです",
     "deletion.inactive_detail.guild_empty": "{guild}({gid}) - メンバーが残っていない",
     "deletion.inactive_detail.guild_deleted": "{ギルド}({gid}) - {count} 人のメンバー: {players}",
-    "deletion.inactive_detail.guild_player": "{名前}({uid}) Lv.{レベル}"
+    "deletion.inactive_detail.guild_player": "{名前}({uid}) Lv.{レベル}",
+    "deletion.menu.fix_connectors": "壊れたコネクタを修復する",
+    "deletion.connectors_fixed": "{fixed} の壊れた参照を修正 ({remaining} 未解決のまま)"
 }

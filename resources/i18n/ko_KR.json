@@ -2033,5 +2033,7 @@
     "deletion.inactive_detail.duration": "- {duration} 동안 비활성 상태",
     "deletion.inactive_detail.guild_empty": "{guild}({gid}) - 남은 회원 없음",
     "deletion.inactive_detail.guild_deleted": "{길드}({gid}) - {count}명의 회원: {players}",
-    "deletion.inactive_detail.guild_player": "{name}({uid}) Lv.{레벨}"
+    "deletion.inactive_detail.guild_player": "{name}({uid}) Lv.{레벨}",
+    "deletion.menu.fix_connectors": "깨진 커넥터 수정",
+    "deletion.connectors_fixed": "{fixed} 깨진 참조 수정({remaining} 해결되지 않은 남아 있음)"
 }

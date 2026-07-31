@@ -2028,5 +2028,7 @@
     "deletion.inactive_detail.duration": "- Inactivo durante {duración}",
     "deletion.inactive_detail.guild_empty": "{guild}({gid}) - No quedan miembros",
     "deletion.inactive_detail.guild_deleted": "{gremio}({gid}) - {count} miembros: {jugadores}",
-    "deletion.inactive_detail.guild_player": "{nombre}({uid}) Nivel{nivel}"
+    "deletion.inactive_detail.guild_player": "{nombre}({uid}) Nivel{nivel}",
+    "deletion.menu.fix_connectors": "Reparar conectores rotos",
+    "deletion.connectors_fixed": "Se corrigieron {fixed} referencias rotas ({remaining} permanecen sin resolver)"
 }

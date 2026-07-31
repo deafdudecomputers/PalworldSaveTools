@@ -1859,6 +1859,12 @@ def repair_structures(parent=None):
             continue
     skipped = total_structures - repaired_structures
     return {'repaired': repaired_structures, 'skipped': skipped}
+def fix_broken_connectors(parent=None):
+    if not constants.loaded_level_json:
+        return None
+    from palworld_aio.managers.base_manager import repair_base_references
+    report = repair_base_references(constants.loaded_level_json)
+    return {'fixed': len(report['fixed']), 'remaining': len(report['remaining']), 'details': report['fixed'][:50]}
 def repair_items(parent=None):
     if not constants.loaded_level_json:
         return None

@@ -2036,5 +2036,7 @@
     "deletion.inactive_detail.duration": "- 处于非活动状态 {duration}",
     "deletion.inactive_detail.guild_empty": "{guild}({gid}) - 没有剩余成员",
     "deletion.inactive_detail.guild_deleted": "{guild}({gid}) - {count} 名成员：{players}",
-    "deletion.inactive_detail.guild_player": "{名称}({uid}) Lv.{等级}"
+    "deletion.inactive_detail.guild_player": "{名称}({uid}) Lv.{等级}",
+    "deletion.menu.fix_connectors": "修复损坏的连接器",
+    "deletion.connectors_fixed": "修复了 {fixed} 损坏的引用（{remaining} 仍然未解决）"
 }

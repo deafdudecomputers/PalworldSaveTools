@@ -15,6 +15,8 @@ LANGUAGES = {'zh_CN': {'name': 'Simplified Chinese', 'code': 'zh-CN'}, 'de_DE': 
 NEW_TRANSLATIONS = {
     'deletion.menu.fix_invalid_active_skills': 'Fix Invalid Active Skills',
     'deletion.invalid_active_skills_fixed': 'Removed {count} invalid active/learned skills from {pals} pals',
+    'deletion.menu.fix_connectors': 'Fix Broken Connectors',
+    'deletion.connectors_fixed': 'Fixed {fixed} broken references ({remaining} unresolved remain)',
     'deletion.menu.reset_lock_gimmick': 'Reset Mini Game Towers',
     'loading.reset_lock_gimmick': 'Resetting mini game towers...',
     'lock_gimmick_reset_count': 'Reset {count} mini game towers',

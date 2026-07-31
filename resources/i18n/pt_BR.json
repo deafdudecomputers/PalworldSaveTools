@@ -2321,5 +2321,7 @@
     "deletion.inactive_detail.duration": "- Inativo por {duration}",
     "deletion.inactive_detail.guild_empty": "{guild}({gid}) - Nenhum membro restante",
     "deletion.inactive_detail.guild_deleted": "{guild}({gid}) - {count} membros: {players}",
-    "deletion.inactive_detail.guild_player": "{nome}({uid}) Nv.{nível}"
+    "deletion.inactive_detail.guild_player": "{nome}({uid}) Nv.{nível}",
+    "deletion.menu.fix_connectors": "Consertar conectores quebrados",
+    "deletion.connectors_fixed": "Corrigidas referências quebradas de {fixed} ({remaining} permanecem não resolvidas)"
 }
