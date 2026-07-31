@@ -12,14 +12,24 @@ from palworld_aio.managers.data_manager import delete_base_camp
 def _s(x):
     return str(x).lower()
 def _new_uuid():
-    return PalUUID(uuid.uuid4().bytes)
+    return PalUUID.from_str(str(uuid.uuid4()))
 def _zero():
-    return PalUUID(uuid.UUID('00000000-0000-0000-0000-000000000000').bytes)
+    return PalUUID.from_str('00000000-0000-0000-0000-000000000000')
 def _clear_char_container_slots(container_obj):
     try:
         container_obj['value']['Slots']['value']['values'] = []
     except:
         pass
+def _patch_raw_concrete_bytes(raw, offset, guid_val):
+    try:
+        b = bytearray(raw)
+        if isinstance(guid_val, PalUUID):
+            b[offset:offset+16] = guid_val.raw_bytes
+        elif isinstance(guid_val, str):
+            b[offset:offset+16] = PalUUID.from_str(guid_val).raw_bytes
+        return bytes(b)
+    except:
+        return raw
 def _iter_work_savedata_entries(work_root):
     if not isinstance(work_root, dict):
         return []
@@ -225,15 +235,15 @@ def import_base_json(loaded_level_json, exported_data, target_guild_id, offset=(
             continue
         old_inst = _s(mr.get('instance_id', ''))
         if old_inst and old_inst != _s(z):
-            instance_id_map[old_inst] = old_inst
+            instance_id_map[old_inst] = _new_uuid()
             old_conc = _s(mr.get('concrete_model_instance_id', ''))
             if old_conc and old_conc != _s(z):
-                concrete_id_map[old_conc] = old_conc
+                concrete_id_map[old_conc] = _new_uuid()
     if palbox_model_id and palbox_model_id not in instance_id_map:
-        instance_id_map[palbox_model_id] = palbox_model_id
+        instance_id_map[palbox_model_id] = _new_uuid()
     new_base_id = _new_uuid()
     new_worker_container_id = _new_uuid()
-    new_palbox_inst_id = palbox_model_id
+    new_palbox_inst_id = instance_id_map.get(palbox_model_id, palbox_model_id) if palbox_model_id else None
     src_base_raw = exported_data['base_camp']['value']['RawData']['value']
     cur_pos = _deep(src_base_raw['transform']['translation'])
     total_offset = [0, 0, 0]
@@ -431,9 +441,16 @@ def import_base_json(loaded_level_json, exported_data, target_guild_id, offset=(
             pass
         cr = _get_concrete_raw(no)
         if isinstance(cr, dict):
-            cr['instance_id'] = new_conc
-            cr['model_instance_id'] = new_inst
-            cr['base_camp_id'] = new_base_id
+            is_raw_fallback = 'values' in cr
+            if is_raw_fallback:
+                raw = cr.get('values')
+                if isinstance(raw, (bytes, bytearray, list)):
+                    cr['values'] = _patch_raw_concrete_bytes(raw, 0, new_conc)
+                    cr['values'] = _patch_raw_concrete_bytes(cr['values'], 16, new_inst)
+            else:
+                cr['instance_id'] = new_conc
+                cr['model_instance_id'] = new_inst
+                cr['base_camp_id'] = new_base_id
             if cr.get('concrete_model_type') == 'PalMapObjectBreedFarmModel':
                 cr['spawned_egg_instance_ids'] = []
             if cr.get('concrete_model_type') in ('PalMapObjectItemBoothModel', 'PalMapObjectPalBoothModel'):
