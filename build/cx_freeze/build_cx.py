@@ -92,6 +92,31 @@ def get_app_version():
             if line.strip().startswith('APP_VERSION'):
                 return line.split('=')[1].strip().strip('"').strip("'")
     return 'unknown'
+def stamp_version_info():
+    exe_path = os.path.join('PST_standalone', 'PalworldSaveTools.exe')
+    if not os.path.exists(exe_path):
+        print(f'WARNING: {exe_path} not found, skipping version stamp')
+        return
+    try:
+        from cx_Freeze.winversioninfo import VersionInfo
+    except ImportError:
+        print('WARNING: cx_Freeze not importable, skipping version stamp')
+        return
+    version = get_app_version()
+    info = VersionInfo(
+        version,
+        description='Palworld Save Tools',
+        company='Pylar',
+        product='Palworld Save Tools',
+        copyright='Copyright (c) 2026 Pylar',
+        comments='',
+        internal_name='PalworldSaveTools',
+        original_filename='PalworldSaveTools.exe',
+    )
+    info.stamp(exe_path)
+    print(f'Stamped version resource: {exe_path} ({version})')
+
+
 def cleanup_build_artifacts():
     build_dir = 'PST_standalone'
     if not os.path.exists(build_dir):
@@ -145,6 +170,7 @@ def main():
     try:
         build_with_cx_freeze()
         cleanup_build_artifacts()
+        stamp_version_info()
         print_logo()
         create_release_archive()
         print_logo()
