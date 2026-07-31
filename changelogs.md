@@ -2,6 +2,7 @@
 - **Imported bases are fully buildable again** — after importing or cloning a base, the game used to treat its structures as unsupported ("not enough support"), so you couldn't place anything on them. Structure support data is now carried over correctly, so an imported base works just like one you built yourself.
 - **Base import no longer corrupts empty structure data** — structures whose support data was empty (most walls, roofs, and fences) were getting junk injected into them during import, which the game misread as broken supports. Empty data is now left untouched, so imported structures stay intact.
 - **Structure connections survive import and clone** — the links that keep a chest attached to its foundation (and furniture anchored to the floor) are now rewired to the imported copy instead of pointing back at the original base. No more detached items or cross-wired bases when importing or cloning.
+- **GamePass save dialog no longer says "Save as New World"** — GamePass saves are written back to the original world, but the dialog still asked you to name a new world. It now says "Save to World": the current world name is prefilled and left untouched unless you edit it to rename. No more confusing clone-world wording.
 - Bumped version to 2.3.0
 
 #2.2.9

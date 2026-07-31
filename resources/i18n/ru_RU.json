@@ -2034,5 +2034,7 @@
     "deletion.inactive_detail.guild_deleted": "{guild}({gid}) – участников: {count}: {players}",
     "deletion.inactive_detail.guild_player": "{name}({uid}) Ур.{уровень}",
     "deletion.menu.fix_connectors": "Исправить сломанные разъемы",
-    "deletion.connectors_fixed": "Исправлены неработающие ссылки {fixed} (остаются неразрешённые {remaining})."
+    "deletion.connectors_fixed": "Исправлены неработающие ссылки {fixed} (остаются неразрешённые {remaining}).",
+    "xgp.save.title": "Сохранить в мир",
+    "xgp.save.msg": "Изменения будут сохранены обратно в мир «{name}».\nОставьте имя без изменений, чтобы сохранить его, или отредактируйте, чтобы переименовать."
 }

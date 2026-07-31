@@ -2323,5 +2323,7 @@
     "deletion.inactive_detail.guild_deleted": "{guild}({gid}) - {count} members: {players}",
     "deletion.inactive_detail.guild_player": "{name}({uid}) Lv.{level}",
     "deletion.menu.fix_connectors": "Fix Broken Connectors",
-    "deletion.connectors_fixed": "Fixed {fixed} broken references ({remaining} unresolved remain)"
+    "deletion.connectors_fixed": "Fixed {fixed} broken references ({remaining} unresolved remain)",
+    "xgp.save.title": "Save to World",
+    "xgp.save.msg": "Changes will be saved back to the world \"{name}\".\nLeave the name unchanged to keep it, or edit to rename."
 }

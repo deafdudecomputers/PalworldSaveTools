@@ -740,9 +740,9 @@ class SlotNumUpdaterApp(QDialog):
                 except Exception:
                     pass
             from PySide6.QtWidgets import QInputDialog, QLineEdit
-            new_name, ok = QInputDialog.getText(self, 'Save as New World',
-                f'World name (original: "{old_name}"):',
-                QLineEdit.Normal, f'{old_name} (modified)')
+            new_name, ok = QInputDialog.getText(self, t('xgp.save.title', default='Save to World'),
+                t('xgp.save.msg', default='Changes will be saved back to the world "{name}".\nLeave the name unchanged to keep it, or edit to rename.', name=old_name),
+                QLineEdit.Normal, old_name)
             if not ok or not new_name.strip():
                 return
             new_name = new_name.strip()

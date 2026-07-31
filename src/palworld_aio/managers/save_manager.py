@@ -270,9 +270,9 @@ class SaveManager(QObject):
                     _old_name = _mg.properties.get('SaveData', {}).get('value', {}).get('WorldName', {}).get('value', 'World')
             except Exception:
                 pass
-            _name, _ok = QInputDialog.getText(parent, 'Save as New World',
-                f'Enter a name for the new world (original: "{_old_name}"):',
-                QLineEdit.Normal, f'{_old_name} (modified)')
+            _name, _ok = QInputDialog.getText(parent, t('xgp.save.title', default='Save to World'),
+                t('xgp.save.msg', default='Changes will be saved back to the world "{name}".\nLeave the name unchanged to keep it, or edit to rename.', name=_old_name),
+                QLineEdit.Normal, _old_name)
             if not _ok or not _name.strip():
                 return
             self._xgp_new_world_name = _name.strip()

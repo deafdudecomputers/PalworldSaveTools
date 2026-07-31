@@ -2060,5 +2060,7 @@
     "deletion.inactive_detail.guild_deleted": "{guild}({gid}) – {count} Mitglieder: {players}",
     "deletion.inactive_detail.guild_player": "{name}({uid}) Lv.{level}",
     "deletion.menu.fix_connectors": "Reparieren Sie defekte Anschlüsse",
-    "deletion.connectors_fixed": "Fehlerhafte {fixed}-Referenzen behoben ({remaining} bleiben ungelöst)"
+    "deletion.connectors_fixed": "Fehlerhafte {fixed}-Referenzen behoben ({remaining} bleiben ungelöst)",
+    "xgp.save.title": "In der Welt speichern",
+    "xgp.save.msg": "Änderungen werden wieder in der Welt „{name}“ gespeichert.\nLassen Sie den Namen unverändert, um ihn beizubehalten, oder bearbeiten Sie ihn, um ihn umzubenennen."
 }

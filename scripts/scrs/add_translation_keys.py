@@ -58,6 +58,8 @@ NEW_TRANSLATIONS = {
     'xgp.network_blocked.btn_ready': 'Ready — restore network',
     'edit_pals.rank_title': 'Set Rank',
     'edit_pals.rank_prompt': 'Enter rank value (1-255):',
+    'xgp.save.title': 'Save to World',
+    'xgp.save.msg': 'Changes will be saved back to the world "{name}".\nLeave the name unchanged to keep it, or edit to rename.',
 }
 OLD_KEYS = []
 def _clean_uv_locks():

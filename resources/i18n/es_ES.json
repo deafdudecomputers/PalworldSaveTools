@@ -2030,5 +2030,7 @@
     "deletion.inactive_detail.guild_deleted": "{gremio}({gid}) - {count} miembros: {jugadores}",
     "deletion.inactive_detail.guild_player": "{nombre}({uid}) Nivel{nivel}",
     "deletion.menu.fix_connectors": "Reparar conectores rotos",
-    "deletion.connectors_fixed": "Se corrigieron {fixed} referencias rotas ({remaining} permanecen sin resolver)"
+    "deletion.connectors_fixed": "Se corrigieron {fixed} referencias rotas ({remaining} permanecen sin resolver)",
+    "xgp.save.title": "Guardar en el mundo",
+    "xgp.save.msg": "Los cambios se guardarán en el mundo \"{name}\".\nDeje el nombre sin cambios para conservarlo o edítelo para cambiarlo."
 }

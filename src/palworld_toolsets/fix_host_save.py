@@ -476,9 +476,9 @@ def fix_save_wrapper(window, level_sav_entry, old_tree, new_tree):
                 old_name = sav_to_gvasfile(_mp).properties.get('SaveData', {}).get('value', {}).get('WorldName', {}).get('value', 'World')
             except Exception:
                 pass
-        new_name, ok = QInputDialog.getText(window, 'Save as New World',
-            f'World name (original: "{old_name}"):',
-            QLineEdit.Normal, f'{old_name} (fixed)')
+        new_name, ok = QInputDialog.getText(window, t('xgp.save.title', default='Save to World'),
+            t('xgp.save.msg', default='Changes will be saved back to the world "{name}".\nLeave the name unchanged to keep it, or edit to rename.', name=old_name),
+            QLineEdit.Normal, old_name)
         if not ok or not new_name.strip():
             return
         xgp_new_name = new_name.strip()

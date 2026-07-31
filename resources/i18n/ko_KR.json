@@ -2035,5 +2035,7 @@
     "deletion.inactive_detail.guild_deleted": "{길드}({gid}) - {count}명의 회원: {players}",
     "deletion.inactive_detail.guild_player": "{name}({uid}) Lv.{레벨}",
     "deletion.menu.fix_connectors": "깨진 커넥터 수정",
-    "deletion.connectors_fixed": "{fixed} 깨진 참조 수정({remaining} 해결되지 않은 남아 있음)"
+    "deletion.connectors_fixed": "{fixed} 깨진 참조 수정({remaining} 해결되지 않은 남아 있음)",
+    "xgp.save.title": "세계에 저장",
+    "xgp.save.msg": "변경 사항은 \"{name}\" 세계에 다시 저장됩니다.\n이름을 유지하려면 이름을 변경하지 않고 그대로 두고, 이름을 바꾸려면 편집하세요."
 }

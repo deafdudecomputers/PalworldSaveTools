@@ -2323,5 +2323,7 @@
     "deletion.inactive_detail.guild_deleted": "{guild}({gid}) - {count} membros: {players}",
     "deletion.inactive_detail.guild_player": "{nome}({uid}) Nv.{nível}",
     "deletion.menu.fix_connectors": "Consertar conectores quebrados",
-    "deletion.connectors_fixed": "Corrigidas referências quebradas de {fixed} ({remaining} permanecem não resolvidas)"
+    "deletion.connectors_fixed": "Corrigidas referências quebradas de {fixed} ({remaining} permanecem não resolvidas)",
+    "xgp.save.title": "Salvar no mundo",
+    "xgp.save.msg": "As alterações serão salvas no mundo \"{name}\".\nDeixe o nome inalterado para mantê-lo ou edite para renomear."
 }

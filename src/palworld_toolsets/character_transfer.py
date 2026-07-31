@@ -1618,9 +1618,9 @@ def finalize_save(window, on_close_complete=None):
                 _old_name = sav_to_gvasfile(_meta_p).properties.get('SaveData', {}).get('value', {}).get('WorldName', {}).get('value', 'World')
             except Exception:
                 pass
-        _name, _ok = QInputDialog.getText(window, 'Save as New World',
-            f'World name (original: "{_old_name}"):',
-            QLineEdit.Normal, f'{_old_name} (modified)')
+        _name, _ok = QInputDialog.getText(window, t('xgp.save.title', default='Save to World'),
+            t('xgp.save.msg', default='Changes will be saved back to the world "{name}".\nLeave the name unchanged to keep it, or edit to rename.', name=_old_name),
+            QLineEdit.Normal, _old_name)
         if not _ok or not _name.strip():
             return
         _xgp_new_world_name = _name.strip()
