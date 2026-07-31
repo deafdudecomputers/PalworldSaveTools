@@ -53,6 +53,7 @@ backup_save_path = None
 srcGuildMapping = None
 player_levels = {}
 player_character_cache = {}
+player_duplicate_bodies = {}
 base_guild_lookup = {}
 container_lookup = {}
 files_to_delete = set()

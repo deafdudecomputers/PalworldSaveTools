@@ -63,31 +63,10 @@ def format_last_seen(last_online_time, current_tick):
             return f'{mins}m'
     except:
         return 'Unknown'
-def get_player_level_from_cspm(level_json, player_uid):
-    try:
-        player_uid_clean = str(player_uid).lower().replace('-', '')
-        char_map = level_json.get('CharacterSaveParameterMap', {}).get('value', [])
-        uid_level_map = {}
-        for entry in char_map:
-            try:
-                sp = entry['value']['RawData']['value']['object']['SaveParameter']
-                if sp['struct_type'] != 'PalIndividualCharacterSaveParameter':
-                    continue
-                sp_val = sp['value']
-                if not sp_val.get('IsPlayer', {}).get('value', False):
-                    continue
-                key = entry.get('key', {})
-                uid_obj = key.get('PlayerUId', {})
-                uid = str(uid_obj.get('value', '') if isinstance(uid_obj, dict) else uid_obj)
-                if uid:
-                    uid_clean = uid.lower().replace('-', '')
-                    level = extract_value(sp_val, 'Level', 1)
-                    uid_level_map[uid_clean] = int(level) if level is not None else 1
-            except Exception:
-                continue
-        return uid_level_map.get(player_uid_clean, 1)
-    except Exception:
-        return 1
+def get_player_level_from_cspm(level_json, player_uid, players_dir=None):
+    from palworld_aio.utils import player_level_map
+    player_uid_clean = str(player_uid).lower().replace('-', '')
+    return player_level_map(level_json, players_dir).get(player_uid_clean, 1)
 def get_player_pals_count_from_cspm(level_json, player_uid):
     try:
         player_uid_clean = str(player_uid).lower().replace('-', '')
@@ -112,27 +91,9 @@ def get_player_pals_count_from_cspm(level_json, player_uid):
         return pal_count
     except Exception:
         return 0
-def _build_level_map(cspm_json):
-    char_map = cspm_json.get('CharacterSaveParameterMap', {}).get('value', [])
-    result = {}
-    for entry in char_map:
-        try:
-            sp = entry['value']['RawData']['value']['object']['SaveParameter']
-            if sp['struct_type'] != 'PalIndividualCharacterSaveParameter':
-                continue
-            sp_val = sp['value']
-            if not sp_val.get('IsPlayer', {}).get('value', False):
-                continue
-            key = entry.get('key', {})
-            uid_obj = key.get('PlayerUId', {})
-            uid = str(uid_obj.get('value', '') if isinstance(uid_obj, dict) else uid_obj)
-            if uid:
-                uid_clean = uid.lower().replace('-', '')
-                level = extract_value(sp_val, 'Level', 1)
-                result[uid_clean] = int(level) if level is not None else 1
-        except Exception:
-            continue
-    return result
+def _build_level_map(cspm_json, players_dir=None):
+    from palworld_aio.utils import player_level_map
+    return player_level_map(cspm_json, players_dir)
 def _build_pal_count_map(cspm_json):
     char_map = cspm_json.get('CharacterSaveParameterMap', {}).get('value', [])
     ownership = ContainerOwnership.build(char_map, cspm_json.get('CharacterContainerSaveData', {}).get('value', []))
@@ -250,6 +211,7 @@ class CharacterTransferWindow(QWidget):
             modified_targets_data = {}
             _session_transferred_dynamics.clear()
             _session_id_map.clear()
+            _target_removed_body_instances.clear()
             self.close()
         try:
             finalize_save(self, _on_save_done)
@@ -811,6 +773,7 @@ modified_target_players = set()
 modified_targets_data = {}
 _session_transferred_dynamics = set()
 _session_id_map = {}
+_target_removed_body_instances = set()
 def transfer_all_characters():
     if not level_json or not targ_lvl:
         show_warning(None, t('warning.title'), t('character_transfer.load_both_saves'))
@@ -821,7 +784,7 @@ def transfer_all_characters():
         total_players = source_player_list.topLevelItemCount()
         print(f'Starting bulk transfer for {total_players} players...')
         total_start = time.perf_counter()
-        level_map = _build_level_map(level_json)
+        level_map = _build_level_map(level_json, os.path.join(os.path.dirname(level_sav_path), 'Players'))
         for i in range(total_players):
             player_start = time.perf_counter()
             item = source_player_list.topLevelItem(i)
@@ -1196,6 +1159,16 @@ def transfer_guild(targ_lvl, targ_json, host_guid, targ_uid, source_guild_dict):
             if str(target_raw.get('admin_player_uid')) == str(host_guid):
                 target_raw['admin_player_uid'] = targ_uid
             new_gid = target_raw.get('group_id')
+            player_inst_id = targ_json['SaveData']['value']['IndividualId']['value']['InstanceId']['value']
+            zero = PalUUID.from_str('00000000-0000-0000-0000-000000000000')
+            piid = str(player_inst_id).replace('-', '').lower()
+            hids = target_raw.setdefault('individual_character_handle_ids', [])
+            hids[:] = [
+                h for h in hids
+                if str(h.get('instance_id', '')).replace('-', '').lower() not in _target_removed_body_instances
+                and str(h.get('instance_id', '')).replace('-', '').lower() != piid
+            ]
+            hids.append({'guid': zero, 'instance_id': player_inst_id})
             _set_player_groupid(targ_json, new_gid)
             _update_cspm_group_id(targ_lvl, targ_uid, new_gid)
             return True
@@ -1237,6 +1210,7 @@ def transfer_tech_and_data():
         print(f'[FAIL] transfer_tech_and_data: {e}')
         return False
 def transfer_character_only(host_guid, targ_uid):
+    global _target_removed_body_instances
     host_instance_id = host_json['SaveData']['value']['IndividualId']['value']['InstanceId']['value']
     exported_map = None
     for character_save_param in level_json['CharacterSaveParameterMap']['value']:
@@ -1253,7 +1227,7 @@ def transfer_character_only(host_guid, targ_uid):
         return False
     targ_instance_id = targ_json['SaveData']['value']['IndividualId']['value']['InstanceId']['value']
     char_list = targ_lvl.setdefault('CharacterSaveParameterMap', {}).setdefault('value', [])
-    updated = False
+    matches = []
     for c in char_list:
         key = c.get('key', {})
         if str(key.get('PlayerUId', {}).get('value', '')) == str(targ_uid):
@@ -1263,28 +1237,34 @@ def transfer_character_only(host_guid, targ_uid):
                     continue
             except Exception:
                 continue
-            c['value'] = fast_deepcopy(exported_map['value'])
-            c['key']['InstanceId']['value'] = targ_instance_id
-            sp = c['value'].get('RawData', {}).get('value', {}).get('object', {}).get('SaveParameter', {}).get('value', {})
-            if 'OwnerPlayerUId' in sp:
-                sp['OwnerPlayerUId']['value'] = targ_uid
-            ind = sp.get('IndividualId', {}).get('value')
-            if ind:
-                ind['InstanceId']['value'] = targ_instance_id
-                ind['PlayerUId']['value'] = targ_uid
-            updated = True
-            break
-    if not updated:
-        new_entry = fast_deepcopy(exported_map)
-        new_entry['key']['PlayerUId']['value'] = targ_uid
-        new_entry['key']['InstanceId']['value'] = targ_instance_id
-        sp = new_entry['value'].get('RawData', {}).get('value', {}).get('object', {}).get('SaveParameter', {}).get('value', {})
+            matches.append(c)
+    def _stamp(entry):
+        entry['value'] = fast_deepcopy(exported_map['value'])
+        entry['key']['InstanceId']['value'] = targ_instance_id
+        sp = entry['value'].get('RawData', {}).get('value', {}).get('object', {}).get('SaveParameter', {}).get('value', {})
         if 'OwnerPlayerUId' in sp:
             sp['OwnerPlayerUId']['value'] = targ_uid
         ind = sp.get('IndividualId', {}).get('value')
         if ind:
             ind['InstanceId']['value'] = targ_instance_id
             ind['PlayerUId']['value'] = targ_uid
+    if matches:
+        targ_inst_clean = str(targ_instance_id).replace('-', '').lower()
+        def _inst(e):
+            return str(e.get('key', {}).get('InstanceId', {}).get('value', '')).replace('-', '').lower()
+        canonical = next((c for c in matches if _inst(c) == targ_inst_clean), matches[0])
+        removed = [c for c in matches if c is not canonical]
+        _target_removed_body_instances = {_inst(c) for c in removed}
+        for c in removed:
+            if c in char_list:
+                char_list.remove(c)
+        _stamp(canonical)
+    else:
+        _target_removed_body_instances = set()
+        new_entry = fast_deepcopy(exported_map)
+        new_entry['key']['PlayerUId']['value'] = targ_uid
+        new_entry['key']['InstanceId']['value'] = targ_instance_id
+        _stamp(new_entry)
         char_list.append(new_entry)
     targ_lvl.setdefault('CharacterContainerSaveData', {'value': []})
     targ_lvl.setdefault('ItemContainerSaveData', {'value': []})
@@ -1490,7 +1470,8 @@ def load_players(save_json, is_source):
     list_box.clear()
     current_tick = source_world_tick if is_source else target_world_tick
     cspm_json = level_json if is_source else targ_lvl
-    level_map = _build_level_map(cspm_json)
+    players_dir = os.path.join(os.path.dirname(level_sav_path if is_source else t_level_sav_path), 'Players')
+    level_map = _build_level_map(cspm_json, players_dir)
     pal_count_map = _build_pal_count_map(cspm_json)
     for guild_id, player_items in players.items():
         for player_item in player_items:

@@ -89,6 +89,95 @@ def extract_value(data, key, default_value: Any = ''):
         if isinstance(value, dict):
             value = value.get('value', default_value)
     return value
+def _player_entry_uid(entry):
+    key = entry.get('key', {})
+    uid_obj = key.get('PlayerUId', {})
+    uid = str(uid_obj.get('value', '') if isinstance(uid_obj, dict) else uid_obj)
+    return uid.replace('-', '').lower() if uid else ''
+def _player_entry_instance(entry):
+    inst = entry.get('key', {}).get('InstanceId', {}).get('value', '')
+    return str(inst).replace('-', '').lower()
+def _player_entry_save_param(entry):
+    return entry['value']['RawData']['value']['object']['SaveParameter']['value']
+def collect_player_bodies(wsd):
+    """All IsPlayer entries from CharacterSaveParameterMap (world save data dict)."""
+    bodies = []
+    if not wsd:
+        return bodies
+    cmap = wsd.get('CharacterSaveParameterMap', {}).get('value', [])
+    for entry in cmap:
+        try:
+            sp = entry['value']['RawData']['value']['object']['SaveParameter']
+            if sp.get('struct_type') != 'PalIndividualCharacterSaveParameter':
+                continue
+            if not sp.get('value', {}).get('IsPlayer', {}).get('value', False):
+                continue
+            bodies.append(entry)
+        except Exception:
+            continue
+    return bodies
+def _read_player_individual_instance(players_dir, uid_clean):
+    """Read Players/{uid}.sav IndividualId.InstanceId, dashless-lower, or None."""
+    if not players_dir:
+        return None
+    fname = os.path.join(players_dir, f'{uid_clean.upper()}.sav')
+    if not os.path.isfile(fname):
+        return None
+    try:
+        gvas = sav_to_gvasfile(fname)
+        sd = gvas.properties['SaveData']['value']
+        iid = sd['IndividualId']['value']['InstanceId']['value']
+        return str(iid).replace('-', '').lower()
+    except Exception:
+        return None
+def canonical_player_entries(wsd, players_dir=None):
+    """SINGLE SOURCE OF TRUTH for per-uid player bodies.
+
+    A save can legitimately hold multiple CharacterSaveParameterMap bodies for the
+    same PlayerUId (game-side desync, character transfer artifacts). The game spawns
+    the live player from Players/{uid}.sav SaveData.IndividualId.InstanceId, so that
+    match is authoritative. When the player file is unavailable or unmatching, fall
+    back to heuristics (Exp, LastOnlineRealTime, Level).
+
+    Returns (canonical, duplicates) keyed by dashless-lower uid.
+    """
+    grouped = {}
+    for entry in collect_player_bodies(wsd):
+        uid = _player_entry_uid(entry)
+        if uid:
+            grouped.setdefault(uid, []).append(entry)
+    canonical = {}
+    duplicates = {}
+    for uid, bodies in grouped.items():
+        if len(bodies) == 1:
+            canonical[uid] = bodies[0]
+            continue
+        target = _read_player_individual_instance(players_dir, uid)
+        by_inst = {_player_entry_instance(e): e for e in bodies}
+        winner = by_inst.get(target) if target else None
+        if winner is None:
+            def _progress(e):
+                sv = _player_entry_save_param(e)
+                return (extract_value(sv, 'Exp', 0), extract_value(sv, 'LastOnlineRealTime', 0), extract_value(sv, 'Level', 0))
+            winner = max(bodies, key=_progress)
+        canonical[uid] = winner
+        duplicates[uid] = [e for e in bodies if e is not winner]
+    return canonical, duplicates
+def player_body_map(wsd, players_dir=None):
+    """{dashless-lower uid: canonical charmap body entry}."""
+    canonical, _ = canonical_player_entries(wsd, players_dir)
+    return canonical
+def player_duplicate_body_map(wsd, players_dir=None):
+    """{dashless-lower uid: [non-canonical body entries]}."""
+    _, duplicates = canonical_player_entries(wsd, players_dir)
+    return duplicates
+def player_level_map(wsd, players_dir=None):
+    """{dashless-lower uid: level int} from canonical bodies only."""
+    out = {}
+    for uid, entry in canonical_player_entries(wsd, players_dir)[0].items():
+        lv = extract_value(_player_entry_save_param(entry), 'Level', 1)
+        out[uid] = int(lv) if lv is not None else 1
+    return out
 def safe_str(s):
     return s.encode('utf-8', 'replace').decode('utf-8')
 def sanitize_filename(name):

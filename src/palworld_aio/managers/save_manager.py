@@ -21,7 +21,7 @@ from import_libs import backup_whole_directory, run_with_loading
 import palworld_coord
 from i18n import t
 from palworld_aio import constants
-from palworld_aio.utils import sav_to_json, json_to_sav, sav_to_gvas_wrapper, wrapper_to_sav, sav_to_gvasfile, extract_value, sanitize_filename, format_duration_short, resolve_name
+from palworld_aio.utils import sav_to_json, json_to_sav, sav_to_gvas_wrapper, wrapper_to_sav, sav_to_gvasfile, extract_value, sanitize_filename, format_duration_short, resolve_name, canonical_player_entries
 from palworld_aio.inventory.container_ownership import ContainerOwnership
 from palworld_aio.managers.func_manager import check_is_illegal_pal
 
@@ -29,29 +29,19 @@ from palworld_aio.managers.func_manager import check_is_illegal_pal
 def build_player_levels():
     if not constants.loaded_level_json:
         return
-    char_map = constants.loaded_level_json['properties']['worldSaveData']['value'].get('CharacterSaveParameterMap', {}).get('value', [])
-    uid_level_map = defaultdict(lambda: 1)
+    wsd = constants.loaded_level_json['properties']['worldSaveData']['value']
+    players_dir = os.path.join(constants.current_save_path, 'Players') if constants.current_save_path else None
+    canonical, duplicates = canonical_player_entries(wsd, players_dir)
+    uid_level_map = {}
     uid_entry_map = {}
-    for entry in char_map:
-        try:
-            sp = entry['value']['RawData']['value']['object']['SaveParameter']
-            if sp['struct_type'] != 'PalIndividualCharacterSaveParameter':
-                continue
-            sp_val = sp['value']
-            if not sp_val.get('IsPlayer', {}).get('value', False):
-                continue
-            key = entry.get('key', {})
-            uid_obj = key.get('PlayerUId', {})
-            uid = str(uid_obj.get('value', '') if isinstance(uid_obj, dict) else uid_obj)
-            level = extract_value(sp_val, 'Level', 1)
-            if uid:
-                clean = uid.replace('-', '')
-                uid_level_map[clean] = level
-                uid_entry_map[clean] = entry
-        except Exception:
-            continue
+    for uid, entry in canonical.items():
+        sv = entry['value']['RawData']['value']['object']['SaveParameter']['value']
+        level = extract_value(sv, 'Level', 1)
+        uid_level_map[uid] = int(level) if level is not None else 1
+        uid_entry_map[uid] = entry
     constants.player_levels = dict(uid_level_map)
     constants.player_character_cache = uid_entry_map
+    constants.player_duplicate_bodies = duplicates
 
 
 def count_owned_pals(level_json):
@@ -99,6 +89,7 @@ class SaveManager(QObject):
         constants.PLAYER_PAL_COUNTS = {}
         constants.player_levels = {}
         constants.player_character_cache = {}
+        constants.player_duplicate_bodies = {}
         constants.PLAYER_DETAILS_CACHE = {}
         constants.PLAYER_REMAPS = {}
         constants.death_bag_protected_instance_ids.clear()

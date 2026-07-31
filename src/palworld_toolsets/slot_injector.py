@@ -86,23 +86,23 @@ def get_player_info_from_save(gvas_file, players_folder=None):
                         player_info = p.get('player_info', {})
                         player_name = player_info.get('player_name', 'Unknown')
                         players[player_uid_str] = {'name': player_name, 'guild': guild_name, 'uid': player_uid_str, 'party_id': None, 'palbox_id': None}
-    char_map = wsd.get('CharacterSaveParameterMap', {}).get('value', [])
-    if isinstance(char_map, list):
-        for entry in char_map:
-            key = entry.get('key', {})
-            player_uid = key.get('PlayerUId', {}).get('value', 'N/A')
-            player_uid_str = str(player_uid).replace('-', '').lower() if player_uid else 'N/A'
-            if player_uid_str not in valid_player_uids or player_uid_str == '00000000000000000000000000000001':
-                continue
-            value = entry.get('value', {})
-            raw_data = value.get('RawData', {}).get('value', {})
-            sp_val = raw_data.get('object', {}).get('SaveParameter', {}).get('value', {})
-            is_player = sp_val.get('IsPlayer', {}).get('value', False)
+    try:
+        from palworld_aio.utils import canonical_player_entries
+        canonical, _ = canonical_player_entries(wsd, players_folder)
+    except Exception:
+        canonical = {}
+    for uid, entry in canonical.items():
+        if uid == '00000000000000000000000000000001':
+            continue
+        if uid not in players:
+            continue
+        try:
+            sp_val = entry['value']['RawData']['value']['object']['SaveParameter']['value']
             nick_name = sp_val.get('NickName', {}).get('value', '')
-            if not is_player:
-                continue
-            if nick_name and player_uid_str in players:
-                players[player_uid_str]['name'] = nick_name
+            if nick_name:
+                players[uid]['name'] = nick_name
+        except Exception:
+            continue
     if players_folder and valid_player_uids:
         container_mapping = load_player_container_mapping(players_folder, valid_player_uids)
         for uid, containers in container_mapping.items():

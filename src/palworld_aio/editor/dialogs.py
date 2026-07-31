@@ -810,29 +810,12 @@ class PalDefenderDialog(ThemedDialog):
         except Exception as e:
             show_critical(self, t('error.title') if t else 'Error', str(e))
     def _scan_guilds(self, inactivity_days, max_level, skip_excl, hide_no_bases):
-        from ..utils import as_uuid, extract_value, format_duration_short
+        from ..utils import as_uuid, extract_value, format_duration_short, player_level_map
         wsd = constants.loaded_level_json['properties']['worldSaveData']['value']
         tick = wsd['GameTimeSaveData']['value']['RealDateTimeTicks']['value']
-        player_levels = {}
-        char_map = wsd.get('CharacterSaveParameterMap', {}).get('value', [])
-        for entry in char_map:
-            try:
-                sp = entry['value']['RawData']['value']['object']['SaveParameter']
-                if sp['struct_type'] != 'PalIndividualCharacterSaveParameter':
-                    continue
-                sp_val = sp['value']
-                if not sp_val.get('IsPlayer', {}).get('value', False):
-                    continue
-                key = entry.get('key', {})
-                uid_obj = key.get('PlayerUId', {})
-                uid = str(uid_obj.get('value', '') if isinstance(uid_obj, dict) else uid_obj)
-                level = extract_value(sp_val, 'Level', 1)
-                if uid:
-                    player_levels[uid.replace('-', '').lower()] = level
-            except:
-                continue
+        player_levels = player_level_map(wsd, constants.current_save_path)
         player_pal_counts = {}
-        for entry in char_map:
+        for entry in wsd.get('CharacterSaveParameterMap', {}).get('value', []):
             try:
                 sp = entry['value']['RawData']['value']['object']['SaveParameter']
                 if sp['struct_type'] != 'PalIndividualCharacterSaveParameter':

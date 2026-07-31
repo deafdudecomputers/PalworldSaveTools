@@ -9,7 +9,7 @@ from palsav.archive import UUID
 from PySide6.QtWidgets import QMessageBox, QInputDialog
 from i18n import t
 from palworld_aio import constants
-from palworld_aio.utils import sav_to_json, json_to_sav, sav_to_gvasfile, gvasfile_to_sav, are_equal_uuids, as_uuid, is_valid_level, extract_value, format_duration, sanitize_filename, resolve_name, calculate_max_hp
+from palworld_aio.utils import sav_to_json, json_to_sav, sav_to_gvasfile, gvasfile_to_sav, are_equal_uuids, as_uuid, is_valid_level, extract_value, format_duration, sanitize_filename, resolve_name, calculate_max_hp, canonical_player_entries
 from palworld_aio.managers.data_manager import delete_base_camp, load_game_data_map
 from palworld_aio.editor.dialogs import GameDaysInputDialog
 from palworld_aio.inventory.container_ownership import ContainerOwnership
@@ -381,6 +381,30 @@ def delete_duplicated_players(parent=None):
         delete_player_pals(wsd, deleted_uids)
     valid_uids = {str(p.get('player_uid', '')).replace('-', '') for g in wsd['GroupSaveDataMap']['value'] if g['value']['GroupType']['value']['value'] == 'EPalGroupType::Guild' for p in g['value']['RawData']['value'].get('players', [])}
     clean_character_save_parameter_map(wsd, valid_uids)
+    players_dir = os.path.join(constants.current_save_path, 'Players')
+    _, duplicate_bodies = canonical_player_entries(wsd, players_dir)
+    removed_ghosts = 0
+    removed_ghost_instances = set()
+    if duplicate_bodies:
+        cmap = wsd.get('CharacterSaveParameterMap', {}).get('value', [])
+        ghost_ids = {id(e) for bodies in duplicate_bodies.values() for e in bodies}
+        removed_ghost_instances = {str(e.get('key', {}).get('InstanceId', {}).get('value', '')).replace('-', '').lower() for bodies in duplicate_bodies.values() for e in bodies}
+        kept = [e for e in cmap if id(e) not in ghost_ids]
+        removed_ghosts = len(cmap) - len(kept)
+        if removed_ghosts:
+            wsd['CharacterSaveParameterMap']['value'] = kept
+    if removed_ghost_instances:
+        for g in wsd.get('GroupSaveDataMap', {}).get('value', []):
+            try:
+                raw = g['value']['RawData']['value']
+                hids = raw.get('individual_character_handle_ids', [])
+                if hids:
+                    raw['individual_character_handle_ids'] = [
+                        h for h in hids
+                        if str(h.get('instance_id', '')).replace('-', '').lower() not in removed_ghost_instances
+                    ]
+            except Exception:
+                continue
     for g in group_data_list:
         if g['value']['GroupType']['value']['value'] != 'EPalGroupType::Guild':
             continue
@@ -393,7 +417,7 @@ def delete_duplicated_players(parent=None):
                 nu = str(raw['admin_player_uid']).replace('-', '').lower()
                 for p in players:
                     p['role'] = 1 if str(p.get('player_uid', '')).replace('-', '').lower() == nu else 3
-    return len(deleted_players)
+    return len(deleted_players) + removed_ghosts
 def delete_unreferenced_data(parent=None):
     if not constants.loaded_level_json:
         return {}

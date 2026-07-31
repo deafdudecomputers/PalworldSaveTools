@@ -142,6 +142,7 @@ def run_aio():
             constants.PLAYER_PAL_COUNTS = {}
             constants.player_levels = {}
             constants.player_character_cache = {}
+            constants.player_duplicate_bodies = {}
             constants.PLAYER_DETAILS_CACHE = {}
             constants.PLAYER_REMAPS = {}
             constants.death_bag_protected_instance_ids.clear()

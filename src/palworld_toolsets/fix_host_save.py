@@ -118,10 +118,11 @@ def get_player_pals_count_from_cspm(level_json, player_uid):
     except Exception:
         return 0
 def _build_maps(level_json):
+    from palworld_aio.utils import player_level_map
     wsd = level_json.get('properties', {}).get('worldSaveData', {}).get('value', {})
     char_map = wsd.get('CharacterSaveParameterMap', {}).get('value', [])
     ownership = ContainerOwnership.build(char_map, wsd.get('CharacterContainerSaveData', {}).get('value', []))
-    level_map = {}
+    level_map = player_level_map(wsd)
     pal_count_map = {}
     for entry in char_map:
         try:
@@ -130,20 +131,13 @@ def _build_maps(level_json):
                 continue
             sp_val = sp['value']
             if sp_val.get('IsPlayer', {}).get('value', False):
-                key = entry.get('key', {})
-                uid_obj = key.get('PlayerUId', {})
-                uid = str(uid_obj.get('value', '') if isinstance(uid_obj, dict) else uid_obj)
-                if uid:
-                    uid_clean = uid.lower().replace('-', '')
-                    level = extract_value(sp_val, 'Level', 1)
-                    level_map[uid_clean] = int(level) if level is not None else 1
-            else:
-                inst_val = entry.get('key', {}).get('InstanceId', {}).get('value')
-                owner_uid_obj = sp_val.get('OwnerPlayerUId', {})
-                owner_uid = str(owner_uid_obj.get('value', '') if isinstance(owner_uid_obj, dict) else owner_uid_obj) if owner_uid_obj else ''
-                effective_owner = ownership.get_effective_owner(inst_val, owner_uid)
-                if effective_owner:
-                    pal_count_map[effective_owner] = pal_count_map.get(effective_owner, 0) + 1
+                continue
+            inst_val = entry.get('key', {}).get('InstanceId', {}).get('value')
+            owner_uid_obj = sp_val.get('OwnerPlayerUId', {})
+            owner_uid = str(owner_uid_obj.get('value', '') if isinstance(owner_uid_obj, dict) else owner_uid_obj) if owner_uid_obj else ''
+            effective_owner = ownership.get_effective_owner(inst_val, owner_uid)
+            if effective_owner:
+                pal_count_map[effective_owner] = pal_count_map.get(effective_owner, 0) + 1
         except Exception:
             continue
     return level_map, pal_count_map
