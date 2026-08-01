@@ -114,6 +114,7 @@ jobs:
           timestamp-rfc3161: http://timestamp.acs.microsoft.com
           timestamp-digest: SHA256
       - name: List built files
+        shell: bash
         run: ls -la dist/ || { echo "dist/ directory not found"; exit 1; }
       - uses: actions/upload-artifact@v7
         with:
