@@ -18,6 +18,10 @@ SRC_DIR = os.path.join(ROOT_DIR, 'src')
 ICON_PATH = os.path.join(RES_DIR, 'assets', 'icons', 'app', 'icon.ico')
 MAIN_SCRIPT = os.path.join(SRC_DIR, 'palworld_aio', 'main.py')
 
+METADATA_PATH = os.path.join('build', 'installer', 'metadata.json')
+SIGNTOOL_PATH = r'C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x64\signtool.exe'
+TIMESTAMP_URL = 'http://timestamp.acs.microsoft.com'
+
 _INCLUDE_MODULES = [
     'palsav', 'palsav.core', 'palsav.archive', 'palsav.paltypes',
     'palsav.gvas', 'palsav.json_tools', 'palsav._cityhash',
@@ -117,7 +121,43 @@ def get_app_version():
     return 'unknown'
 
 
-def build_with_nuitka(onefile: bool = True):
+def sign_exe(exe_path):
+    dlib = os.environ.get('ARTIFACT_SIGNING_DLIB')
+    if not dlib:
+        candidates = [
+            os.path.join(os.environ.get('LOCALAPPDATA', ''), 'Microsoft',
+                         'MicrosoftArtifactSigningClientTools', 'Azure.CodeSigning.Dlib.dll'),
+            'build/installer/Azure.CodeSigning.Dlib.dll',
+        ]
+        dlib = next((c for c in candidates if os.path.exists(c)), '')
+    if not os.path.exists(dlib):
+        print('SIGNING SKIPPED: Azure.CodeSigning.Dlib.dll not found '
+              '(set ARTIFACT_SIGNING_DLIB)')
+        return False
+    metadata = os.environ.get('ARTIFACT_SIGNING_METADATA', METADATA_PATH)
+    if not os.path.exists(metadata):
+        print('SIGNING SKIPPED: metadata.json not found')
+        return False
+    required = ('AZURE_TENANT_ID', 'AZURE_CLIENT_ID', 'AZURE_CLIENT_SECRET')
+    missing = [v for v in required if not os.environ.get(v)]
+    if missing:
+        print(f'SIGNING SKIPPED: missing env {", ".join(missing)}')
+        return False
+    cmd = [
+        SIGNTOOL_PATH, 'sign', '/v', '/fd', 'SHA256',
+        '/tr', TIMESTAMP_URL, '/td', 'SHA256',
+        '/dlib', dlib, '/dmdf', metadata, exe_path,
+    ]
+    print(f'Signing: {exe_path}')
+    result = subprocess.run(cmd, check=False)
+    if result.returncode != 0:
+        print(f'SIGNING FAILED (rc={result.returncode})')
+        return False
+    print(f'Signed: {exe_path}')
+    return True
+
+
+def build_with_nuitka(onefile: bool = True, no_compression: bool = True):
     python_parts = resolve_python()
     if isinstance(python_parts, tuple):
         python_cmd = list(python_parts)
@@ -140,6 +180,9 @@ def build_with_nuitka(onefile: bool = True):
         cmd.append('--onefile')
     else:
         cmd.append('--standalone')
+
+    if no_compression:
+        cmd.append('--onefile-no-compression')
 
     cmd.append('--prefer-source-code')
 
@@ -204,14 +247,19 @@ def main():
     parser.add_argument('--use-venv', action='store_true', help='Reuse existing venv')
     parser.add_argument('--onefile', action='store_true', help='Build single-file executable')
     parser.add_argument('--onedir', action='store_true', help='Build directory distribution')
+    parser.add_argument('--compression', action='store_true',
+                        help='Enable onefile payload compression (default off: lower AV false positives)')
+    parser.add_argument('--sign', action='store_true',
+                        help='Authenticode-sign the output via Artifact Signing (needs AZURE_* env vars)')
     args = parser.parse_args()
 
     onefile = args.onefile or not args.onedir
+    no_compression = not args.compression
 
     clean_build_artifacts()
     set_standalone_mode(True)
     try:
-        rc = build_with_nuitka(onefile)
+        rc = build_with_nuitka(onefile, no_compression)
     finally:
         set_standalone_mode(False)
 
@@ -231,9 +279,16 @@ def main():
         exe_path = os.path.join('dist', exe_name)
         dist_dir = os.path.join('dist', f'{exe_name}.dist')
         if os.path.exists(exe_path):
+            if args.sign:
+                sign_exe(exe_path)
             size_mb = os.path.getsize(exe_path) / (1024 * 1024)
             print(f'Build complete: {exe_path} ({size_mb:.1f} MB)')
         elif os.path.isdir(dist_dir):
+            if args.sign:
+                for root, _, files in os.walk(dist_dir):
+                    for f in files:
+                        if f.lower().endswith('.exe'):
+                            sign_exe(os.path.join(root, f))
             size_mb = sum(os.path.getsize(os.path.join(dp, f)) for dp, _, fns in os.walk(dist_dir) for f in fns) / (1024 * 1024)
             print(f'Build complete: {dist_dir}/ ({size_mb:.1f} MB)')
         else:

@@ -1,0 +1,275 @@
+name: SIGNED Build All
+
+# Nuitka onefile release pipeline with Authenticode signing for Windows via
+# Azure Artifact Signing. Reuses the linux/mac jobs from Build All & Release;
+# the Windows job builds a Nuitka onefile and signs it (lower AV false
+# positives than the cx_Freeze standalone: 3/69 vs 19/69 on VirusTotal).
+#
+# Required GitHub secrets for Windows signing (OIDC):
+#   AZURE_CLIENT_ID        - appId of the Azure AD app registration
+#   AZURE_TENANT_ID        - tenant id (66d22a4a-1b6d-4468-9575-6685b668d5c4)
+#   AZURE_SUBSCRIPTION_ID  - subscription id (5a1df47a-965d-4cd8-88a0-09ca61642a10)
+# The app registration must have a federated credential for this repo and the
+# "Artifact Signing Certificate Profile Signer" role on the PalworldSigning account.
+#
+# Nexus upload is handled by the existing nexus-upload.yml workflow (fires on
+# release: published) — drafts are never published, so they never upload. That
+# workflow's windows asset glob targets the signed Nuitka onefile exe.
+
+on:
+  workflow_dispatch:
+    inputs:
+      append_only:
+        description: "Append to existing release"
+        required: false
+        default: false
+        type: boolean
+      skip_github_release:
+        description: "Skip GitHub release"
+        required: false
+        default: false
+        type: boolean
+      draft_only:
+        description: "Create as draft only"
+        required: false
+        default: true
+        type: boolean
+      force_rebuild:
+        description: "Force Rebuild"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: signed-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  prepare-source:
+    runs-on: ubuntu-latest
+    outputs:
+      app_name: ${{ steps.env.outputs.app_name }}
+      version: ${{ steps.env.outputs.version }}
+      game_version: ${{ steps.env.outputs.game_version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - name: Bootstrap environment
+        id: env
+        uses: ./.github/actions/setup-build-env
+      - name: Create source tarball
+        env:
+          APP_NAME: ${{ steps.env.outputs.app_name }}
+          VERSION: ${{ steps.env.outputs.version }}
+        run: |
+          git archive --format=tar.gz -o "${APP_NAME}-v${VERSION}-source.tar.gz" HEAD
+          ls -la *.tar.gz
+      - uses: actions/upload-artifact@v7
+        with:
+          name: source-tarball
+          path: ${{ steps.env.outputs.app_name }}-*-source.tar.gz
+          if-no-files-found: error
+
+  build-windows-signed:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - name: Bootstrap environment
+        id: env
+        uses: ./.github/actions/setup-build-env
+      - name: Install dependencies
+        run: |
+          uv venv --clear
+          uv pip install -r requirements.txt nuitka
+      - name: Build Nuitka onefile
+        run: uv run python build/nuitka/build_nuitka.py --onefile
+      - name: Azure login (OIDC)
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Sign with Artifact Signing
+        uses: azure/artifact-signing-action@v2
+        with:
+          endpoint: https://wus2.codesigning.azure.net/
+          signing-account-name: PalworldSigning
+          certificate-profile-name: pst-private
+          files: ${{ github.workspace }}\dist\PalworldSaveTools-v${{ steps.env.outputs.version }}-win.exe
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+      - name: List built files
+        run: ls -la dist/ || { echo "dist/ directory not found"; exit 1; }
+      - uses: actions/upload-artifact@v7
+        with:
+          name: windows-signed-build
+          path: dist/PalworldSaveTools-v${{ steps.env.outputs.version }}-win.exe
+          if-no-files-found: error
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - name: Bootstrap environment
+        id: env
+        uses: ./.github/actions/setup-build-env
+      - name: Restore cached dist
+        if: github.event.inputs.force_rebuild != 'true'
+        id: cache-dist
+        uses: actions/cache@v4
+        with:
+          path: dist
+          key: ${{ runner.os }}-pst-dist-${{ steps.env.outputs.version }}-${{ hashFiles('build/**', 'src/**', 'resources/**', 'pyproject.toml', 'requirements.txt', 'README.md', 'license') }}
+      - name: Install system deps
+        if: steps.cache-dist.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y patchelf file wget
+      - name: Install dependencies
+        if: steps.cache-dist.outputs.cache-hit != 'true'
+        run: |
+          uv venv --clear
+          uv pip install -r requirements.txt nuitka
+      - name: Build AppImage
+        if: steps.cache-dist.outputs.cache-hit != 'true'
+        # GitHub runners lack a usable FUSE mount namespace, so appimagetool
+        # runs in extract-and-run mode inside linux_build.py.
+        run: uv run python build/linux_build.py --appimage-extract-and-run
+      - name: List built files
+        run: ls -la dist/ || { echo "dist/ directory not found"; exit 1; }
+      - uses: actions/upload-artifact@v7
+        with:
+          name: linux-build
+          path: dist/${{ steps.env.outputs.app_name }}-*-linux.AppImage
+          if-no-files-found: error
+
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - name: Bootstrap environment
+        id: env
+        uses: ./.github/actions/setup-build-env
+      - name: Restore cached dist
+        if: github.event.inputs.force_rebuild != 'true'
+        id: cache-dist
+        uses: actions/cache@v4
+        with:
+          path: dist
+          key: ${{ runner.os }}-pst-dist-${{ steps.env.outputs.version }}-${{ hashFiles('build/**', 'src/**', 'resources/**', 'pyproject.toml', 'requirements.txt', 'README.md', 'license') }}
+      - name: Install dependencies
+        if: steps.cache-dist.outputs.cache-hit != 'true'
+        run: |
+          uv venv --clear
+          uv pip install -r requirements.txt nuitka imageio
+      - name: Build macOS DMG
+        if: steps.cache-dist.outputs.cache-hit != 'true'
+        run: uv run python build/macos_build.py
+      - name: List built files
+        run: ls -la dist/ || { echo "dist/ directory not found"; exit 1; }
+      - uses: actions/upload-artifact@v7
+        with:
+          name: macos-build
+          path: dist/${{ steps.env.outputs.app_name }}-*-macos.dmg
+          if-no-files-found: error
+
+  create-release:
+    needs: [prepare-source, build-windows-signed, build-linux, build-mac]
+    if: ${{ github.event.inputs.skip_github_release != 'true' }}
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.env.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - name: Bootstrap environment
+        id: env
+        uses: ./.github/actions/setup-build-env
+      - uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+      - name: List all artifacts
+        run: find artifacts -type f -ls
+      - name: Verify existing release by tag
+        if: ${{ github.event.inputs.append_only == 'true' }}
+        id: find_release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: v${{ steps.env.outputs.version }}
+        run: |
+          # Confirm a release with this tag already exists (draft or published)
+          if ! gh release view "$TAG" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            echo "::error::No release found with tag '$TAG'. Untick 'append_only' or create the release first."
+            gh release list --repo "${{ github.repository }}" --limit 10
+            exit 1
+          fi
+          echo "Found existing release: $TAG"
+      - name: Append files to existing release (no edits)
+        if: ${{ github.event.inputs.append_only == 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "v${{ steps.env.outputs.version }}" \
+            --repo "${{ github.repository }}" \
+            artifacts/**/* \
+            --clobber
+      - name: Extract changelog entry
+        if: ${{ github.event.inputs.append_only != 'true' }}
+        run: |
+          awk '/^#[0-9]/{if (found) exit; if ($0 == "#${{ steps.env.outputs.version }}") found=1; next} found' \
+            changelogs.md > /tmp/changelog_entry.md 2>/dev/null || true
+          if [ ! -s /tmp/changelog_entry.md ]; then
+            echo "No changelog entry for v${{ steps.env.outputs.version }} yet." > /tmp/changelog_entry.md
+          fi
+          echo "=== Changelog entry ==="
+          cat /tmp/changelog_entry.md
+      - name: Render release notes from template
+        if: ${{ github.event.inputs.append_only != 'true' }}
+        env:
+          APP_NAME: ${{ steps.env.outputs.app_name }}
+          VERSION: ${{ steps.env.outputs.version }}
+          GAME_VERSION: ${{ steps.env.outputs.game_version }}
+          REPO_URL: https://github.com/${{ github.repository }}
+          RELEASE_URL: https://github.com/${{ github.repository }}/releases/tag/v${{ steps.env.outputs.version }}
+          DISCORD_URL: https://discord.gg/sYcZwcT4cT
+          NEXUS_URL: ${{ vars.NEXUS_MOD_URL || 'https://www.nexusmods.com/palworld/mods/3190' }}
+        run: |
+          envsubst < .github/templates/release_notes.md > /tmp/notes_partial.md
+          sed -i '/__CHANGELOG_ENTRY__/{
+            r /tmp/changelog_entry.md
+            d
+          }' /tmp/notes_partial.md
+          mv /tmp/notes_partial.md release_notes.md
+          echo "=== Rendered release notes ==="
+          cat release_notes.md
+      - name: Create release (with notes)
+        if: ${{ github.event.inputs.append_only != 'true' }}
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: v${{ steps.env.outputs.version }}
+          name: v${{ steps.env.outputs.version }}
+          body_path: release_notes.md
+          draft: ${{ github.event.inputs.draft_only == 'true' }}
+          prerelease: false
+          files: artifacts/**/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

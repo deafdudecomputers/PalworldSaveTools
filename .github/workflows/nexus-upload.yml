@@ -23,7 +23,7 @@ jobs:
       matrix:
         include:
           - variant: windows
-            asset_glob: "PST_standalone_v*.zip"
+            asset_glob: "PalworldSaveTools-v*-win.exe"
             file_id: "7648655"
           - variant: linux
             asset_glob: "PalworldSaveTools-v*-linux.AppImage"

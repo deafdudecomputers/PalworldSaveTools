@@ -1,3 +1,8 @@
+#2.3.1
+- **Windows builds are now digitally signed** — the Windows release is Authenticode-signed with a certificate, which greatly reduced antivirus false positives (from 19 flagged engines to 3 on VirusTotal, including your own antivirus). Some engines still raise heuristics because the tool edits game files, but most now accept it as legitimate.
+- **Windows now ships as a single-file build** — the Windows release is one self-contained .exe instead of a folder of files, so there's nothing to extract or keep together.
+- Bumped version to 2.3.1
+
 #2.3.0
 - **Imported bases are fully buildable again** — after importing or cloning a base, the game used to treat its structures as unsupported ("not enough support"), so you couldn't place anything on them. Structure support data is now carried over correctly, so an imported base works just like one you built yourself.
 - **Base import no longer corrupts empty structure data** — structures whose support data was empty (most walls, roofs, and fences) were getting junk injected into them during import, which the game misread as broken supports. Empty data is now left untouched, so imported structures stay intact.
