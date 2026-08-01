@@ -12,9 +12,9 @@ name: SIGNED Build All
 # The app registration must have a federated credential for this repo and the
 # "Artifact Signing Certificate Profile Signer" role on the PalworldSigning account.
 #
-# Nexus gating matches build-all-and-release.yml: skip_nexus_upload forces the
-# release to draft, and nexus-upload.yml (fires on release: published) then
-# never runs. Uncheck both draft_only and skip_nexus_upload to publish + upload.
+# Nexus gating: skip_nexus_upload=true hard-skips the in-workflow nexus-upload
+# job (no upload ever). draft_only controls only draft status. nexus-upload.yml
+# has no release: trigger anymore, so a publish can't bypass the toggle.
 
 on:
   workflow_dispatch:
