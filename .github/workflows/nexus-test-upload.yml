@@ -14,6 +14,7 @@ on:
       file_id:
         description: "Nexus file_id of the test file slot on the mod page"
         required: true
+        default: "7743117"
       display_name:
         description: "Nexus file display name"
         required: false
