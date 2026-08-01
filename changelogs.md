@@ -1,5 +1,5 @@
 #2.3.1
-- **Windows builds are now digitally signed** — the Windows release is Authenticode-signed with a certificate, which greatly reduced antivirus false positives (from 19 flagged engines to 3 on VirusTotal, including your own antivirus). Some engines still raise heuristics because the tool edits game files, but most now accept it as legitimate.
+- **Windows builds are now digitally signed** — the Windows release is Authenticode-signed with a certificate, which greatly reduced antivirus false positives.
 - **Windows now ships as a single-file build** — the Windows release is one self-contained .exe instead of a folder of files, so there's nothing to extract or keep together.
 - Bumped version to 2.3.1
 
