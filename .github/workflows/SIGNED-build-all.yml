@@ -272,9 +272,62 @@ jobs:
           tag_name: v${{ steps.env.outputs.version }}
           name: v${{ steps.env.outputs.version }}
           body_path: release_notes.md
-          draft: ${{ github.event.inputs.draft_only == 'true' || github.event.inputs.skip_nexus_upload == 'true' }}
+          draft: ${{ github.event.inputs.draft_only == 'true' }}
           prerelease: false
           files: artifacts/**/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  nexus-upload:
+    needs: [prepare-source, build-windows-signed, build-linux, build-mac]
+    # Hard gate: skip_nexus_upload=true means NO upload, period — independent of
+    # draft/publish state. Runs straight from build artifacts, not release events.
+    if: ${{ github.event.inputs.skip_nexus_upload != 'true' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: windows
+            asset_glob: "PalworldSaveTools-v*-win.exe"
+            file_id: "7648655"
+          - variant: linux
+            asset_glob: "PalworldSaveTools-v*-linux.AppImage"
+            file_id: "7648652"
+          - variant: macos
+            asset_glob: "PalworldSaveTools-v*-macos.dmg"
+            file_id: "7648646"
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+      - name: Find & zip asset
+        id: package
+        run: |
+          asset=$(find artifacts -name "${{ matrix.asset_glob }}" -type f 2>/dev/null | head -1)
+          if [ -z "$asset" ]; then
+            echo "::error::No asset matching '${{ matrix.asset_glob }}'"
+            find artifacts -type f 2>/dev/null || echo "(empty)"
+            exit 1
+          fi
+          echo "Found: $asset"
+          case "$asset" in
+            *.zip|*.7z)
+              echo "upload_file=$asset" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              zip_name="${asset%.*}.zip"
+              zip -j "$zip_name" "$asset"
+              echo "upload_file=$zip_name" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
+      - name: Upload to Nexus Mods
+        uses: Nexus-Mods/upload-action@v1.0.0-beta.8
+        with:
+          api_key: ${{ secrets.NEXUSMODS_API_KEY }}
+          file_id: ${{ matrix.file_id }}
+          filename: ${{ steps.package.outputs.upload_file }}
+          version: ${{ needs.prepare-source.outputs.version }}
+          display_name: v${{ needs.prepare-source.outputs.version }}_${{ matrix.variant }}
+          archive_existing_version: true
 

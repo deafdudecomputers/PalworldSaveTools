@@ -1,10 +1,11 @@
 name: Nexus Mods Upload
 
-# Uploads release assets to Nexus Mods when a GitHub release is published.
-# Also supports manual workflow_dispatch for testing or re-uploads.
+# Uploads release assets to Nexus Mods. Auto-upload now lives inside the release
+# workflows (SIGNED-build-all.yml / build-all-and-release.yml) where the
+# skip_nexus_upload toggle hard-gates it. This workflow stays for manual
+# workflow_dispatch re-uploads only — the release: published trigger was removed
+# so a publish can never bypass the skip toggle.
 on:
-  release:
-    types: [published]
   workflow_dispatch:
     inputs:
       tag:
