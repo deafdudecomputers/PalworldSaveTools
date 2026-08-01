@@ -42,7 +42,7 @@ on:
       force_rebuild:
         description: "Force Rebuild"
         required: false
-        default: false
+        default: true
         type: boolean
 
 permissions:
