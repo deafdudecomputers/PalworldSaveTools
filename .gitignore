@@ -91,3 +91,4 @@ CHANGELOG.multilang.md
 
 # cx_Freeze standalone build output
 PST_standalone/
+PST_standalone*.zip
