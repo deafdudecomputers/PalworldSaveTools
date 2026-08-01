@@ -30,7 +30,7 @@
 
 Palworld Save Tools (PST) é um aplicativo de desktop rápido e completo para inspecionar e editar arquivos salvos do Palworld. Construído com Python e PySide6, ele lê e grava diretamente o formato de salvamento compactado do jogo - sem necessidade de mods de jogo.
 
-Se você precisa gerenciar um servidor dedicado, migrar entre servidores cooperativos e dedicados, limpar dados abandonados ou ajustar Pals individual, o PST fornece uma interface unificada para tudo isso.
+Se você precisa gerenciar um servidor dedicado, migrar entre servidores cooperativos e dedicados, limpar dados abandonados ou ajustar Pals individual, o PST fornece uma interface unificada única para tudo isso.
 
 ### Destaques
 
@@ -101,7 +101,7 @@ Se você precisa gerenciar um servidor dedicado, migrar entre servidores coopera
 
 - Visualize e pesquise todos os jogadores por nome, nível, contagem de pal, UID, guilda e hora da última visualização.
 - Edite nomes de jogadores, níveis, estatísticas e pontos de tecnologia.
-- **Aba Estatísticas** — Estatísticas do herói (Saúde, Vigor, Ataque, Defesa, Velocidade de Trabalho, Peso) com valores corretos computados no jogo; Habilidades de relíquia com alternadores e giradores.
+- **Aba Estatísticas** — Estatísticas do herói (Saúde, Resistência, Ataque, Defesa, Velocidade de Trabalho, Peso) com valores corretos computados no jogo; Habilidades de relíquia com alternadores e giradores.
 - **Max All Stats** — Limite instantaneamente todas as estatísticas ao máximo (50 pontos).
 - **Operações em massa** entre vários jogadores: gerenciamento de itens, gerenciamento pal e desbloqueio de tecnologia.
 - Excluir jogadores inativos por limite de tempo; remova duplicatas.
@@ -227,7 +227,7 @@ Binários pré-construídos estão disponíveis para todas as três plataformas 
 | Plataforma | Baixar | Requisitos |
 |----------|----------|-------------|
 | **Janelas** | `PalworldSaveTools-*.exe` | Janelas 10/11, [VC++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170) (2015–2022) |
-| **Linux** | `PalworldSaveTools-*-linux` | Qualquer distribuição moderna |
+| **Linux** | `PalworldSaveTools-*-linux.AppImage` | Qualquer distribuição moderna |
 | **macOS** | `PalworldSaveTools-*-macos.dmg` | macOS 12+ (Monterey ou posterior) |
 
 Também disponível em [Nexus Mods](https://www.nexusmods.com/palworld/mods/3190).
@@ -238,7 +238,7 @@ Também disponível em [Nexus Mods](https://www.nexusmods.com/palworld/mods/3190
 
 > **Windows:** Se você vir "VCRUNTIME140.dll não encontrado", instale o [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170).
 
-> **Linux:** Talvez seja necessário marcar o arquivo como executável: `chmod +x PalworldSaveTools-*-linux`
+> **Linux:** Talvez seja necessário marcar o arquivo como executável: `chmod +x PalworldSaveTools-*-linux.AppImage`
 
 > **macOS:** Se o Gatekeeper bloquear o aplicativo, clique com o botão direito → **Abrir** na primeira vez ou execute `xattr -d com.apple.quarantine /path/to/app`.
 
@@ -544,7 +544,7 @@ O formato do arquivo salvo está desatualizado. Carregue o jogo salvo (Solo, Co-
 
 ### O binário Linux/macOS não inicia
 
-- **Linux:** `chmod +x PalworldSaveTools-*-linux` para marcá-lo como executável.
+- **Linux:** `chmod +x PalworldSaveTools-*-linux.AppImage` para marcá-lo como executável.
 - **macOS:** Se bloqueado pelo Gatekeeper, clique com o botão direito → **Abrir** ou execute `xattr -d com.apple.quarantine /path/to/app`.
 
 
@@ -714,7 +714,7 @@ Este projeto não existiria sem as pessoas por trás dele.
 
 ### Colaboradores
 
-**[dkoz](https://github.com/dkoz)** — O homem por trás das identidades. Fornece IDs de dados de jogos, visão estrutural sobre os códigos de ID e conhecimento profundo de como os dados do Palworld são conectados, o que mantém a ferramenta precisa a cada atualização do jogo.
+**[dkoz](https://github.com/dkoz)** — O homem por trás das identidades. Fornece IDs de dados de jogos, visão estrutural sobre os códigos de ID e profundo conhecimento de como os dados do Palworld são conectados, o que mantém a ferramenta precisa a cada atualização do jogo.
 
 **[oMaN-Rod](https://github.com/oMaN-Rod)** — Fornecido o analisador de salvamento original do qual este projeto se bifurcou. Sem seu trabalho fundamental para quebrar o formato de salvamento do Palworld, nada disso existiria. O fork simplificou e simplificou seu analisador no que o PST é hoje.
 **[Okaetsu](https://github.com/Okaetsu)** — Modificação de insights que tornaram possível a importação/exportação básica. Sua compreensão de como o Palworld estrutura os dados básicos do lado do modding preencheu a lacuna entre o modding e a edição salva, tornando esse recurso uma realidade.

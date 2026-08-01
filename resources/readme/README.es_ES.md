@@ -226,12 +226,12 @@ Accesibles a través de **Menú → Funciones**, estas operaciones de nivel de s
 
 ### Compilaciones independientes (recomendadas)
 
-Los archivos binarios prediseñados están disponibles para las tres plataformas principales desde [GitHub Releases](https://github.com/deafdudecomputers/PalworldSaveTools/releases/latest):
+Los binarios prediseñados están disponibles para las tres plataformas principales desde [GitHub Releases](https://github.com/deafdudecomputers/PalworldSaveTools/releases/latest):
 
 | Plataforma | Descargar | Requisitos |
 |----------|----------|--------------|
 | **Windows** | `PalworldSaveTools-*.exe` | Windows 10/11, [VC++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170) (2015-2022) |
-| **Linux** | `PalworldSaveTools-*-linux` | Cualquier distribución moderna |
+| **Linux** | `PalworldSaveTools-*-linux.AppImage` | Cualquier distribución moderna |
 | **macOS** | `PalworldSaveTools-*-macos.dmg` | macOS 12+ (Monterey o posterior) |
 
 También disponible en [Nexus Mods](https://www.nexusmods.com/palworld/mods/3190).
@@ -242,7 +242,7 @@ También disponible en [Nexus Mods](https://www.nexusmods.com/palworld/mods/3190
 
 > **Windows:** Si ve "No se encontró VCRUNTIME140.dll", instale [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170).
 
-> **Linux:** Es posible que necesites marcar el archivo como ejecutable: `chmod +x PalworldSaveTools-*-linux`
+> **Linux:** Es posible que necesites marcar el archivo como ejecutable: `chmod +x PalworldSaveTools-*-linux.AppImage`
 
 > **macOS:** Si Gatekeeper bloquea la aplicación, haga clic derecho → **Abrir** la primera vez o ejecute `xattr -d com.apple.quarantine /path/to/app`.
 
@@ -389,7 +389,7 @@ Lleva tu personaje del servidor dedicado a un guardado cooperativo local, algo �
    - Abra PST → **Herramientas** → **Reparar guardado de host**.
    - Navega hasta la cooperativa local `Level.sav`.
    - **Reproductor de origen**: selecciona el personaje de tu servidor dedicado (enumerado por su UID).
-   - **Jugador objetivo**: selecciona el personaje cooperativo temporal (el que está en `0001.sav`, que figura como anfitrión).
+   - **Jugador objetivo**: selecciona el personaje cooperativo temporal (el de `0001.sav`, que figura como anfitrión).
    - Haga clic en el botón para ejecutar el intercambio.
 
 4. **Organiza la cooperativa normalmente.**
@@ -548,7 +548,7 @@ El formato del archivo guardado está desactualizado. Cargue el guardado en el j
 
 ### El binario de Linux/macOS no se inicia
 
-- **Linux:** `chmod +x PalworldSaveTools-*-linux` para marcarlo como ejecutable.
+- **Linux:** `chmod +x PalworldSaveTools-*-linux.AppImage` para marcarlo como ejecutable.
 - **macOS:** Si Gatekeeper lo bloquea, haga clic derecho → **Abrir** o ejecute `xattr -d com.apple.quarantine /path/to/app`.
 
 
@@ -743,7 +743,7 @@ Este proyecto no existiría sin las personas que lo respaldan.
 Un enorme agradecimiento a:
 
 - **Palworld** desarrollado por Pocketpair, Inc. — para el juego que nos unió a todos.
-- **Los reporteros de errores**: cada problema presentado, cada caso límite encontrado, cada registro pegado en Discord. Usted hace que esta herramienta sea más sólida con cada informe.
+- **Los reporteros de errores**: cada problema presentado, cada caso extremo encontrado, cada registro pegado en Discord. Usted hace que esta herramienta sea más sólida con cada informe.
 - **La comunidad de modding de Palworld**: compañeros modders, desarrolladores de herramientas y expertos que comparten conocimientos, realizan ingeniería inversa en formatos e impulsan el ecosistema hacia adelante. Este proyecto se sustenta sobre los hombros de ese esfuerzo colectivo.
 - **Todos los contribuyentes y miembros de la comunidad**: ya sea que enviaron un PR, respondieron una pregunta en Discord o simplemente le contaron a un amigo sobre PST, gracias.
 

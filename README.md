@@ -226,7 +226,7 @@ Pre-built binaries are available for all three major platforms from [GitHub Rele
 | Platform | Download | Requirements |
 |----------|----------|--------------|
 | **Windows** | `PalworldSaveTools-*.exe` | Windows 10/11, [VC++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170) (2015–2022) |
-| **Linux** | `PalworldSaveTools-*-linux` | Any modern distro |
+| **Linux** | `PalworldSaveTools-*-linux.AppImage` | Any modern distro |
 | **macOS** | `PalworldSaveTools-*-macos.dmg` | macOS 12+ (Monterey or later) |
 
 Also available on [Nexus Mods](https://www.nexusmods.com/palworld/mods/3190).
@@ -237,7 +237,7 @@ Also available on [Nexus Mods](https://www.nexusmods.com/palworld/mods/3190).
 
 > **Windows:** If you see "VCRUNTIME140.dll was not found," install the [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170).
 
-> **Linux:** You may need to mark the file executable: `chmod +x PalworldSaveTools-*-linux`
+> **Linux:** You may need to mark the file executable: `chmod +x PalworldSaveTools-*-linux.AppImage`
 
 > **macOS:** If Gatekeeper blocks the app, right-click → **Open** the first time, or run `xattr -d com.apple.quarantine /path/to/app`.
 
@@ -543,7 +543,7 @@ The save file format is outdated. Load the save in-game (Solo, Co-op, or Dedicat
 
 ### Linux / macOS binary won't launch
 
-- **Linux:** `chmod +x PalworldSaveTools-*-linux` to mark it executable.
+- **Linux:** `chmod +x PalworldSaveTools-*-linux.AppImage` to mark it executable.
 - **macOS:** If blocked by Gatekeeper, right-click → **Open**, or run `xattr -d com.apple.quarantine /path/to/app`.
 
 

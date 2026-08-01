@@ -28,7 +28,7 @@
 
 </div>
 
-Palworld Save Tools (PST) est une application de bureau rapide tout-en-un permettant d'inspecter et de modifier les fichiers de sauvegarde Palworld. Construit avec Python et PySide6, il lit et écrit directement le format de sauvegarde compressé du jeu – aucun module de jeu n'est requis.
+Palworld Save Tools (PST) est une application de bureau rapide et tout-en-un permettant d'inspecter et de modifier les fichiers de sauvegarde Palworld. Construit avec Python et PySide6, il lit et écrit directement le format de sauvegarde compressé du jeu – aucun module de jeu n'est requis.
 
 Que vous ayez besoin de gérer un serveur dédié, de migrer entre des serveurs coopératifs et dédiés, de nettoyer des données abandonnées ou d'affiner un Pals individuel, PST fournit une interface unifiée unique pour tout cela.
 
@@ -125,7 +125,7 @@ Une interface d'édition approfondie pour n'importe quel Pal appartenant à n'im
 
 Vue à deux panneaux : liste des guildes en haut, liste des membres en bas.
 
-- Renommez les guildes, changez de chef, définissez le niveau de guilde, le niveau de guilde maximum.
+- Renommer les guildes, changer de chef, définir le niveau de guilde, le niveau de guilde maximum.
 - Débloquez toutes les recherches en laboratoire ; reconstruisez toutes les guildes.
 - Déplacez les joueurs entre les guildes ; supprimer les guildes vides ou inactives.
 
@@ -224,7 +224,7 @@ Des binaires prédéfinis sont disponibles pour les trois principales plates-for
 | Plateforme | Télécharger | Exigences |
 |--------------|----------|--------------|
 | **Windows** | `PalworldSaveTools-*.exe` | Windows 10/11, [VC++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170) (2015-2022) |
-| **Linux** | `PalworldSaveTools-*-linux` | Toute distribution moderne |
+| **Linux** | `PalworldSaveTools-*-linux.AppImage` | Toute distribution moderne |
 | **macOS** | `PalworldSaveTools-*-macos.dmg` | macOS 12+ (Monterey ou version ultérieure) |
 
 Également disponible sur [Nexus Mods](https://www.nexusmods.com/palworld/mods/3190).
@@ -235,7 +235,7 @@ Des binaires prédéfinis sont disponibles pour les trois principales plates-for
 
 > **Windows :** Si vous voyez « VCRUNTIME140.dll n'a pas été trouvé », installez le [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170).
 
-> **Linux :** Vous devrez peut-être marquer le fichier comme exécutable : `chmod +x PalworldSaveTools-*-linux`
+> **Linux :** Vous devrez peut-être marquer le fichier comme exécutable : `chmod +x PalworldSaveTools-*-linux.AppImage`
 
 > **macOS :** Si Gatekeeper bloque l'application, cliquez avec le bouton droit → **Ouvrir** pour la première fois ou exécutez `xattr -d com.apple.quarantine /path/to/app`.
 
@@ -541,7 +541,7 @@ Le format du fichier de sauvegarde est obsolète. Chargez la sauvegarde dans le 
 
 ### Le binaire Linux / macOS ne se lance pas
 
-- **Linux :** `chmod +x PalworldSaveTools-*-linux` pour le marquer comme exécutable.
+- **Linux :** `chmod +x PalworldSaveTools-*-linux.AppImage` pour le marquer comme exécutable.
 - **macOS :** Si bloqué par Gatekeeper, cliquez avec le bouton droit → **Ouvrir** ou exécutez `xattr -d com.apple.quarantine /path/to/app`.
 
 
@@ -737,7 +737,7 @@ Un immense merci à :
 
 - **Palworld** développé par Pocketpair, Inc. — pour le jeu qui nous a tous réunis.
 - **Les rapporteurs de bogues** — chaque problème déposé, chaque cas limite trouvé, chaque journal collé dans Discord. Vous rendez cet outil plus robuste à chaque rapport.
-- **La communauté de modding Palworld** : d'autres moddeurs, développeurs d'outils et bricoleurs qui partagent leurs connaissances, effectuent de l'ingénierie inverse des formats et font avancer l'écosystème. Ce projet repose sur les épaules de cet effort collectif.
+- **La communauté de modding Palworld** : d'autres moddeurs, développeurs d'outils et bricoleurs qui partagent leurs connaissances, effectuent de l'ingénierie inverse des formats et font avancer l'écosystème. Ce projet repose sur cet effort collectif.
 - **Tous les contributeurs et membres de la communauté** — que vous ayez soumis un PR, répondu à une question dans Discord ou simplement parlé de PST à un ami — merci.
 
 ---

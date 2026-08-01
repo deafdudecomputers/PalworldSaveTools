@@ -30,14 +30,14 @@
 
 Palworld Save Tools (PST) ist eine schnelle All-in-One-Desktopanwendung zum Überprüfen und Bearbeiten von Palworld-Sicherungsdateien. Es wurde mit Python und PySide6 erstellt und liest und schreibt das komprimierte Speicherformat des Spiels direkt – keine Spielmodifikationen erforderlich.
 
-Ganz gleich, ob Sie einen dedizierten Server verwalten, zwischen Co-op- und dedizierten Servern migrieren, aufgegebene Daten bereinigen oder einzelne Pals optimieren müssen, PST bietet für alles eine einzige einheitliche Schnittstelle.
+Ganz gleich, ob Sie einen dedizierten Server verwalten, zwischen kooperativen und dedizierten Servern migrieren, aufgegebene Daten bereinigen oder einzelne Pals optimieren müssen, PST bietet für alles eine einzige, einheitliche Schnittstelle.
 
 ### Highlights
 
 - **Plattformübergreifend** – Vorgefertigte Binärdateien für **Windows**, **Linux** und **macOS**.
-- **Schnelles natives Parsen** – Einer der schnellsten verfügbaren Lesegeräte für gespeicherte Dateien, angetrieben von der [`palsav`](src/palsav)-Engine.
+- **Schnelles natives Parsen** – Einer der schnellsten verfügbaren Lesegeräte für gespeicherte Dateien, angetrieben durch die [`palsav`](src/palsav)-Engine.
 - **Visuelle Karte** – Interaktive Weltkarte mit Basis-/Spielermarkierungen, Sperrzonen und Koordinatenkalibrierung.
-- **Umfassende Pal-Bearbeitung** – Volle Kontrolle über Statistiken, IVs, Seelen, Fähigkeiten, passives, Arbeitseignungen, Rang und Aussehensflaggen.
+- **Umfassende Pal-Bearbeitung** – Volle Kontrolle über Statistiken, IVs, Seelen, Fähigkeiten, passives, Arbeitseignungen, Rang und Aussehensmarkierungen.
 - **Tools auf Serverniveau** – Massenlöschung, Bereinigung, Konvertierung und Zeichenübertragung für Administratoren.
 - **Automatische Backups** – Bei jedem Speichervorgang wird vor dem Schreiben ein Backup erstellt.
 - **9 Sprachen** – Lokalisierte Benutzeroberfläche, In-App-Anleitungen und Dokumentation.
@@ -105,14 +105,14 @@ Ganz gleich, ob Sie einen dedizierten Server verwalten, zwischen Co-op- und dedi
 
 ### Pal Editor
 
-Eine umfassende Bearbeitungsoberfläche für jedes Pal, das einem beliebigen Spieler gehört. Pals werden von **Party** (aktive Truppe) und **Palbox** (Lagerung) organisiert.
+Eine umfassende Bearbeitungsoberfläche für jedes Pal, das einem beliebigen Spieler gehört. Pals werden von **Party** (aktive Truppe) und **Palbox** (Lager) organisiert.
 
 - **Statistiken & IVs** – HP, Angriff, Verteidigung (IV 0–100), Level (1–80), Vertrauensrang (0–10).
 - **Seelen** – HP, Angriff, Verteidigung, Handwerksgeschwindigkeit (0–20).
 - **Fertigkeiten** – Aktive Fertigkeitsauswahl; lerne alle Bewegungen; Fähigkeiten zur Massensynchronisierung in Pals.
 - **Passive Eigenschaften** – Passiver Picker mit vollständigen Spieldaten.
 - **Arbeitseignung** – Legen Sie individuelle Arbeitseignungsstufen fest (0–10).
-- **Aussehensflaggen** – Boss/Alpha, Lucky/Shiny, Predator, Awakened und Imported/DNA umschalten.
+- **Aussehensflaggen** – Umschalten zwischen Boss/Alpha, Lucky/Shiny, Predator, Awakened und Imported/DNA.
 - **Rang & Sperre** – Rang und bevorzugte Sperrstufe festlegen (0–3).
 - **Cheat-Modus** – Umschalten, um alle Obergrenzen zu erweitern: Level, IVs, Seelen, Kondensatorrang auf 255; Schalten Sie unbegrenzte Aktiv-/Passivfähigkeiten frei, wobei Duplikate zulässig sind.
 - **Exportieren/Importieren** – Klicken Sie mit der rechten Maustaste auf einen beliebigen pal, um ihn als `.pstpal` (komprimiert) oder `.json` zu exportieren. Importieren Sie in leere Slots über Gruppen-, Palbox-, DPS- oder Basisarbeiter hinweg. Funktioniert für alle Spielstände und Spieler.
@@ -224,7 +224,7 @@ Vorgefertigte Binärdateien sind für alle drei Hauptplattformen ab [GitHub Rele
 | Plattform | Herunterladen | Anforderungen |
 |----------|----------|--------------|
 | **Windows** | `PalworldSaveTools-*.exe` | Windows 10/11, [VC++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170) (2015–2022) |
-| **Linux** | `PalworldSaveTools-*-linux` | Jede moderne Distribution |
+| **Linux** | `PalworldSaveTools-*-linux.AppImage` | Jede moderne Distribution |
 | **macOS** | `PalworldSaveTools-*-macos.dmg` | macOS 12+ (Monterey oder höher) |
 
 Auch erhältlich für [Nexus Mods](https://www.nexusmods.com/palworld/mods/3190).
@@ -235,7 +235,7 @@ Auch erhältlich für [Nexus Mods](https://www.nexusmods.com/palworld/mods/3190)
 
 > **Windows:** Wenn die Meldung „VCRUNTIME140.dll wurde nicht gefunden“ angezeigt wird, installieren Sie [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170).
 
-> **Linux:** Möglicherweise müssen Sie die Datei als ausführbar markieren: `chmod +x PalworldSaveTools-*-linux`
+> **Linux:** Möglicherweise müssen Sie die Datei als ausführbar markieren: `chmod +x PalworldSaveTools-*-linux.AppImage`
 
 > **macOS:** Wenn Gatekeeper die App blockiert, klicken Sie beim ersten Mal mit der rechten Maustaste → **Öffnen** oder führen Sie `xattr -d com.apple.quarantine /path/to/app` aus.
 
@@ -382,7 +382,7 @@ Bringen Sie Ihren dedizierten Server-Charakter zurück zu einem lokalen Koop-Spe
    - Öffnen Sie PST → **Tools** → **Fix Host Save**.
    - Navigieren Sie zur örtlichen Genossenschaft `Level.sav`.
    - **Quellspieler**: Wählen Sie Ihren dedizierten Servercharakter aus (aufgelistet nach seiner UID).
-   - **Zielspieler**: Wählen Sie den temporären Koop-Charakter (den in `0001.sav` – aufgeführt als Host).
+   - **Zielspieler**: Wählen Sie den temporären Koop-Charakter aus (den in `0001.sav` – aufgeführt als Host).
    - Klicken Sie auf die Schaltfläche, um den Austausch durchzuführen.
 
 4. **Normalerweise Gastgeber-Koop.**
@@ -439,7 +439,7 @@ Da ein Austausch Spieler B in den Host-Slot verschiebt, die Daten von Spieler A 
 
 ---
 
-**Schritt 3 – Tauschen Sie die Originaldaten von A in die neue UID von A aus.**
+**Schritt 3 – Tauschen Sie die Originaldaten von A gegen die neue UID von A aus.**
 - Öffnen Sie **Fix Host Save** erneut mit demselben `Level.sav`.
 - **Quelle**: `1234.sav` (Originaldaten von Spieler A). **Ziel**: `9999.sav` (der temporäre Charakter von Spieler A).
 - Klicken Sie auf die Schaltfläche. Sie tauschen erneut.
@@ -541,7 +541,7 @@ Das Speicherdateiformat ist veraltet. Laden Sie den Speicherstand im Spiel (Solo
 
 ### Linux/MacOS-Binärdatei wird nicht gestartet
 
-- **Linux:** `chmod +x PalworldSaveTools-*-linux`, um es als ausführbar zu markieren.
+- **Linux:** `chmod +x PalworldSaveTools-*-linux.AppImage`, um es als ausführbar zu markieren.
 - **macOS:** Wenn vom Gatekeeper blockiert, klicken Sie mit der rechten Maustaste → **Öffnen** oder führen Sie `xattr -d com.apple.quarantine /path/to/app` aus.
 
 
