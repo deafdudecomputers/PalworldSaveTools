@@ -12,9 +12,9 @@ name: SIGNED Build All
 # The app registration must have a federated credential for this repo and the
 # "Artifact Signing Certificate Profile Signer" role on the PalworldSigning account.
 #
-# Nexus upload is handled by the existing nexus-upload.yml workflow (fires on
-# release: published) — drafts are never published, so they never upload. That
-# workflow's windows asset glob targets the signed Nuitka onefile exe.
+# Nexus gating matches build-all-and-release.yml: skip_nexus_upload forces the
+# release to draft, and nexus-upload.yml (fires on release: published) then
+# never runs. Uncheck both draft_only and skip_nexus_upload to publish + upload.
 
 on:
   workflow_dispatch:
@@ -31,6 +31,11 @@ on:
         type: boolean
       draft_only:
         description: "Create as draft only"
+        required: false
+        default: true
+        type: boolean
+      skip_nexus_upload:
+        description: "Skip Nexus upload"
         required: false
         default: true
         type: boolean
@@ -267,7 +272,7 @@ jobs:
           tag_name: v${{ steps.env.outputs.version }}
           name: v${{ steps.env.outputs.version }}
           body_path: release_notes.md
-          draft: ${{ github.event.inputs.draft_only == 'true' }}
+          draft: ${{ github.event.inputs.draft_only == 'true' || github.event.inputs.skip_nexus_upload == 'true' }}
           prerelease: false
           files: artifacts/**/*
         env:
