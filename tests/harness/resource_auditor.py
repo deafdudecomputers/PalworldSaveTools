@@ -46,7 +46,6 @@ _RESOURCE_MAP: dict[str, str] = {
     'assets/icons/game/zones.webp': 'assets/icons/game/zones.webp',
     'assets/maps/T_TreeMap.webp': 'assets/maps/T_TreeMap.webp',
     'assets/maps/T_WorldMap.webp': 'assets/maps/T_WorldMap.webp',
-    'certs/cacert.pem': 'certs/cacert.pem',
     'background.png': 'assets/branding/background.png',
     'logo.png': 'assets/branding/logo.png',
     'PST.png': 'assets/branding/PST.png',
@@ -74,7 +73,6 @@ _RESOURCE_MAP: dict[str, str] = {
     'zones.webp': 'assets/icons/game/zones.webp',
     'T_TreeMap.webp': 'assets/maps/T_TreeMap.webp',
     'T_WorldMap.webp': 'assets/maps/T_WorldMap.webp',
-    'cert/cacert.pem': 'certs/cacert.pem',
 }
 
 

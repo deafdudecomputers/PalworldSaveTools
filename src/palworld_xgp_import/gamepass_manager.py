@@ -3,6 +3,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import uuid
 from typing import Optional
@@ -13,36 +14,54 @@ from palworld_xgp_import.container_types import (
 
 SAVE_SUFFIXES = ("Level", "Level-01", "LocalData", "WorldOption")
 
+_NO_WINDOW = getattr(subprocess, 'CREATE_NO_WINDOW', 0) if sys.platform == 'win32' else 0
+
+
+def _connected_interface_names() -> list[str]:
+    """Locale-free names of connected network interfaces (netsh ipv4 show interfaces)."""
+    r = subprocess.run(
+        ['netsh', 'interface', 'ipv4', 'show', 'interfaces'],
+        capture_output=True, text=True, check=False, creationflags=_NO_WINDOW,
+    )
+    names = []
+    for line in r.stdout.splitlines():
+        line = line.strip()
+        m = re.match(r'^(\d+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(.+)$', line)
+        if not m:
+            continue
+        idx, _, _, _state, name = m.groups()
+        if int(idx) == 1 or 'loopback' in name.lower():
+            continue
+        names.append(name.strip())
+    return names
+
 
 def toggle_network(enable: bool, adapters: list[str] | None = None) -> list[str]:
-    """Disable or enable physical network adapters.
+    """Disable or enable network adapters via netsh.
 
-    When enable=False: disables all active physical adapters, returns their names.
-    When enable=True: re-enables the adapters named in the list (from prior disable).
+    When enable=False: disables every connected adapter so the game and cloud
+    sync see an instant disconnect and the game falls back to the local save.
+    When enable=True: re-enables the adapters named in the list (from the
+    prior disable).
 
-    Requires admin rights (PST already requires admin for XGP writes).
+    'adapters' keeps the legacy name for API compatibility. Requires admin
+    rights (PST already requires admin for XGP writes).
     """
-    _ps = ['powershell', '-NoProfile', '-Command']
     if enable:
         for name in (adapters or []):
             subprocess.run(
-                [*_ps, f'Enable-NetAdapter -Name "{name}" -Confirm:$false'],
-                capture_output=True, check=False,
+                ['netsh', 'interface', 'set', 'interface', name, 'enabled'],
+                capture_output=True, check=False, creationflags=_NO_WINDOW,
             )
         return []
-    else:
-        r = subprocess.run(
-            [*_ps, '(Get-NetAdapter -Physical | Where-Object {$_.Status -eq "Up"}).Name'],
-            capture_output=True, text=True, check=False,
+    names = _connected_interface_names()
+    for name in names:
+        subprocess.run(
+            ['netsh', 'interface', 'set', 'interface', name, 'disabled'],
+            capture_output=True, check=False, creationflags=_NO_WINDOW,
         )
-        names = [n.strip() for n in r.stdout.strip().split('\n') if n.strip()]
-        for name in names:
-            subprocess.run(
-                [*_ps, f'Disable-NetAdapter -Name "{name}" -Confirm:$false'],
-                capture_output=True, check=False,
-            )
-        print(f'[toggle_network] disabled: {names}')
-        return names
+    print(f'[toggle_network] disabled adapters: {names}')
+    return names
 
 
 CONTAINER_REGEX = re.compile(r"[0-9A-F]{16}_[0-9A-F]{32}$")
@@ -109,7 +128,8 @@ def find_container_paths() -> list[str]:
 def read_container_index(container_path: str) -> ContainerIndex:
     import subprocess as _sp
     for _s in ('XblGameSave', 'XblAuthManager'):
-        _sp.run(['sc', 'stop', _s], capture_output=True, check=False)
+        _sp.run(['sc', 'stop', _s], capture_output=True, check=False,
+                creationflags=_NO_WINDOW)
     index_path = os.path.join(container_path, "containers.index")
     if not os.path.exists(index_path):
         raise FileNotFoundError(f"containers.index not found: {index_path}")

@@ -70,10 +70,6 @@ class Runner:
         cmd = [PYTHON, str(CX_FREEZE_SCRIPT), '--use-venv']
         return _run(cmd, label='cx_Freeze — Directory (local)')
 
-    def nuitka_onefile(self) -> int:
-        cmd = [PYTHON, str(NUITKA_SCRIPT), '--onefile']
-        return _run(cmd, label='Nuitka — One-File (local)')
-
     def nuitka_onedir(self) -> int:
         cmd = [PYTHON, str(NUITKA_SCRIPT), '--onedir']
         return _run(cmd, label='Nuitka — Directory (local)')

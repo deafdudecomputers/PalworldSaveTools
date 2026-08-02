@@ -25,15 +25,7 @@ import traceback
 import multiprocessing
 _is_frozen = getattr(sys, 'frozen', False)
 if _is_frozen:
-    import subprocess
     multiprocessing.set_executable(sys.executable)
-    _original_popen = subprocess.Popen
-    class _NoConsolePopen(_original_popen):
-        def __init__(self, *args, **kwargs):
-            if sys.platform == 'win32' and 'creationflags' not in kwargs:
-                kwargs['creationflags'] = subprocess.CREATE_NO_WINDOW
-            super().__init__(*args, **kwargs)
-    subprocess.Popen = _NoConsolePopen
 if __name__ == '__main__':
     multiprocessing.freeze_support()
 os.environ['QT_LOGGING_RULES'] = '*=false'

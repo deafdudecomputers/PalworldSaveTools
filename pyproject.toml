@@ -21,7 +21,6 @@ dependencies = [
     "msgpack",
     "zstandard",
     "orjson",
-    "py7zr",
     "nuitka>=4.1.2",
     "loguru>=0.7.3",
 ]

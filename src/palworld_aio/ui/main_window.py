@@ -190,7 +190,7 @@ class UpdateChecker(QThread):
     def run(self):
         try:
             import ssl, json
-            context = ssl._create_unverified_context()
+            context = ssl.create_default_context()
             req = urllib.request.Request(
                 'https://api.github.com/repos/deafdudecomputers/PalworldSaveTools/releases/latest',
                 headers={

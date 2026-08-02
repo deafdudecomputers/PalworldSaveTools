@@ -393,7 +393,9 @@ class ErrorDialog(QWidget):
                     pass
         try:
             import subprocess
-            subprocess.run(['clip.exe'], input=text.encode('utf-16'), check=True)
+            _flags = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
+            subprocess.run(['clip.exe'], input=text.encode('utf-16'), check=True,
+                           creationflags=_flags)
             old_txt = btn.text()
             btn.setText('COPIED!')
             QTimer.singleShot(2000, lambda t=old_txt: _restore(t))

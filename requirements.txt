@@ -1,7 +1,6 @@
 pyside6-essentials
 cx-freeze>=8.3.0
 nerdfont
-py7zr
 orjson
 packaging
 Pillow

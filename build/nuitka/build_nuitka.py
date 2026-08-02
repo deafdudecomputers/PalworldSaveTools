@@ -36,10 +36,10 @@ _INCLUDE_MODULES = [
     'palworld_toolsets', 'palworld_toolsets.game_pass_save_fix',
     'palworld_toolsets.convertids', 'palworld_toolsets.restore_map',
     'palworld_toolsets.slot_injector', 'palworld_toolsets.character_transfer',
-    'palworld_toolsets.modify_save', 'palworld_toolsets.fix_host_save',
+    'palworld_toolsets.fix_host_save',
     'palworld_toolsets.convert_generic', 'palworld_toolsets.xgp_save_extract',
     'palworld_xgp_import', 'nerdfont', 'orjson', 'brotli',
-    'cbor2', 'zstandard', 'py7zr', 'packaging',
+    'cbor2', 'zstandard', 'packaging',
 ]
 
 _EXCLUDE_MODULES = [

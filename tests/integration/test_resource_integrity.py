@@ -155,7 +155,7 @@ class TestResourceMapConsistency:
         )
 
     def test_no_duplicate_targets(self):
-        _CANONICAL_PREFIXES = ('assets/', 'certs/')
+        _CANONICAL_PREFIXES = ('assets/',)
         seen = {}
         for key, mapped in _RESOURCE_MAP.items():
             if not any(key.startswith(p) for p in _CANONICAL_PREFIXES):
@@ -168,7 +168,7 @@ class TestResourceMapConsistency:
             seen[mapped] = key
 
     def test_canonical_keys_map_to_themselves(self):
-        _CANONICAL_PREFIXES = ('assets/', 'certs/')
+        _CANONICAL_PREFIXES = ('assets/',)
         for key, mapped in _RESOURCE_MAP.items():
             if any(key.startswith(p) for p in _CANONICAL_PREFIXES):
                 assert mapped == key, f"Canonical key '{key}' should map to itself but maps to '{mapped}'"
@@ -225,7 +225,6 @@ class TestAssetInventoryIntegrity:
             'game_data/append_text.json',
             'game_data/relic_data.json',
             'game_data/world_map_areas.json',
-            'certs/cacert.pem',
             'i18n/en_US.json',
             'i18n/config.json',
             'tab_guide/en/intro.html',

@@ -19,8 +19,3 @@ def test_resources_directory_has_i18n():
 def test_resources_directory_has_assets():
     path = get_resources_directory()
     assert os.path.isdir(os.path.join(path, "assets"))
-
-
-def test_resources_directory_has_certs():
-    path = get_resources_directory()
-    assert os.path.isdir(os.path.join(path, "certs"))
