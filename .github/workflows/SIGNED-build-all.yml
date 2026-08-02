@@ -94,7 +94,17 @@ jobs:
         run: |
           uv venv --clear
           uv pip install -r requirements.txt nuitka
+          choco install ccache -y --no-progress
+      - name: Restore Nuitka ccache
+        uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: ${{ runner.os }}-nuitka-ccache-${{ hashFiles('src/**', 'build/**', 'requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-nuitka-ccache-
       - name: Build Nuitka onefile executable
+        env:
+          CCACHE_DIR: ${{ github.workspace }}\.ccache
         run: uv run python build/nuitka/build_nuitka.py --onefile
       - name: Azure login (OIDC)
         uses: azure/login@v3

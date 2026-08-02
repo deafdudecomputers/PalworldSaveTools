@@ -215,6 +215,7 @@ def build_with_nuitka(onefile: bool = True, no_compression: bool = True):
 
     cmd.append('--prefer-source-code')
     cmd.append('--lto=no')
+    cmd.append('--ccache')
 
     cmd += [
         '--enable-plugin=pyside6',
