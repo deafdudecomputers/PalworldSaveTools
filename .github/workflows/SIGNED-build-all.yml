@@ -1,8 +1,9 @@
 name: SIGNED Build All
 
 # Release pipeline with Authenticode signing for Windows via Azure Artifact
-# Signing. Reuses the linux/mac jobs from Build All & Release; the Windows job
-# builds a Nuitka onefile executable (no-compression, VT-optimal) and signs it.
+# Signing. Reuses the linux/mac jobs from Build All & Release; the Windows
+# Nuitka job builds a onefile executable (no-compression, VT-optimal) and signs
+# it. The cx_Freeze standalone zip is built in its own parallel Windows job.
 #
 # Required GitHub secrets for Windows signing (OIDC):
 #   AZURE_CLIENT_ID        - appId of the Azure AD app registration
@@ -120,11 +121,24 @@ jobs:
           name: windows-signed-build
           path: dist/PalworldSaveTools-v${{ steps.env.outputs.version }}-win.exe
           if-no-files-found: error
+
+  build-cx-freeze:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - name: Bootstrap environment
+        id: env
+        uses: ./.github/actions/setup-build-env
       - name: Build cx_Freeze standalone (unsigned)
         run: uv run python build/cx_freeze/build_cx.py
-      - name: List standalone output
+      - name: List standalone build output
         shell: bash
-        run: ls -la PST_standalone_v${{ steps.env.outputs.version }}.zip
+        run: |
+          echo "=== .zip archive ==="
+          ls -la *.zip 2>/dev/null || echo "No .zip files"
       - uses: actions/upload-artifact@v7
         with:
           name: windows-cx-standalone
@@ -205,7 +219,7 @@ jobs:
           if-no-files-found: error
 
   create-release:
-    needs: [prepare-source, build-windows-signed, build-linux, build-mac]
+    needs: [prepare-source, build-windows-signed, build-cx-freeze, build-linux, build-mac]
     if: ${{ github.event.inputs.skip_github_release != 'true' }}
     runs-on: ubuntu-latest
     outputs:
@@ -289,7 +303,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   nexus-upload:
-    needs: [prepare-source, build-windows-signed, build-linux, build-mac]
+    needs: [prepare-source, build-windows-signed, build-cx-freeze, build-linux, build-mac]
     # Hard gate: skip_nexus_upload=true means NO upload, period — independent of
     # draft/publish state. Runs straight from build artifacts, not release events.
     if: ${{ github.event.inputs.skip_nexus_upload != 'true' }}
