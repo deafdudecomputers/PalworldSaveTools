@@ -120,6 +120,16 @@ jobs:
           name: windows-signed-build
           path: dist/PalworldSaveTools-v${{ steps.env.outputs.version }}-win.exe
           if-no-files-found: error
+      - name: Build cx_Freeze standalone (unsigned)
+        run: uv run python build/cx_freeze/build_cx.py
+      - name: List standalone output
+        shell: bash
+        run: ls -la PST_standalone_v${{ steps.env.outputs.version }}.zip
+      - uses: actions/upload-artifact@v7
+        with:
+          name: windows-cx-standalone
+          path: PST_standalone_v${{ steps.env.outputs.version }}.zip
+          if-no-files-found: error
 
   build-linux:
     runs-on: ubuntu-latest
