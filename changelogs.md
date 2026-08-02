@@ -1,6 +1,7 @@
 #2.3.2
 - **Clearing passive skills no longer leaves a hidden "None" trait behind** — removing a pal's passive skills (right-click a slot or pick "Clear") used to write an empty slot that the game turned into an invisible "None" passive. That ghost trait counted as a real skill during breeding, so it could be passed down to offspring and stopped you from breeding truly blank pals. Trying to remove it again with the tool never worked. Removed passives are now fully deleted, so a pal with all skills cleared is genuinely blank in-game and breeds that way.
 - **Codebase cleanup cuts antivirus false positives** — removed unused libraries and bundled components that antivirus engines kept misreading as threats, along with the tool that downloaded third-party programs at runtime. Windows builds now trigger far fewer detections.
+- **Sidebar labels no longer tiny on macOS** — the expanded sidebar's text was rendered at a size that came out extremely small on Mac Retina displays. It now adapts to the platform, so labels are readable on macOS and unchanged on Windows. Contributed by jsvk.
 - Bumped version to 2.3.2
 
 #2.3.1
