@@ -1,8 +1,6 @@
 #2.3.2
 - **Clearing passive skills no longer leaves a hidden "None" trait behind** — removing a pal's passive skills (right-click a slot or pick "Clear") used to write an empty slot that the game turned into an invisible "None" passive. That ghost trait counted as a real skill during breeding, so it could be passed down to offspring and stopped you from breeding truly blank pals. Trying to remove it again with the tool never worked. Removed passives are now fully deleted, so a pal with all skills cleared is genuinely blank in-game and breeds that way.
-- **Windows release is back to a single self-contained .exe** — the previous installer build is replaced with one digitally signed executable. No install wizard, no folder of files, nothing to extract.
-- **Antivirus false positives sharply reduced** — several behaviors antivirus engines kept flagging were removed or reworked, including the bundled archive-crypto library and the downloader that fetched third-party tools at runtime. VirusTotal detections dropped by half, leaving only generic heuristics.
-- **The standalone "Modify Save" tool was removed** — it downloaded and launched external programs, which is why antivirus flagged it. The same save-editing features are still available in the main editor.
+- **Codebase cleanup cuts antivirus false positives** — removed bundled crypto/archive libraries and the third-party tool downloader that antivirus engines kept flagging. Windows builds now trigger far fewer detections.
 - Bumped version to 2.3.2
 
 #2.3.1
