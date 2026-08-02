@@ -29,7 +29,8 @@
 
 | Platform | File |
 |---|---|
-| 🪟 Windows | `${APP_NAME}-v${VERSION}-windows-setup.exe` |
+| 🪟 Windows (single .exe) | `${APP_NAME}-v${VERSION}-win.exe` |
+| 🪟 Windows (standalone folder) | `PST_standalone_v${VERSION}.zip` |
 | 🐧 Linux   | `${APP_NAME}-v${VERSION}-linux.AppImage` |
 | 🍎 macOS   | `${APP_NAME}-v${VERSION}-macos.dmg` |
 
