@@ -1,3 +1,8 @@
+#2.3.2
+- **Clearing passive skills no longer leaves a hidden "None" trait behind** — removing a pal's passive skills (right-click a slot or pick "Clear") used to write an empty slot that the game turned into an invisible "None" passive. That ghost trait counted as a real skill during breeding, so it could be passed down to offspring and stopped you from breeding truly blank pals. Trying to remove it again with the tool never worked. Removed passives are now fully deleted, so a pal with all skills cleared is genuinely blank in-game and breeds that way.
+- **Windows builds are back on cx_Freeze** — the release is built with cx_Freeze again instead of Nuitka, because the Nuitka-based build was getting flagged by antivirus software. The installer output is unchanged.
+- Bumped version to 2.3.2
+
 #2.3.1
 - **Windows builds are now digitally signed** — the Windows release is Authenticode-signed with a certificate, which greatly reduced antivirus false positives.
 - **Windows now ships as a single-file build** — the Windows release is one self-contained .exe instead of a folder of files, so there's nothing to extract or keep together.

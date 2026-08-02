@@ -406,6 +406,7 @@ class PalInfoHandlerMixin:
         while len(cur) <= slot_idx:
             cur.append('')
         cur[slot_idx] = asset
+        cur = [s for s in cur if s]
         self._raw['PassiveSkillList'] = {'array_type': 'NameProperty', 'id': None, 'value': {'values': cur[:ps_cap]}, 'type': 'ArrayProperty'}
         self._refresh()
 
@@ -524,7 +525,7 @@ class PalInfoHandlerMixin:
             if not ok or not name.strip():
                 return
             name = name.strip()
-            loadouts[name] = cur_list
+            loadouts[name] = [p for p in cur_list if p]
             try:
                 os.makedirs(os.path.dirname(loadouts_path), exist_ok=True)
                 json_tools.dump(loadouts, loadouts_path, indent=2)
@@ -543,6 +544,10 @@ class PalInfoHandlerMixin:
             name = sel.data(Qt.UserRole)
             passive_list = loadouts.get(name)
             if not passive_list:
+                return
+            passive_list = [p for p in passive_list if p]
+            if not passive_list:
+                show_warning(dlg, t('edit_pals.passive_loadouts'), t('edit_pals.loadouts_no_passives'))
                 return
             if not self._raw:
                 show_warning(dlg, t('edit_pals.passive_loadouts'), t('edit_pals.loadouts_no_pal'))
