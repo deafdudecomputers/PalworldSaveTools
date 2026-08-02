@@ -120,28 +120,6 @@ jobs:
           name: windows-signed-build
           path: dist/PalworldSaveTools-v${{ steps.env.outputs.version }}-win.exe
           if-no-files-found: error
-      - name: Build cx_Freeze standalone
-        run: uv run python build/cx_freeze/build_cx.py
-      - name: Sign cx_Freeze main executable
-        uses: azure/artifact-signing-action@v2
-        with:
-          endpoint: https://wus2.codesigning.azure.net/
-          signing-account-name: PalworldSigning
-          certificate-profile-name: pst-private
-          files: ${{ github.workspace }}\PST_standalone\PalworldSaveTools.exe
-          file-digest: SHA256
-          timestamp-rfc3161: http://timestamp.acs.microsoft.com
-          timestamp-digest: SHA256
-      - name: Re-zip signed standalone
-        run: uv run python -c "import importlib.util as i; s=i.spec_from_file_location('b','build/cx_freeze/build_cx.py'); m=i.module_from_spec(s); s.loader.exec_module(m); m.create_release_archive()"
-      - name: List standalone build output
-        shell: bash
-        run: ls -la PST_standalone_v${{ steps.env.outputs.version }}.zip
-      - uses: actions/upload-artifact@v7
-        with:
-          name: windows-cx-standalone
-          path: PST_standalone_v${{ steps.env.outputs.version }}.zip
-          if-no-files-found: error
 
   build-linux:
     runs-on: ubuntu-latest
