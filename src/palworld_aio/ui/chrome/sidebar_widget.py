@@ -1,3 +1,4 @@
+import sys
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QStyleOptionButton, QStylePainter, QStyle
 from PySide6.QtCore import Signal, Qt
 from PySide6.QtGui import QFont, QCursor, QPainter, QColor, QBrush, QFontMetrics
@@ -12,6 +13,7 @@ ICONS = {'tools': nf.icons.get('nf-fa-wrench', '\uf0ad'), 'map': nf.icons.get('n
 SIDEBAR_W_COLLAPSED = 48
 SIDEBAR_W_EXPANDED = 150
 ITEM_H = 44
+LABEL_FONT_SIZE = 10 if sys.platform == 'darwin' else 7
 class NerdBtn(QPushButton):
     def paintEvent(self, event):
         sp = QStylePainter(self)
@@ -104,7 +106,7 @@ class NavItem(QPushButton):
             x = 16 - br.x()
             y = (self.height() - br.height()) / 2 - br.y()
             p.drawText(int(x), int(y), text)
-            label_font = QFont(constants.FONT_FAMILY_NERD, 7)
+            label_font = QFont(constants.FONT_FAMILY_NERD, LABEL_FONT_SIZE)
             p.setFont(label_font)
             p.setPen(self.palette().color(self.foregroundRole()))
             lfm = QFontMetrics(label_font)
@@ -185,7 +187,7 @@ class BottomBtn(QPushButton):
             y = (self.height() - br.height()) / 2 - br.y()
             p.drawText(int(x), int(y), text)
             if self._label:
-                label_font = QFont(constants.FONT_FAMILY_NERD, 7)
+                label_font = QFont(constants.FONT_FAMILY_NERD, LABEL_FONT_SIZE)
                 p.setFont(label_font)
                 p.setPen(self.palette().color(self.foregroundRole()))
                 lfm = QFontMetrics(label_font)
