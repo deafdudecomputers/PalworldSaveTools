@@ -30,7 +30,12 @@ def sync_version():
                 if line.strip().startswith('APP_VERSION'):
                     version = line.split('=')[1].strip().strip('"').strip("'")
                     break
-    updates = [(pyproject_file, 'version\\s*=\\s*["\\\'].*?["\\\']', f'version="{version}"'), (setup_file, 'version\\s*=\\s*["\\\'].*?["\\\']', f'version="{version}"')]
+    installer_file = os.path.join('build', 'installer', 'pst.windows.iss')
+    updates = [
+        (pyproject_file, 'version\\s*=\\s*["\\\'].*?["\\\']', f'version="{version}"'),
+        (setup_file, 'version\\s*=\\s*["\\\'].*?["\\\']', f'version="{version}"'),
+        (installer_file, '#define\\s+MyAppVersion\\s+".*?"', f'#define MyAppVersion "{version}"'),
+    ]
     for file_path, pattern, replacement in updates:
         if not os.path.exists(file_path):
             continue
