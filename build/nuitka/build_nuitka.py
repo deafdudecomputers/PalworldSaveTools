@@ -157,6 +157,35 @@ def sign_exe(exe_path):
     return True
 
 
+def strip_pe_timestamps(exe_path):
+    """Zero the PE TimeDateStamp + checksum for reproducible builds.
+
+    Nuitka stamps build time into the PE header, making every build a byte-
+    different sample that AV-ML engines rescore from scratch. Zeroing the
+    timestamp removes one drift source, so re-builds stay hash-stable and a
+    WDSI-cleared sample keeps matching future releases.
+    """
+    try:
+        import pefile
+    except ImportError:
+        print('pefile not installed; skipping PE timestamp strip')
+        return False
+    try:
+        pe = pefile.PE(exe_path)
+        pe.FILE_HEADER.TimeDateStamp = 0
+        if pe.OPTIONAL_HEADER:
+            pe.OPTIONAL_HEADER.CheckSum = 0
+        tmp = exe_path + '.strip'
+        pe.write(filename=tmp)
+        pe.close()
+        os.replace(tmp, exe_path)
+        print(f'Stripped PE timestamps: {exe_path}')
+        return True
+    except Exception as e:
+        print(f'PE timestamp strip failed: {e}')
+        return False
+
+
 def build_with_nuitka(onefile: bool = True, no_compression: bool = True):
     python_parts = resolve_python()
     if isinstance(python_parts, tuple):
@@ -280,6 +309,7 @@ def main():
         exe_path = os.path.join('dist', exe_name)
         dist_dir = os.path.join('dist', f'{exe_name}.dist')
         if os.path.exists(exe_path):
+            strip_pe_timestamps(exe_path)
             if args.sign:
                 sign_exe(exe_path)
             size_mb = os.path.getsize(exe_path) / (1024 * 1024)
