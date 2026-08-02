@@ -60,6 +60,11 @@ NEW_TRANSLATIONS = {
     'edit_pals.rank_prompt': 'Enter rank value (1-255):',
     'xgp.save.title': 'Save to World',
     'xgp.save.msg': 'Changes will be saved back to the world "{name}".\nLeave the name unchanged to keep it, or edit to rename.',
+    'edit_pals.all_passives_btn': 'ALL',
+    'edit_pals.all_passives_hint': 'Apply every passive skill to this pal (Cheat mode)',
+    'edit_pals.all_passives_cheat_only': 'Cheat mode must be enabled to apply all passives.',
+    'edit_pals.all_passives_confirm': 'Apply all {count} passive skills to this pal? (Cheat mode only)',
+    'edit_pals.all_passives_done': 'Applied all {count} passive skills.',
 }
 OLD_KEYS = []
 def _clean_uv_locks():

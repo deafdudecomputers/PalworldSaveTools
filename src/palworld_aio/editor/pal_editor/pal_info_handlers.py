@@ -421,6 +421,27 @@ class PalInfoHandlerMixin:
             result.append(clean if isinstance(clean, str) else '')
         return result
 
+    def _on_all_passives(self):
+        if not PalFrame._cheat_mode:
+            show_warning(self, t('edit_pals.passive_loadouts'), t('edit_pals.all_passives_cheat_only'))
+            return
+        if not self._raw:
+            show_warning(self, t('edit_pals.passive_loadouts'), t('edit_pals.loadouts_no_pal'))
+            return
+        _ensure_passive_data()
+        PalFrame._load_maps()
+        all_keys = sorted(PalFrame._PASSMAP.keys())
+        if not all_keys:
+            show_warning(self, t('edit_pals.passive_loadouts'), t('edit_pals.loadouts_no_passives'))
+            return
+        confirm = show_question(self, t('edit_pals.all_passives_btn'), t('edit_pals.all_passives_confirm', count=len(all_keys)))
+        if not confirm:
+            return
+        self._raw['PassiveSkillList'] = {'array_type': 'NameProperty', 'id': None, 'value': {'values': all_keys}, 'type': 'ArrayProperty'}
+        self._ps_page = 0
+        self._refresh()
+        show_information(self, t('edit_pals.all_passives_btn'), t('edit_pals.all_passives_done', count=len(all_keys)))
+
     def _on_passive_loadout(self):
         from resource_resolver import get_user_config_dir
         loadouts_path = os.path.join(get_user_config_dir(), 'passive_loadouts.json')
@@ -731,6 +752,8 @@ class PalInfoHandlerMixin:
 
     def _on_cheat_toggle(self):
         PalFrame._cheat_mode = self.info_cheat_btn.isChecked()
+        if hasattr(self, '_all_passives_btn'):
+            self._all_passives_btn.setVisible(PalFrame._cheat_mode)
         self._as_page = 0
         self._ps_page = 0
         self._refresh()
@@ -853,6 +876,8 @@ class PalInfoHandlerMixin:
 
         if hasattr(self, '_l_icon'):
             self._l_icon.setToolTip(t('edit_pals.loadouts_hint'))
+        if hasattr(self, '_all_passives_btn'):
+            self._all_passives_btn.setToolTip(t('edit_pals.all_passives_hint'))
         if hasattr(self, 'gender_icon'):
             self.gender_icon.setToolTip(t('edit_pals.tooltip.gender'))
         if hasattr(self, 'info_predator_btn'):

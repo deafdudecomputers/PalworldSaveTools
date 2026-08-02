@@ -2322,5 +2322,10 @@
     "deletion.menu.fix_connectors": "Consertar conectores quebrados",
     "deletion.connectors_fixed": "Corrigidas referências quebradas de {fixed} ({remaining} permanecem não resolvidas)",
     "xgp.save.title": "Salvar no mundo",
-    "xgp.save.msg": "As alterações serão salvas no mundo \"{name}\".\nDeixe o nome inalterado para mantê-lo ou edite para renomear."
+    "xgp.save.msg": "As alterações serão salvas no mundo \"{name}\".\nDeixe o nome inalterado para mantê-lo ou edite para renomear.",
+    "edit_pals.all_passives_btn": "TODOS",
+    "edit_pals.all_passives_hint": "Aplique todas as habilidades passivas a este amigo (modo Cheat)",
+    "edit_pals.all_passives_cheat_only": "O modo Cheat deve estar habilitado para aplicar todas as passivas.",
+    "edit_pals.all_passives_confirm": "Aplicar todas as habilidades passivas {count} a este amigo? (somente modo cheat)",
+    "edit_pals.all_passives_done": "Aplicou todas as habilidades passivas {count}."
 }

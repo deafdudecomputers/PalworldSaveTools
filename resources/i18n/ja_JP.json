@@ -1989,7 +1989,7 @@
     "edit_pals.ctx.bulk_max_buff": "飼料",
     "edit_pals.tooltip.max_buff": "この仲間に食べ物をあげます",
     "edit_pals.max_buff_all": "飼料",
-    "edit_pals.bulk_max_buff_title": "餌の餌 - {name}",
+    "edit_pals.bulk_max_buff_title": "餌を与える - {name}",
     "edit_pals.bulk_max_buff_desc": "選択した友達に {food} を与えます",
     "edit_pals.bulk_max_buff_success": "FRB {count} {name}",
     "edit_pals.bulk_max_buff_success_all": "{count} 人の友人に餌を与えました",
@@ -2014,7 +2014,7 @@
     "xgp.network_blocked.title": "ネットワークがブロックされました",
     "xgp.network_blocked.text": "Xbox クラウド同期を防ぐためにネットワークがブロックされました。\n\n1.パルワールドを起動する\n2.「ネットワーク接続が不安定です」というメッセージが表示されるまで待ちます。\n3. 下の「準備完了」をクリックしてネットワークを復元します\n4.パルワールドで「OK」をクリックします",
     "xgp.network_blocked.btn_ready": "準備完了 — ネットワークを復元します",
-    "edit_pals.rank_title": "ランクを設定する",
+    "edit_pals.rank_title": "セットランク",
     "edit_pals.rank_prompt": "ランク値を入力してください (1 ～ 255):",
     "anti_air_reset_all": "対空砲塔が完全にリセットされました",
     "deletion.inactive_filter.title": "非アクティブなプレーヤーの削除 — フィルター",
@@ -2035,5 +2035,10 @@
     "deletion.menu.fix_connectors": "壊れたコネクタを修復する",
     "deletion.connectors_fixed": "{fixed} の壊れた参照を修正 ({remaining} 未解決のまま)",
     "xgp.save.title": "世界に保存",
-    "xgp.save.msg": "変更はワールド「{name}」に保存されます。\n名前を変更しないでそのままにするか、編集して名前を変更します。"
+    "xgp.save.msg": "変更はワールド「{name}」に保存されます。\n名前を変更しないでそのままにするか、編集して名前を変更します。",
+    "edit_pals.all_passives_btn": "全て",
+    "edit_pals.all_passives_hint": "すべてのパッシブスキルをこの仲間に適用します（チートモード）",
+    "edit_pals.all_passives_cheat_only": "すべてのパッシブを適用するには、チート モードを有効にする必要があります。",
+    "edit_pals.all_passives_confirm": "すべての{count}パッシブスキルをこの仲間に適用しますか? (チートモードのみ)",
+    "edit_pals.all_passives_done": "すべての{count}パッシブスキルを適用しました。"
 }

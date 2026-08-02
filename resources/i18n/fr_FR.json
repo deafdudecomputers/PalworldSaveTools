@@ -2017,5 +2017,10 @@
     "deletion.menu.fix_connectors": "Réparer les connecteurs cassés",
     "deletion.connectors_fixed": "Correction des références brisées {fixed} ({remaining} restent non résolues)",
     "xgp.save.title": "Enregistrer dans le monde",
-    "xgp.save.msg": "Les modifications seront enregistrées dans le monde \"{name}\".\nLaissez le nom inchangé pour le conserver, ou modifiez-le pour le renommer."
+    "xgp.save.msg": "Les modifications seront enregistrées dans le monde \"{name}\".\nLaissez le nom inchangé pour le conserver, ou modifiez-le pour le renommer.",
+    "edit_pals.all_passives_btn": "TOUS",
+    "edit_pals.all_passives_hint": "Appliquez toutes les compétences passives à ce copain (mode Cheat)",
+    "edit_pals.all_passives_cheat_only": "Le mode Cheat doit être activé pour appliquer tous les passifs.",
+    "edit_pals.all_passives_confirm": "Appliquer toutes les compétences passives {count} à ce copain ? (Mode triche uniquement)",
+    "edit_pals.all_passives_done": "Application de toutes les compétences passives {count}."
 }

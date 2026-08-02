@@ -2059,5 +2059,10 @@
     "deletion.menu.fix_connectors": "Reparieren Sie defekte Anschlüsse",
     "deletion.connectors_fixed": "Fehlerhafte {fixed}-Referenzen behoben ({remaining} bleiben ungelöst)",
     "xgp.save.title": "In der Welt speichern",
-    "xgp.save.msg": "Änderungen werden wieder in der Welt „{name}“ gespeichert.\nLassen Sie den Namen unverändert, um ihn beizubehalten, oder bearbeiten Sie ihn, um ihn umzubenennen."
+    "xgp.save.msg": "Änderungen werden wieder in der Welt „{name}“ gespeichert.\nLassen Sie den Namen unverändert, um ihn beizubehalten, oder bearbeiten Sie ihn, um ihn umzubenennen.",
+    "edit_pals.all_passives_btn": "ALLE",
+    "edit_pals.all_passives_hint": "Wende alle passiven Fähigkeiten auf diesen Kumpel an (Cheat-Modus)",
+    "edit_pals.all_passives_cheat_only": "Der Cheat-Modus muss aktiviert sein, um alle Passiven anzuwenden.",
+    "edit_pals.all_passives_confirm": "Alle {count} passiven Fähigkeiten auf diesen Kumpel anwenden? (Nur Cheat-Modus)",
+    "edit_pals.all_passives_done": "Alle {count} passiven Fertigkeiten angewendet."
 }

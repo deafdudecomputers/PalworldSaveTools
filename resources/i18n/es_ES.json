@@ -2029,5 +2029,10 @@
     "deletion.menu.fix_connectors": "Reparar conectores rotos",
     "deletion.connectors_fixed": "Se corrigieron {fixed} referencias rotas ({remaining} permanecen sin resolver)",
     "xgp.save.title": "Guardar en el mundo",
-    "xgp.save.msg": "Los cambios se guardarán en el mundo \"{name}\".\nDeje el nombre sin cambios para conservarlo o edítelo para cambiarlo."
+    "xgp.save.msg": "Los cambios se guardarán en el mundo \"{name}\".\nDeje el nombre sin cambios para conservarlo o edítelo para cambiarlo.",
+    "edit_pals.all_passives_btn": "TODO",
+    "edit_pals.all_passives_hint": "Aplica todas las habilidades pasivas a este amigo (modo trampa)",
+    "edit_pals.all_passives_cheat_only": "El modo trampa debe estar habilitado para aplicar todas las pasivas.",
+    "edit_pals.all_passives_confirm": "¿Aplicar todas las habilidades pasivas {count} a este amigo? (Solo modo trampa)",
+    "edit_pals.all_passives_done": "Aplicó todas las habilidades pasivas {count}."
 }

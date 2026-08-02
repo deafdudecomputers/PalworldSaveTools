@@ -2037,5 +2037,10 @@
     "deletion.menu.fix_connectors": "修复损坏的连接器",
     "deletion.connectors_fixed": "修复了 {fixed} 损坏的引用（{remaining} 仍然未解决）",
     "xgp.save.title": "保存到世界",
-    "xgp.save.msg": "更改将被保存回世界“{name}”。\n保持名称不变以保留它，或编辑以重命名。"
+    "xgp.save.msg": "更改将被保存回世界“{name}”。\n保持名称不变以保留它，或编辑以重命名。",
+    "edit_pals.all_passives_btn": "全部",
+    "edit_pals.all_passives_hint": "将所有被动技能应用到这个朋友身上（作弊模式）",
+    "edit_pals.all_passives_cheat_only": "必须启用作弊模式才能应用所有被动技能。",
+    "edit_pals.all_passives_confirm": "将所有 {count} 被动技能应用到这个朋友身上？ （仅限作弊模式）",
+    "edit_pals.all_passives_done": "应用所有 {count} 被动技能。"
 }
