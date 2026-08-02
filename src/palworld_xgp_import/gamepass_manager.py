@@ -66,7 +66,7 @@ def toggle_network(enable: bool, adapters: list[str] | None = None) -> list[str]
 
 CONTAINER_REGEX = re.compile(r"[0-9A-F]{16}_[0-9A-F]{32}$")
 
-STEAM_SAVE_REQUIRED = ['Level.sav', 'LevelMeta.sav', 'LocalData.sav']
+STEAM_SAVE_REQUIRED = ['Level.sav', 'LevelMeta.sav']
 XGP_CONTAINER_REQUIRED = ['Level', 'LevelMeta']
 
 
