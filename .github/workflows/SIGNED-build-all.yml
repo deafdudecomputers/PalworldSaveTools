@@ -1,9 +1,9 @@
 name: SIGNED Build All
 
-# Nuitka onefile release pipeline with Authenticode signing for Windows via
+# Inno Setup installer release pipeline with Authenticode signing for Windows via
 # Azure Artifact Signing. Reuses the linux/mac jobs from Build All & Release;
-# the Windows job builds a Nuitka onefile and signs it (lower AV false
-# positives than the cx_Freeze standalone: 3/69 vs 19/69 on VirusTotal).
+# the Windows job builds a cx_Freeze standalone and packages it into an Inno
+# Setup installer, then signs the setup executable.
 #
 # Required GitHub secrets for Windows signing (OIDC):
 #   AZURE_CLIENT_ID        - appId of the Azure AD app registration
@@ -94,9 +94,9 @@ jobs:
       - name: Install dependencies
         run: |
           uv venv --clear
-          uv pip install -r requirements.txt nuitka
-      - name: Build Nuitka onefile
-        run: uv run python build/nuitka/build_nuitka.py --onefile
+          uv pip install -r requirements.txt
+      - name: Build Inno Setup installer
+        run: uv run python build/build_inno.py
       - name: Azure login (OIDC)
         uses: azure/login@v3
         with:
@@ -109,17 +109,17 @@ jobs:
           endpoint: https://wus2.codesigning.azure.net/
           signing-account-name: PalworldSigning
           certificate-profile-name: pst-private
-          files: ${{ github.workspace }}\dist\PalworldSaveTools-v${{ steps.env.outputs.version }}-win.exe
+          files: ${{ github.workspace }}\build\installer\PalworldSaveTools-v${{ steps.env.outputs.version }}-windows-setup.exe
           file-digest: SHA256
           timestamp-rfc3161: http://timestamp.acs.microsoft.com
           timestamp-digest: SHA256
       - name: List built files
         shell: bash
-        run: ls -la dist/ || { echo "dist/ directory not found"; exit 1; }
+        run: ls -la build/installer/ || { echo "build/installer directory not found"; exit 1; }
       - uses: actions/upload-artifact@v7
         with:
           name: windows-signed-build
-          path: dist/PalworldSaveTools-v${{ steps.env.outputs.version }}-win.exe
+          path: build/installer/PalworldSaveTools-v${{ steps.env.outputs.version }}-windows-setup.exe
           if-no-files-found: error
 
   build-linux:
@@ -290,7 +290,7 @@ jobs:
       matrix:
         include:
           - variant: windows
-            asset_glob: "PalworldSaveTools-v*-win.exe"
+            asset_glob: "PalworldSaveTools-v*-windows-setup.exe"
             file_id: "7648655"
           - variant: linux
             asset_glob: "PalworldSaveTools-v*-linux.AppImage"

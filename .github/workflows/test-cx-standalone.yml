@@ -23,25 +23,19 @@ jobs:
         id: env
         uses: ./.github/actions/setup-build-env
 
-      - name: Build cx_Freeze standalone
-        run: uv run python build/cx_freeze/build_cx.py
+      - name: Build cx_Freeze standalone + Inno Setup installer
+        run: uv run python build/build_inno.py
 
       - name: Verify build output
         shell: bash
         run: |
-          echo "=== Root directory ==="
-          ls -la *.zip 2>/dev/null || echo "No .zip files found at root"
-          echo "=== PST_standalone/ ==="
-          if [ -d PST_standalone ]; then
-            ls -la PST_standalone/
-          else
-            echo "No PST_standalone directory found"
-          fi
+          echo "=== build/installer/ ==="
+          ls -la build/installer/ || { echo "build/installer directory not found"; exit 1; }
 
       - uses: actions/upload-artifact@v7
         with:
           name: cx-standalone-build-${{ steps.env.outputs.version }}
-          path: PST_standalone_v*.zip
+          path: build/installer/PalworldSaveTools-v*-windows-setup.exe
           if-no-files-found: warn
 
       - name: Extract changelog entry
@@ -83,6 +77,6 @@ jobs:
           body_path: release_notes.md
           draft: true
           prerelease: true
-          files: PST_standalone_v*.zip
+          files: build/installer/PalworldSaveTools-v*-windows-setup.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,7 +1,7 @@
 name: Nexus Test Upload (Windows)
 
-# Builds the Nuitka onefile Windows exe, zips it (exe at archive root,
-# PSP-style), and uploads it to a Nexus file slot. Use this to verify a
+# Builds the Inno Setup installer, zips it (installer at archive root),
+# and uploads it to a Nexus file slot. Use this to verify a
 # candidate artifact passes Nexus's scan before wiring it into the real
 # release pipeline.
 #
@@ -18,7 +18,7 @@ on:
       display_name:
         description: "Nexus file display name"
         required: false
-        default: "TEST-nuitka-win"
+        default: "TEST-inno-win"
 
 permissions:
   contents: read
@@ -37,22 +37,22 @@ jobs:
       - name: Install dependencies
         run: |
           uv venv --clear
-          uv pip install -r requirements.txt nuitka
-      - name: Build Nuitka onefile
-        run: uv run python build/nuitka/build_nuitka.py --onefile
-      - name: Zip executable (bare at archive root)
+          uv pip install -r requirements.txt
+      - name: Build Inno Setup installer
+        run: uv run python build/build_inno.py
+      - name: Zip installer (bare at archive root)
         shell: pwsh
         run: |
-          $exe = Get-ChildItem dist -Filter "PalworldSaveTools-v*.exe" | Select-Object -First 1
-          if (-not $exe) { Write-Error "No built exe found in dist/"; exit 1 }
-          Compress-Archive -Path $exe.FullName -DestinationPath "pst-win-nuitka-test.zip"
-          Get-Item "pst-win-nuitka-test.zip" | Select-Object Name, Length
+          $exe = Get-ChildItem build/installer -Filter "PalworldSaveTools-v*-windows-setup.exe" | Select-Object -First 1
+          if (-not $exe) { Write-Error "No installer found in build/installer/"; exit 1 }
+          Compress-Archive -Path $exe.FullName -DestinationPath "pst-win-inno-test.zip"
+          Get-Item "pst-win-inno-test.zip" | Select-Object Name, Length
       - name: Upload to Nexus
         uses: Nexus-Mods/upload-action@v1.0.0-beta.8
         with:
           api_key: ${{ secrets.NEXUSMODS_API_KEY }}
           file_id: ${{ github.event.inputs.file_id }}
-          filename: pst-win-nuitka-test.zip
+          filename: pst-win-inno-test.zip
           version: ${{ steps.env.outputs.version }}-test
           display_name: ${{ github.event.inputs.display_name }}
           archive_existing_version: true

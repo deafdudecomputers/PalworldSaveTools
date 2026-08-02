@@ -1,6 +1,7 @@
 #2.3.2
 - **Clearing passive skills no longer leaves a hidden "None" trait behind** — removing a pal's passive skills (right-click a slot or pick "Clear") used to write an empty slot that the game turned into an invisible "None" passive. That ghost trait counted as a real skill during breeding, so it could be passed down to offspring and stopped you from breeding truly blank pals. Trying to remove it again with the tool never worked. Removed passives are now fully deleted, so a pal with all skills cleared is genuinely blank in-game and breeds that way.
-- **Windows builds are back on cx_Freeze** — the release is built with cx_Freeze again instead of Nuitka, because the Nuitka-based build was getting flagged by antivirus software. The installer output is unchanged.
+- **Windows builds are back on cx_Freeze** — the release is built with cx_Freeze again instead of Nuitka, because the Nuitka-based build was getting flagged by antivirus software.
+- **Windows now ships as an Inno Setup installer** — the Windows release is a proper `PalworldSaveTools-v2.3.2-windows-setup.exe` installer that guides you through install and uninstall, instead of a raw folder or single exe. The signed release pipeline and the plain release pipeline both build the same installer, so every Windows download has the same one-click setup experience.
 - Bumped version to 2.3.2
 
 #2.3.1

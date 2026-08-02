@@ -1,4 +1,8 @@
 import sys, os
+# Keep src/palsav ahead of src: src/palsav is a namespace dir (no __init__.py)
+# that would otherwise shadow the installed palsav package and break
+# palsav.core resolution in cx_Freeze's module finder.
+sys.path.insert(0, os.path.abspath('src/palsav'))
 sys.path.insert(0, os.path.abspath('src'))
 sys.path.insert(0, os.path.abspath('resources'))
 from cx_Freeze import setup, Executable

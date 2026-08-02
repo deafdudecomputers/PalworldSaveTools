@@ -24,7 +24,7 @@ jobs:
       matrix:
         include:
           - variant: windows
-            asset_glob: "PalworldSaveTools-v*-win.exe"
+            asset_glob: "PalworldSaveTools-v*-windows-setup.exe"
             file_id: "7648655"
           - variant: linux
             asset_glob: "PalworldSaveTools-v*-linux.AppImage"

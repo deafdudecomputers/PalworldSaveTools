@@ -74,17 +74,17 @@ jobs:
       - name: Bootstrap environment
         id: env
         uses: ./.github/actions/setup-build-env
-      - name: Build cx_Freeze standalone
-        run: uv run python build/cx_freeze/build_cx.py
-      - name: List standalone build output
+      - name: Build cx_Freeze standalone + Inno Setup installer
+        run: uv run python build/build_inno.py
+      - name: List installer output
         shell: bash
         run: |
-          echo "=== .zip archive ==="
-          ls -la *.zip 2>/dev/null || echo "No .zip files"
+          echo "=== build/installer/ ==="
+          ls -la build/installer/ || { echo "build/installer directory not found"; exit 1; }
       - uses: actions/upload-artifact@v7
         with:
           name: windows-standalone
-          path: PST_standalone_v*.zip
+          path: build/installer/PalworldSaveTools-v*-windows-setup.exe
           if-no-files-found: warn
 
   build-linux:
@@ -255,7 +255,7 @@ jobs:
       matrix:
         include:
           - variant: windows
-            asset_glob: "PST_standalone_v*.zip"
+            asset_glob: "PalworldSaveTools-v*-windows-setup.exe"
             file_id: "7648655"
           - variant: linux
             asset_glob: "PalworldSaveTools-v*-linux.AppImage"

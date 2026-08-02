@@ -29,7 +29,7 @@
 
 | Platform | File |
 |---|---|
-| 🪟 Windows | `PST_standalone_v${VERSION}.zip` |
+| 🪟 Windows | `${APP_NAME}-v${VERSION}-windows-setup.exe` |
 | 🐧 Linux   | `${APP_NAME}-v${VERSION}-linux.AppImage` |
 | 🍎 macOS   | `${APP_NAME}-v${VERSION}-macos.dmg` |
 
