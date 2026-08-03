@@ -1240,7 +1240,6 @@ def unlock_viewing_cage_for_player(player_uid, parent=None):
     except Exception as e:
         return False
 def detect_and_trim_overfilled_inventories(parent=None):
-    import copy
     if not constants.current_save_path:
         return 0
     players_dir = os.path.join(constants.current_save_path, 'Players')
@@ -1249,11 +1248,11 @@ def detect_and_trim_overfilled_inventories(parent=None):
     player_files = [f for f in os.listdir(players_dir) if f.endswith('.sav') and '_dps' not in f]
     fixed_containers = 0
     try:
+        from palworld_aio.inventory.standardized_container import StandardizedContainer
         wsd = constants.loaded_level_json['properties']['worldSaveData']['value']
         item_containers = wsd.get('ItemContainerSaveData', {}).get('value', [])
         container_lookup = {str(c['key']['ID']['value']): c for c in item_containers if 'key' in c}
         for player_file in player_files:
-            player_uid = player_file.replace('.sav', '')
             try:
                 player_path = os.path.join(players_dir, player_file)
                 player_gvas = sav_to_gvasfile(player_path)
@@ -1283,26 +1282,30 @@ def detect_and_trim_overfilled_inventories(parent=None):
                     current_slot_num = container['value'].get('SlotNum', {}).get('value', 0)
                     target_slots = player_max_slots
                     if len(slots) != target_slots or current_slot_num != target_slots:
-                        for si, s in enumerate(slots):
-                            rd = s.get('RawData', {}).get('value', {})
-                            if isinstance(rd, dict):
-                                rd['slot_index'] = si
+                        before_count = len(slots)
                         if len(slots) > target_slots:
                             slots[:] = slots[:target_slots]
                         elif len(slots) < target_slots:
-                            if len(slots) > 0:
-                                template_slot = copy.deepcopy(slots[0])
-                                template_slot['RawData']['value']['item']['static_id'] = ''
-                                template_slot['RawData']['value']['item']['dynamic_id']['created_world_id'] = '00000000-0000-0000-0000-000000000000'
-                                template_slot['RawData']['value']['item']['dynamic_id']['local_id'] = '00000000-0000-0000-0000-000000000000'
-                                template_slot['RawData']['value']['count'] = 0
-                                while len(slots) < target_slots:
-                                    new_slot = copy.deepcopy(template_slot)
-                                    new_slot['RawData']['value']['slot_index'] = len(slots)
-                                    slots.append(new_slot)
+                            sc = StandardizedContainer(str(main_id), container, max_slots=target_slots)
+                            slots[:] = sc.get_raw_slots()
+                        changed = len(slots) != before_count
                         if 'SlotNum' in container['value']:
-                            container['value']['SlotNum']['value'] = len(slots)
-                        fixed_containers += 1
+                            new_slot_num = len(slots)
+                            if container['value']['SlotNum']['value'] != new_slot_num:
+                                container['value']['SlotNum']['value'] = new_slot_num
+                                changed = True
+                        if changed:
+                            fixed_containers += 1
+            except Exception as e:
+                pass
+        pal_containers = wsd.get('CharacterContainerSaveData', {}).get('value', [])
+        for c in pal_containers:
+            try:
+                slots = c['value']['Slots']['value']['values']
+                slot_num = c['value'].get('SlotNum', {}).get('value')
+                if slot_num is not None and slot_num > 0 and len(slots) > slot_num:
+                    slots[:] = slots[:slot_num]
+                    fixed_containers += 1
             except Exception as e:
                 pass
         return fixed_containers
