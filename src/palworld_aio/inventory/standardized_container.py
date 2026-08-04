@@ -196,3 +196,20 @@ class StandardizedContainer:
         while len(self.slots) < self.max_slots:
             self.slots.append(ContainerSlot(slot_index=len(self.slots)))
         return True
+    def set_capacity(self, new_max_slots: int) -> bool:
+        filled_count = len([s for s in self.slots if s.item_id and s.item_id != ''])
+        if new_max_slots < filled_count:
+            return False
+        if new_max_slots < len(self.slots):
+            for s in self.slots[new_max_slots:]:
+                if s.dynamic_id:
+                    try:
+                        get_dynamic_item_manager().unregister_item(s.dynamic_id, self.container_id)
+                    except Exception:
+                        pass
+            self.slots = self.slots[:new_max_slots]
+        self.max_slots = new_max_slots
+        while len(self.slots) < self.max_slots:
+            self.slots.append(ContainerSlot(slot_index=len(self.slots)))
+        self.container_data['value']['SlotNum']['value'] = new_max_slots
+        return True

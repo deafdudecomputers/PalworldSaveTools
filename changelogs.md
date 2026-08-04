@@ -1,3 +1,8 @@
+#2.3.3
+- **Resize player inventory slots** — a new "Modify Slots" button in the Player Inventory tab lets you expand or shrink the main inventory anywhere from 42 up to 999 slots. Shrinking below the number of items you're carrying is blocked, and a manually resized inventory now keeps its size instead of snapping back to the default 42 slots on reload.
+- **Fix Overfilled Inventories now also fills underfilled inventories and trims overfull pal containers** — player inventories with fewer slots than expected are topped up with proper empty slots, and pal containers (party, palbox, base workers) holding more pals than their declared capacity are trimmed back down. Only containers that actually changed are counted.
+- Bumped version to 2.3.3
+
 #2.3.2
 - **Apply every passive at once in Pal Editor (Cheat mode)** — while Cheat mode is on, a new `[A]` button appears next to the loadouts button in the passive skills header (press `A` on the keyboard too). It asks for confirmation, then grants the selected pal all available passive skills at once. The button stays hidden outside Cheat mode.
 - **Clearing passive skills no longer leaves a hidden "None" trait behind** — removing a pal's passive skills (right-click a slot or pick "Clear") used to write an empty slot that the game turned into an invisible "None" passive. That ghost trait counted as a real skill during breeding, so it could be passed down to offspring and stopped you from breeding truly blank pals. Trying to remove it again with the tool never worked. Removed passives are now fully deleted, so a pal with all skills cleared is genuinely blank in-game and breeds that way.

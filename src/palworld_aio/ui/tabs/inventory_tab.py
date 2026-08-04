@@ -1835,6 +1835,77 @@ class ItemPickerDialog(QDialog):
                 qty = 1
             self.item_selected.emit(self.selected_item, qty)
             self.accept()
+class ModifyInventorySlotsDialog(QDialog):
+    def __init__(self, current_slots=42, current_items=0, parent=None):
+        super().__init__(parent)
+        self.current_slots = max(42, current_slots)
+        self.current_items = current_items
+        self.new_slot_count = self.current_slots
+        self._setup_ui()
+    def _setup_ui(self):
+        self.setWindowTitle(t('inventory.modify_slots_title', default='Modify Inventory Slots'))
+        self.setModal(True)
+        self.setMinimumWidth(350)
+        self.setStyleSheet(DARK_THEME_STYLE)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(15, 15, 15, 15)
+        layout.setSpacing(10)
+        status_group = QFrame()
+        status_layout = QVBoxLayout(status_group)
+        status_layout.setContentsMargins(0, 0, 0, 0)
+        status_layout.setSpacing(4)
+        self.current_slots_label = QLabel(t('inventory.modify_slots_current_slots', count=self.current_slots, default=f'Current Slots: {self.current_slots}'))
+        self.current_slots_label.setStyleSheet('font-weight: bold; color: #e2e8f0;')
+        status_layout.addWidget(self.current_slots_label)
+        self.current_items_label = QLabel(t('inventory.modify_slots_current_items', count=self.current_items, default=f'Current Items: {self.current_items}'))
+        self.current_items_label.setStyleSheet('font-weight: bold; color: #94a3b8;')
+        status_layout.addWidget(self.current_items_label)
+        layout.addWidget(status_group)
+        input_row = QHBoxLayout()
+        input_row.setSpacing(8)
+        new_label = QLabel(t('inventory.modify_slots_new', default='New Slot Count'))
+        new_label.setStyleSheet('color: #e2e8f0;')
+        input_row.addWidget(new_label)
+        input_row.addStretch()
+        self.slot_spinbox = QSpinBox()
+        self.slot_spinbox.setMinimum(42)
+        self.slot_spinbox.setMaximum(999)
+        self.slot_spinbox.setValue(self.current_slots)
+        self.slot_spinbox.valueChanged.connect(self._on_slot_count_changed)
+        input_row.addWidget(self.slot_spinbox)
+        layout.addLayout(input_row)
+        self.warning_label = QLabel('')
+        self.warning_label.setStyleSheet('color: #ff6b6b; font-weight: bold;')
+        self.warning_label.setVisible(False)
+        layout.addWidget(self.warning_label)
+        button_layout = QHBoxLayout()
+        button_layout.addStretch()
+        self.ok_button = QPushButton(t('inventory.modify_slots_ok', default='OK'))
+        self.ok_button.clicked.connect(self.accept)
+        self.ok_button.setEnabled(False)
+        button_layout.addWidget(self.ok_button)
+        cancel_button = QPushButton(t('inventory.modify_slots_cancel', default='Cancel'))
+        cancel_button.clicked.connect(self.reject)
+        button_layout.addWidget(cancel_button)
+        layout.addLayout(button_layout)
+        self._update_validation()
+    def _on_slot_count_changed(self, value):
+        self.new_slot_count = value
+        self._update_validation()
+    def _update_validation(self):
+        if self.new_slot_count < self.current_items:
+            self.warning_label.setText(t('inventory.modify_slots_warning_items', count=self.current_items, default=f'Warning: Cannot reduce slots below current item count ({self.current_items})'))
+            self.warning_label.setVisible(True)
+            self.ok_button.setEnabled(False)
+        elif self.new_slot_count == self.current_slots:
+            self.warning_label.setText(t('inventory.modify_slots_no_change', default='No change needed - slot count is the same'))
+            self.warning_label.setVisible(True)
+            self.ok_button.setEnabled(False)
+        else:
+            self.warning_label.setVisible(False)
+            self.ok_button.setEnabled(True)
+    def get_slot_count(self):
+        return self.new_slot_count
 class PlayerInventoryTab(QWidget):
     unlock_all_map_requested = Signal(list)
     saved = Signal()
@@ -1920,6 +1991,12 @@ class PlayerInventoryTab(QWidget):
         self.inv_clear_btn.setCursor(Qt.PointingHandCursor)
         self.inv_clear_btn.clicked.connect(self._clear_all_inventory)
         self.main_grid.header_layout.insertWidget(sort_idx + 2, self.inv_clear_btn)
+        self.inv_modify_slots_btn = QPushButton(t('inventory.modify_slots_btn', default='Modify Slots'))
+        self.inv_modify_slots_btn.setFixedHeight(24)
+        self.inv_modify_slots_btn.setStyleSheet('QPushButton { background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); border-radius: 6px; padding: 4px 8px; font-weight: 600; font-size: 11px; } QPushButton:hover { background: rgba(56,189,248,0.25); border-color: rgba(56,189,248,0.5); color: #FFFFFF; }')
+        self.inv_modify_slots_btn.setCursor(Qt.PointingHandCursor)
+        self.inv_modify_slots_btn.clicked.connect(self._on_modify_inventory_slots)
+        self.main_grid.header_layout.insertWidget(sort_idx + 3, self.inv_modify_slots_btn)
         self.inv_tabs.addTab(self.main_grid, t('inventory.main', default='Inventory'))
         self.key_grid = InventoryGridWidget('key_items')
         self.key_grid.item_selected.connect(self._on_item_selected)
@@ -2435,6 +2512,21 @@ class PlayerInventoryTab(QWidget):
                 key_container = self.inventory.get_container('key')
                 if key_container:
                     self._update_raw_save_data('key', key_container)
+                self._refresh_display()
+    def _on_modify_inventory_slots(self):
+        if not self.current_player_uid or not self.inventory:
+            QMessageBox.warning(self, t('inventory.select_player', default='Select Player...'), t('inventory.select_player_first', default='Please select a player first.'))
+            return
+        main_container = self.inventory.get_container('main')
+        if not main_container:
+            QMessageBox.warning(self, t('inventory.modify_slots_title', default='Modify Inventory Slots'), t('inventory.modify_slots_no_container', default='No main inventory container found.'))
+            return
+        current_slots = self.inventory.max_slots
+        filled_count = len([s for s in main_container.slots if s.get('item_id', '')])
+        dialog = ModifyInventorySlotsDialog(current_slots, filled_count, self)
+        if dialog.exec() == QDialog.Accepted:
+            new_max = dialog.get_slot_count()
+            if new_max != current_slots and self.inventory.set_max_slots(new_max):
                 self._refresh_display()
     def _on_inventory_loadout(self):
         if not self.current_player_uid:
@@ -3278,6 +3370,8 @@ class PlayerInventoryTab(QWidget):
             self.inv_loadout_btn.setText(t('inventory.loadouts_btn', default='Loadouts'))
         if hasattr(self, 'inv_clear_btn'):
             self.inv_clear_btn.setText(t('inventory.clear_btn', default='Clear'))
+        if hasattr(self, 'inv_modify_slots_btn'):
+            self.inv_modify_slots_btn.setText(t('inventory.modify_slots_btn', default='Modify Slots'))
         if hasattr(self, 'equip_loadout_btn'):
             self.equip_loadout_btn.setText(t('inventory.equip_loadouts_btn', default='Loadouts'))
         if hasattr(self, 'equip_clear_btn'):

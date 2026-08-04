@@ -473,11 +473,31 @@ class PlayerInventory:
                 item_id = slot.get('item_id', '')
                 if item_id in INVENTORY_EXPANSION_ITEMS:
                     expansion_count += 1
-        self.max_slots = 42 + expansion_count * 3
+        expansion_target = 42 + expansion_count * 3
         main_container = self.containers.get('main')
+        current = self.max_slots
         if main_container and hasattr(main_container, '_standardized_container'):
-            main_container._standardized_container.expand_capacity(self.max_slots)
-            main_container._standardized_container.container_data['value']['SlotNum']['value'] = self.max_slots
+            current = main_container._standardized_container.max_slots
+        self.max_slots = max(expansion_target, current)
+        if main_container and hasattr(main_container, '_standardized_container'):
+            std = main_container._standardized_container
+            if self.max_slots > std.max_slots:
+                std.expand_capacity(self.max_slots)
+                std.container_data['value']['SlotNum']['value'] = self.max_slots
+    def set_max_slots(self, new_max: int) -> bool:
+        try:
+            new_max = max(42, min(999, int(new_max)))
+        except (TypeError, ValueError):
+            return False
+        main_container = self.containers.get('main')
+        if not main_container or not hasattr(main_container, '_standardized_container'):
+            return False
+        std = main_container._standardized_container
+        if not std.set_capacity(new_max):
+            return False
+        self.max_slots = new_max
+        self.save()
+        return True
     def get_container(self, container_type: str) -> InventoryContainer:
         return self.containers.get(container_type)
     def get_all_items(self) -> list:
