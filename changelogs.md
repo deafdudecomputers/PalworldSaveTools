@@ -9,6 +9,7 @@
 - **Imported structures now belong to the destination guild** — buildings previously kept the source world's player as their owner. They are now owned by the target guild's leader, so nothing references a player who doesn't exist in your save.
 - **Save errors no longer hide behind "Saved successfully"** — if writing the save fails, a full error screen with details and a copy button appears instead of a false success message.
 - **Importing bases into a real save no longer fails** — the support check that treated normally-placed structures as unsupported has been relaxed, so existing bases import without being blocked.
+- **Newer work records now decode correctly** — the work entries the game creates for multi-recipe workbenches and fish ponds used to show up as unreadable raw data. They now load like any other work and roundtrip byte-for-byte, so editing, validation, and reference checks see every work in the save.
 - Bumped version to 2.3.3
 
 #2.3.2
