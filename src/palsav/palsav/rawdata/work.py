@@ -2,7 +2,7 @@ from typing import Any, Sequence
 import logging
 logger = logging.getLogger(__name__)
 from palsav.archive import *
-WORK_BASE_TYPES = set(['EPalWorkableType::Illegal', 'EPalWorkableType::Progress', 'EPalWorkableType::CollectItem', 'EPalWorkableType::TransportItem', 'EPalWorkableType::TransportItemInBaseCamp', 'EPalWorkableType::ReviveCharacter', 'EPalWorkableType::CollectResource', 'EPalWorkableType::Booth', 'EPalWorkableType::LevelObject', 'EPalWorkableType::Repair', 'EPalWorkableType::Defense', 'EPalWorkableType::BootUp', 'EPalWorkableType::OnlyJoin', 'EPalWorkableType::OnlyJoinAndWalkAround', 'EPalWorkableType::RemoveMapObjectEffect', 'EPalWorkableType::MonsterFarm', 'EPalWorkableType::Progress_MultiType'])
+WORK_BASE_TYPES = set(['EPalWorkableType::Illegal', 'EPalWorkableType::Progress', 'EPalWorkableType::CollectItem', 'EPalWorkableType::TransportItem', 'EPalWorkableType::TransportItemInBaseCamp', 'EPalWorkableType::ReviveCharacter', 'EPalWorkableType::CollectResource', 'EPalWorkableType::Booth', 'EPalWorkableType::LevelObject', 'EPalWorkableType::Repair', 'EPalWorkableType::Defense', 'EPalWorkableType::BootUp', 'EPalWorkableType::OnlyJoin', 'EPalWorkableType::OnlyJoinAndWalkAround', 'EPalWorkableType::RemoveMapObjectEffect', 'EPalWorkableType::MonsterFarm', 'EPalWorkableType::Progress_MultiType', 'EPalWorkableType::FishPond'])
 def decode(reader: FArchiveReader, type_name: str, size: int, path: str) -> dict[str, Any]:
     if type_name != 'ArrayProperty':
         raise Exception(f'Expected ArrayProperty, got {type_name}')
@@ -55,6 +55,9 @@ def decode_bytes(parent_reader: FArchiveReader, b_bytes: Sequence[int], work_typ
                 data['progress_time_since_last_tick'] = reader.float()
                 data['tick_process_min_interval'] = reader.float()
                 data['multi_tail'] = [int(b) for b in reader.read_to_end()]
+                return data
+            case 'EPalWorkableType::FishPond':
+                data['fish_tail'] = [int(b) for b in reader.read_to_end()]
                 return data
             case 'EPalWorkableType::ReviveCharacter':
                 data['target_individual_id'] = {'player_uid': reader.guid(), 'instance_id': reader.guid()}
@@ -153,6 +156,10 @@ def encode_bytes(p: dict[str, Any], work_type: str) -> bytes:
                 writer.float(p['tick_process_min_interval'])
                 if 'multi_tail' in p:
                     writer.write(bytes(p['multi_tail']))
+                return writer.bytes()
+            case 'EPalWorkableType::FishPond':
+                if 'fish_tail' in p:
+                    writer.write(bytes(p['fish_tail']))
                 return writer.bytes()
             case 'EPalWorkableType::ReviveCharacter':
                 writer.guid(p['target_individual_id']['player_uid'])
