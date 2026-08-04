@@ -714,7 +714,6 @@ def import_base_json(loaded_level_json, exported_data, target_guild_id, offset=(
                 continue
     work_id_map = {}
     cloned_works = []
-    new_work_ids_for_collection = []
     for we in exported_data.get('works', []):
         nwe = _deep(we)
         nwr = _get_work_raw(nwe)
@@ -745,7 +744,6 @@ def import_base_json(loaded_level_json, exported_data, target_guild_id, offset=(
         except:
             pass
         cloned_works.append(nwe)
-        new_work_ids_for_collection.append(nw_id)
     nb = _deep(exported_data['base_camp'])
     nb['key'] = new_base_id
     try:
@@ -763,7 +761,7 @@ def import_base_json(loaded_level_json, exported_data, target_guild_id, offset=(
         pass
     try:
         nb['value']['WorkCollection']['value']['RawData']['value']['id'] = new_base_id
-        nb['value']['WorkCollection']['value']['RawData']['value']['work_ids'] = new_work_ids_for_collection
+        nb['value']['WorkCollection']['value']['RawData']['value']['work_ids'] = []
     except:
         pass
     if new_palbox_inst_id:

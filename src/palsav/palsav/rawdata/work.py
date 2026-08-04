@@ -2,7 +2,7 @@ from typing import Any, Sequence
 import logging
 logger = logging.getLogger(__name__)
 from palsav.archive import *
-WORK_BASE_TYPES = set(['EPalWorkableType::Illegal', 'EPalWorkableType::Progress', 'EPalWorkableType::CollectItem', 'EPalWorkableType::TransportItem', 'EPalWorkableType::TransportItemInBaseCamp', 'EPalWorkableType::ReviveCharacter', 'EPalWorkableType::CollectResource', 'EPalWorkableType::Booth', 'EPalWorkableType::LevelObject', 'EPalWorkableType::Repair', 'EPalWorkableType::Defense', 'EPalWorkableType::BootUp', 'EPalWorkableType::OnlyJoin', 'EPalWorkableType::OnlyJoinAndWalkAround', 'EPalWorkableType::RemoveMapObjectEffect', 'EPalWorkableType::MonsterFarm'])
+WORK_BASE_TYPES = set(['EPalWorkableType::Illegal', 'EPalWorkableType::Progress', 'EPalWorkableType::CollectItem', 'EPalWorkableType::TransportItem', 'EPalWorkableType::TransportItemInBaseCamp', 'EPalWorkableType::ReviveCharacter', 'EPalWorkableType::CollectResource', 'EPalWorkableType::Booth', 'EPalWorkableType::LevelObject', 'EPalWorkableType::Repair', 'EPalWorkableType::Defense', 'EPalWorkableType::BootUp', 'EPalWorkableType::OnlyJoin', 'EPalWorkableType::OnlyJoinAndWalkAround', 'EPalWorkableType::RemoveMapObjectEffect', 'EPalWorkableType::MonsterFarm', 'EPalWorkableType::Progress_MultiType'])
 def decode(reader: FArchiveReader, type_name: str, size: int, path: str) -> dict[str, Any]:
     if type_name != 'ArrayProperty':
         raise Exception(f'Expected ArrayProperty, got {type_name}')
@@ -46,6 +46,16 @@ def decode_bytes(parent_reader: FArchiveReader, b_bytes: Sequence[int], work_typ
                 data['auto_work_self_amount_by_sec'] = reader.float()
                 data['progress_time_since_last_tick'] = reader.float()
                 data['tick_process_min_interval'] = reader.float()
+            case 'EPalWorkableType::Progress_MultiType':
+                data['required_work_amount'] = reader.float()
+                data['current_work_amount'] = reader.float()
+                data['work_exp'] = reader.i32()
+                data['work_exp_calc_type'] = reader.byte()
+                data['auto_work_self_amount_by_sec'] = reader.float()
+                data['progress_time_since_last_tick'] = reader.float()
+                data['tick_process_min_interval'] = reader.float()
+                data['multi_tail'] = [int(b) for b in reader.read_to_end()]
+                return data
             case 'EPalWorkableType::ReviveCharacter':
                 data['target_individual_id'] = {'player_uid': reader.guid(), 'instance_id': reader.guid()}
             case 'EPalWorkableType::Repair' | 'EPalWorkableType::MonsterFarm' | 'EPalWorkableType::OnlyJoinAndWalkAround' | 'EPalWorkableType::OnlyJoin' | 'EPalWorkableType::Booth':
@@ -133,6 +143,17 @@ def encode_bytes(p: dict[str, Any], work_type: str) -> bytes:
                 writer.float(p['auto_work_self_amount_by_sec'])
                 writer.float(p['progress_time_since_last_tick'])
                 writer.float(p['tick_process_min_interval'])
+            case 'EPalWorkableType::Progress_MultiType':
+                writer.float(p['required_work_amount'])
+                writer.float(p['current_work_amount'])
+                writer.i32(p['work_exp'])
+                writer.byte(p['work_exp_calc_type'])
+                writer.float(p['auto_work_self_amount_by_sec'])
+                writer.float(p['progress_time_since_last_tick'])
+                writer.float(p['tick_process_min_interval'])
+                if 'multi_tail' in p:
+                    writer.write(bytes(p['multi_tail']))
+                return writer.bytes()
             case 'EPalWorkableType::ReviveCharacter':
                 writer.guid(p['target_individual_id']['player_uid'])
                 writer.guid(p['target_individual_id']['instance_id'])
