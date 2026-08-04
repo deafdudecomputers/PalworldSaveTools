@@ -2050,5 +2050,20 @@
     "inventory.modify_slots_cancel": "キャンセル",
     "inventory.modify_slots_warning_items": "警告: スロットを現在のアイテム数より減らすことはできません ({count})",
     "inventory.modify_slots_no_change": "変更は必要ありません - スロット数は同じです",
-    "inventory.modify_slots_no_container": "メインのインベントリコンテナが見つかりません。"
+    "inventory.modify_slots_no_container": "メインのインベントリコンテナが見つかりません。",
+    "player_item.modify_slots_btn": "スロットの変更",
+    "player_item.modify_slots_title": "プレーヤースロットを変更する",
+    "player_item.modify_slots_prompt": "新しいインベントリ スロット数を入力してください (42 ～ 999):",
+    "player_item.modify_slots_confirm": "{count} プレイヤーの {slots} スロットにインベントリのサイズを変更しますか?",
+    "player_item.modify_slots_blocked": "縮小できません: これらのプレイヤーは {slots} スロットよりも多くのアイテムを持っています:\n{players}",
+    "player_item.modify_slots_done": "{count} プレーヤーのインベントリのサイズを {slots} スロットに変更しました",
+    "edit_pals.name_mode": "デフォルト名:",
+    "edit_pals.name_mode_new": "新しい",
+    "edit_pals.name_mode_copy": "©コピー",
+    "edit_pals.name_mode_none": "ニックネームなし",
+    "edit_pals.bulk_sync_nickname": "ニックネームを適用する",
+    "pal_name_settings.title": "仲間名の設定",
+    "pal_name_settings.mode_label": "新しい友達に次の名前を付けます。",
+    "pal_name_settings.mode_hint": "パル (パル エディター、ベース パル、グローバル パル ストレージ) の作成時およびクローンに適用されます。入力されたニックネームは常にそれをオーバーライドします。",
+    "pal_name_settings.sync_nickname": "一括同期中にニックネームを適用する"
 }

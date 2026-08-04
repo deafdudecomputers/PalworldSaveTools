@@ -35,6 +35,7 @@ from palworld_aio.editor.pal_editor import (
     build_pal_context_menu,
     BulkSyncAllDialog,
     BulkSyncPalDialog,
+    creation_nickname,
     delete_pal_from_all,
     EditPalsDialog,
     FramelessDialog,

@@ -2074,5 +2074,20 @@
     "inventory.modify_slots_cancel": "Stornieren",
     "inventory.modify_slots_warning_items": "Warnung: Slots können nicht unter die aktuelle Artikelanzahl ({count}) reduziert werden.",
     "inventory.modify_slots_no_change": "Keine Änderung erforderlich – die Anzahl der Slots ist gleich",
-    "inventory.modify_slots_no_container": "Kein Hauptinventarcontainer gefunden."
+    "inventory.modify_slots_no_container": "Kein Hauptinventarcontainer gefunden.",
+    "player_item.modify_slots_btn": "Slots ändern",
+    "player_item.modify_slots_title": "Spielerplätze ändern",
+    "player_item.modify_slots_prompt": "Geben Sie die Anzahl der neuen Inventarplätze ein (42–999):",
+    "player_item.modify_slots_confirm": "Größe des Inventars auf {slots} Slots für {count} Spieler ändern?",
+    "player_item.modify_slots_blocked": "Kann nicht verkleinert werden: Diese Spieler haben mehr Gegenstände als {slots} Slots:\n{players}",
+    "player_item.modify_slots_done": "Die Größe des Spielerinventars von {count} wurde auf {slots} Plätze geändert",
+    "edit_pals.name_mode": "Standardname:",
+    "edit_pals.name_mode_new": "Neu",
+    "edit_pals.name_mode_copy": "© Kopie",
+    "edit_pals.name_mode_none": "Kein Spitzname",
+    "edit_pals.bulk_sync_nickname": "Spitznamen anwenden",
+    "pal_name_settings.title": "Einstellungen für Kumpelnamen",
+    "pal_name_settings.mode_label": "Benennen Sie neue Freunde mit:",
+    "pal_name_settings.mode_hint": "Gilt beim Erstellen von Pals (Pal Editor, Basis-Pals, Global Pal Storage) und für Klone. Ein eingegebener Spitzname hat immer Vorrang.",
+    "pal_name_settings.sync_nickname": "Spitznamen während der Massensynchronisierung anwenden"
 }

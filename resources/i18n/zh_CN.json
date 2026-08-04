@@ -2052,5 +2052,20 @@
     "inventory.modify_slots_cancel": "取消",
     "inventory.modify_slots_warning_items": "警告：无法将插槽减少到当前项目数以下 ({count})",
     "inventory.modify_slots_no_change": "无需更改 - 槽数相同",
-    "inventory.modify_slots_no_container": "未找到主要库存容器。"
+    "inventory.modify_slots_no_container": "未找到主要库存容器。",
+    "player_item.modify_slots_btn": "修改槽位",
+    "player_item.modify_slots_title": "修改玩家槽位",
+    "player_item.modify_slots_prompt": "输入新的库存槽位计数 (42-999)：",
+    "player_item.modify_slots_confirm": "将库存大小调整为 {count} 玩家的 {slots} 插槽？",
+    "player_item.modify_slots_blocked": "无法缩小：这些玩家拥有的物品多于 {slots} 槽位：\n{players}",
+    "player_item.modify_slots_done": "将 {count} 玩家库存调整为 {slots} 槽位",
+    "edit_pals.name_mode": "默认名称：",
+    "edit_pals.name_mode_new": "新的",
+    "edit_pals.name_mode_copy": "© 复制",
+    "edit_pals.name_mode_none": "没有昵称",
+    "edit_pals.bulk_sync_nickname": "申请昵称",
+    "pal_name_settings.title": "好友名称设置",
+    "pal_name_settings.mode_label": "为新朋友命名：",
+    "pal_name_settings.mode_hint": "适用于创建好友（好友编辑器、基础好友、全局好友存储）和克隆。输入的昵称总是会覆盖它。",
+    "pal_name_settings.sync_nickname": "在批量同步期间应用昵称"
 }

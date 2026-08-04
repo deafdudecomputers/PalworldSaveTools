@@ -16,7 +16,7 @@ from . import data as _data
 from .data import _ensure_skill_data
 from . import icons as _icons
 from .icons import _partner_desc_to_html, _strip_prefix_label
-from .pal_ops import _generate_pal_save_param, _get_raw_from_item, _learn_all_skills_raw, _register_pal_instance_to_guild
+from .pal_ops import _generate_pal_save_param, _get_raw_from_item, _learn_all_skills_raw, _register_pal_instance_to_guild, creation_nickname, get_name_mode, get_sync_nickname, set_name_mode, set_sync_nickname
 from .legacy_frame import PalFrame
 from .pal_info_widget import PalInfoWidget
 from .widgets import FramelessDialog, SkillSlotFrame
@@ -452,6 +452,10 @@ class BulkSyncPalDialog(FramelessDialog):
         body.addLayout(right_col, 1)
         il.addLayout(body, 1)
         btn_row = QHBoxLayout()
+        self._apply_nickname_chk = ToggleCheckBtn(t('edit_pals.bulk_sync_nickname') if t else 'Apply Nickname')
+        self._apply_nickname_chk.setChecked(get_sync_nickname())
+        self._apply_nickname_chk.toggled.connect(set_sync_nickname)
+        btn_row.addWidget(self._apply_nickname_chk)
         btn_row.addStretch()
         cancel_btn = QPushButton(t('edit_pals.bulk_sync_cancel'))
         cancel_btn.setStyleSheet('QPushButton { background: rgba(255,255,255,0.05); color: #9CA3AF; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 6px 16px; font-size: 12px; font-weight: 600; } QPushButton:hover { background: rgba(255,255,255,0.1); color: #FFFFFF; }')
@@ -500,6 +504,11 @@ class BulkSyncPalDialog(FramelessDialog):
                 target_raw['GotWorkSuitabilityAddRankList'] = copy.deepcopy(ws)
             else:
                 target_raw.pop('GotWorkSuitabilityAddRankList', None)
+            if self._apply_nickname_chk.isChecked():
+                if 'NickName' in current_raw:
+                    target_raw['NickName'] = copy.deepcopy(current_raw['NickName'])
+                else:
+                    target_raw.pop('NickName', None)
             source_cid = extract_value(current_raw, 'CharacterID', '')
             if source_cid.upper().startswith('BOSS_') and not extract_value(target_raw, 'CharacterID', '').upper().startswith('BOSS_'):
                 tgt_cid = extract_value(target_raw, 'CharacterID', '')
@@ -608,6 +617,10 @@ class BulkSyncAllDialog(FramelessDialog):
         body.addLayout(right_col, 1)
         il.addLayout(body, 1)
         btn_row = QHBoxLayout()
+        self._apply_nickname_chk = ToggleCheckBtn(t('edit_pals.bulk_sync_nickname') if t else 'Apply Nickname')
+        self._apply_nickname_chk.setChecked(get_sync_nickname())
+        self._apply_nickname_chk.toggled.connect(set_sync_nickname)
+        btn_row.addWidget(self._apply_nickname_chk)
         btn_row.addStretch()
         cancel_btn = QPushButton(t('edit_pals.bulk_sync_cancel'))
         cancel_btn.setStyleSheet('QPushButton { background: rgba(255,255,255,0.05); color: #9CA3AF; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 6px 16px; font-size: 12px; font-weight: 600; } QPushButton:hover { background: rgba(255,255,255,0.1); color: #FFFFFF; }')
@@ -734,6 +747,11 @@ class BulkSyncAllDialog(FramelessDialog):
                     target_raw[key] = copy.deepcopy(self._source_raw[key])
                 else:
                     target_raw.pop(key, None)
+            if self._apply_nickname_chk.isChecked():
+                if 'NickName' in self._source_raw:
+                    target_raw['NickName'] = copy.deepcopy(self._source_raw['NickName'])
+                else:
+                    target_raw.pop('NickName', None)
             if 'EquipWaza' in target_raw:
                 ew = target_raw['EquipWaza']
                 ew_list = ew.get('value', {}).get('values', []) if isinstance(ew, dict) else ew if isinstance(ew, list) else []
@@ -892,6 +910,17 @@ class PalCreateDialog(QDialog):
         self.nick_edit = QLineEdit()
         self.nick_edit.setPlaceholderText(t('edit_pals.nickname_placeholder') if t else 'Optional')
         nick_layout.addWidget(self.nick_edit)
+        self._name_mode_label = QLabel(t('edit_pals.name_mode') if t else 'Default name:')
+        self._name_mode_label.setStyleSheet('color: #9CA3AF;')
+        nick_layout.addWidget(self._name_mode_label)
+        self._name_mode_combo = StyledCombo()
+        self._name_mode_combo.addItem(t('edit_pals.name_mode_new') if t else 'New', 'new')
+        self._name_mode_combo.addItem(t('edit_pals.name_mode_copy') if t else '© Copy', 'copy')
+        self._name_mode_combo.addItem(t('edit_pals.name_mode_none') if t else 'No Nickname', 'none')
+        cur_mode = get_name_mode()
+        self._name_mode_combo.setCurrentIndex(list(('new', 'copy', 'none')).index(cur_mode) if cur_mode in ('new', 'copy', 'none') else 0)
+        self._name_mode_combo.currentIndexChanged.connect(self._on_name_mode_changed)
+        nick_layout.addWidget(self._name_mode_combo)
         nick_layout.addStretch()
         ok_btn = QPushButton(t('edit_pals.create'))
         ok_btn.clicked.connect(self._on_create)
@@ -900,6 +929,10 @@ class PalCreateDialog(QDialog):
         cancel_btn.clicked.connect(self.reject)
         nick_layout.addWidget(cancel_btn)
         layout.addLayout(nick_layout)
+    def _on_name_mode_changed(self, index):
+        mode = self._name_mode_combo.itemData(index) if self._name_mode_combo else None
+        if mode:
+            set_name_mode(mode)
     def refresh_labels(self):
         if hasattr(self, '_search_edit'):
             self._search_edit.setPlaceholderText(t('edit_pals.search_placeholder') if t else 'Type to filter pals...')
@@ -907,6 +940,12 @@ class PalCreateDialog(QDialog):
             self._nickname_label.setText(t('edit_pals.nickname') if t else 'Nickname:')
         if hasattr(self, 'nick_edit'):
             self.nick_edit.setPlaceholderText(t('edit_pals.nickname_placeholder') if t else 'Optional')
+        if hasattr(self, '_name_mode_label'):
+            self._name_mode_label.setText(t('edit_pals.name_mode') if t else 'Default name:')
+        if hasattr(self, '_name_mode_combo'):
+            self._name_mode_combo.setItemText(0, t('edit_pals.name_mode_new') if t else 'New')
+            self._name_mode_combo.setItemText(1, t('edit_pals.name_mode_copy') if t else '© Copy')
+            self._name_mode_combo.setItemText(2, t('edit_pals.name_mode_none') if t else 'No Nickname')
     def _filter_pal_list(self):
         search_text = self._search_edit.text().lower() if hasattr(self, '_search_edit') else ''
         show_standard = self._show_standard_chk.isChecked() if hasattr(self, '_show_standard_chk') else True
@@ -971,7 +1010,8 @@ class PalCreateDialog(QDialog):
             show_warning(self, 'Error', t('edit_pals.error_select_pal_type'))
             return
         cid = self.selected_pal['asset']
-        nick = self.nick_edit.text().strip() or f"🆕{self.selected_pal['name']}"
+        typed_nick = self.nick_edit.text().strip() if hasattr(self, 'nick_edit') else ''
+        nick = typed_nick if typed_nick else creation_nickname(self.selected_pal['name'])
         if self.is_dps:
             import uuid
             from palworld_aio.utils import calculate_max_hp
@@ -1423,8 +1463,6 @@ class BulkSpeciesDialog(FramelessDialog):
         pr = self._pal_info._raw if hasattr(self._pal_info, '_raw') else None
         if not pr:
             return (0, 0)
-        nick_base = resolve_name(cid_upper, PalFrame._NAMEMAP) or cid_upper
-        safe_nick = _strip_prefix_label(nick_base)
         pals_done = 0
         for _ in range(qty):
             container_id = None
@@ -1449,8 +1487,9 @@ class BulkSpeciesDialog(FramelessDialog):
             if not is_dps_slot:
                 if not container_id or new_index is None:
                     continue
-                nick = f'{safe_nick}_clone'
-                new_pal = _generate_pal_save_param(cid_upper, nick, owner_uid, container_id, new_index, group_id)
+                src_nick = extract_value(pr, 'NickName', '') or ''
+                clone_nick = creation_nickname(src_nick or (resolve_name(cid_upper, PalFrame._NAMEMAP) or cid_upper))
+                new_pal = _generate_pal_save_param(cid_upper, clone_nick, owner_uid, container_id, new_index, group_id)
                 new_raw_target = _get_raw_from_item(new_pal)
                 if not new_raw_target:
                     continue
@@ -1458,6 +1497,8 @@ class BulkSpeciesDialog(FramelessDialog):
                     if field in ('SlotId', 'OwnerPlayerUId'):
                         continue
                     new_raw_target[field] = copy.deepcopy(pr[field])
+                if clone_nick:
+                    new_raw_target['NickName'] = {'id': None, 'type': 'StrProperty', 'value': clone_nick}
                 instance_id = new_pal['key']['InstanceId']['value']
                 cmap.append(new_pal)
                 char_containers = safe_nested_get(wsd, ['CharacterContainerSaveData', 'value'], [])
@@ -1484,6 +1525,10 @@ class BulkSpeciesDialog(FramelessDialog):
                 if empty_idx is None:
                     continue
                 new_raw = copy.deepcopy(pr)
+                src_nick = extract_value(pr, 'NickName', '') or ''
+                clone_nick = creation_nickname(src_nick or (resolve_name(cid_upper, PalFrame._NAMEMAP) or cid_upper))
+                if clone_nick:
+                    new_raw['NickName'] = {'id': None, 'type': 'StrProperty', 'value': clone_nick}
                 new_inst = str(uuid.uuid4())
                 new_raw['OwnerPlayerUId'] = {'struct_type': 'Guid', 'struct_id': eu, 'id': None, 'value': str(owner_uid) if owner_uid else eu, 'type': 'StructProperty'}
                 sid = new_raw.get('SlotId', {}).get('value', {})

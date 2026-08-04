@@ -2013,7 +2013,7 @@ class BasePalsContentWidget(QFrame):
     def _on_pal_clicked(self, idx):
         self._select_pal(idx)
     def _add_new_pal(self):
-        from palworld_aio.editor.edit_pals import PalCreateDialog, _generate_pal_save_param
+        from palworld_aio.editor.edit_pals import PalCreateDialog, _generate_pal_save_param, creation_nickname
         PalFrame._load_maps()
         stub = type('Stub', (), {'party_container': None, 'palbox_container': '00000000-0000-0000-0000-000000000000', 'player_uid': '00000000-0000-0000-0000-000000000000', 'current_box_index': 1, 'palbox_pal_dict': {}})()
         dlg = PalCreateDialog(stub, False, 0)
@@ -2036,7 +2036,7 @@ class BasePalsContentWidget(QFrame):
         ))
         if dlg.exec() == QDialog.Accepted and dlg.selected_pal['asset']:
             cid = dlg.selected_pal['asset']
-            nick = dlg.nick_edit.text().strip() or ''
+            nick = dlg.nick_edit.text().strip() or creation_nickname(dlg.selected_pal['name'])
             if self._current_base_id:
                 from palworld_aio.inventory.base_inventory_manager import get_base_worker_container_id
                 container_id = get_base_worker_container_id(self._current_base_id)

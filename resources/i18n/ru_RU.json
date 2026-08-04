@@ -2048,5 +2048,20 @@
     "inventory.modify_slots_cancel": "Отмена",
     "inventory.modify_slots_warning_items": "Предупреждение: невозможно уменьшить количество слотов ниже текущего количества предметов ({count}).",
     "inventory.modify_slots_no_change": "Никаких изменений не требуется — количество слотов такое же.",
-    "inventory.modify_slots_no_container": "Основной контейнер инвентаря не найден."
+    "inventory.modify_slots_no_container": "Основной контейнер инвентаря не найден.",
+    "player_item.modify_slots_btn": "Изменить слоты",
+    "player_item.modify_slots_title": "Изменить слоты игроков",
+    "player_item.modify_slots_prompt": "Введите новое количество слотов инвентаря (42-999):",
+    "player_item.modify_slots_confirm": "Изменить размер инвентаря до {slots} слотов для {count} игроков?",
+    "player_item.modify_slots_blocked": "Невозможно сжать: у этих игроков больше предметов, чем слотов {slots}:\n{players}",
+    "player_item.modify_slots_done": "Изменен размер инвентаря игроков {count} до {slots} слотов.",
+    "edit_pals.name_mode": "Имя по умолчанию:",
+    "edit_pals.name_mode_new": "Новый",
+    "edit_pals.name_mode_copy": "© Копировать",
+    "edit_pals.name_mode_none": "Нет псевдонима",
+    "edit_pals.bulk_sync_nickname": "Применить псевдоним",
+    "pal_name_settings.title": "Настройки имени приятеля",
+    "pal_name_settings.mode_label": "Назовите новых друзей с помощью:",
+    "pal_name_settings.mode_hint": "Применяется при создании друзей (Pal Editor, базовых друзей, Global Pal Storage) и клонов. Набранный псевдоним всегда имеет приоритет над ним.",
+    "pal_name_settings.sync_nickname": "Применить псевдоним во время массовой синхронизации"
 }

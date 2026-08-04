@@ -78,6 +78,10 @@ class _SelectPalDialog(PalCreateDialog):
             self._nickname_label.hide()
         if hasattr(self, 'nick_edit'):
             self.nick_edit.hide()
+        if hasattr(self, '_name_mode_label'):
+            self._name_mode_label.hide()
+        if hasattr(self, '_name_mode_combo'):
+            self._name_mode_combo.hide()
         self._search_edit.textChanged.disconnect()
         self._search_edit.textChanged.connect(self._filter_pal_list)
 

@@ -41,6 +41,7 @@ class PlayerItemActionDialog(QDialog):
     add_all_effigies_requested = Signal(list)
     unlock_all_map_requested = Signal(list)
     edit_abilities_requested = Signal(list, object)
+    modify_slots_requested = Signal(list, int)
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle(t('player_item.title') if t else 'Bulk Player Item Management')
@@ -109,6 +110,11 @@ class PlayerItemActionDialog(QDialog):
         self.unlock_all_map_btn.setCursor(Qt.PointingHandCursor)
         self.unlock_all_map_btn.clicked.connect(lambda: self._on_unlock_all_map_clicked())
         add_all_layout.addWidget(self.unlock_all_map_btn)
+        self.modify_slots_btn = QPushButton(t('player_item.modify_slots_btn') if t else 'Modify Slots')
+        self.modify_slots_btn.setStyleSheet('QPushButton { background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); border-radius: 6px; padding: 4px 8px; font-weight: 600; font-size: 11px; } QPushButton:hover { background: rgba(56,189,248,0.25); border-color: rgba(56,189,248,0.5); color: #FFFFFF; }')
+        self.modify_slots_btn.setCursor(Qt.PointingHandCursor)
+        self.modify_slots_btn.clicked.connect(self._on_modify_slots_clicked)
+        add_all_layout.addWidget(self.modify_slots_btn)
         add_all_layout.addStretch()
         players_layout.addWidget(add_all_frame)
         self.player_list = QListWidget()
@@ -714,3 +720,59 @@ class PlayerItemActionDialog(QDialog):
         reply = QMessageBox.question(self, t('inventory.unlock_all_map_confirm.title', default='Unlock All Fast Travel'), t('inventory.unlock_all_map_confirm.msg', count=len(uids), points=ft_count, players=len(uids), default=f'Unlock all {ft_count} fast travel points for {len(uids)} player(s)?'), QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.Yes:
             self.unlock_all_map_requested.emit(uids)
+    def _player_filled_count(self, player_uid):
+        try:
+            import os
+            uid_clean = str(player_uid).replace('-', '').upper()
+            sav_file = os.path.join(constants.current_save_path, 'Players', f'{uid_clean}.sav')
+            if not os.path.exists(sav_file):
+                return 0
+            gvas = sav_to_gvasfile(sav_file)
+            save_data = gvas.properties.get('SaveData', {}).get('value', {})
+            inv_info = save_data.get('InventoryInfo', {}).get('value', {})
+            if not inv_info:
+                return 0
+            main_id = inv_info.get('CommonContainerId', {}).get('value', {}).get('ID', {}).get('value', '')
+            if not main_id:
+                return 0
+            cont_id_low = str(main_id).replace('-', '').lower()
+            container_data = constants.get_container_lookup().get(cont_id_low)
+            if not container_data:
+                return 0
+            slots = container_data.get('value', {}).get('Slots', {}).get('value', {}).get('values', [])
+            filled = 0
+            for slot in slots:
+                try:
+                    raw_data = slot.get('RawData', {})
+                    raw_value = raw_data.get('value', {}) if raw_data.get('type') in ('Array', 'ArrayProperty') else raw_data
+                    if raw_value.get('count', 0) > 0:
+                        filled += 1
+                except Exception:
+                    continue
+            return filled
+        except Exception:
+            return 0
+    def _on_modify_slots_clicked(self):
+        uids = self._get_checked_player_uids()
+        if not uids:
+            QMessageBox.warning(self, t('player_item.no_players_selected') if t else 'No Players Selected', t('player_item.select_at_least_one') if t else 'Please select at least one player.')
+            return
+        new_count, ok = QInputDialog.getInt(self, t('player_item.modify_slots_title') if t else 'Modify Player Slots', t('player_item.modify_slots_prompt') if t else 'Enter new inventory slot count (42-999):', 42, 42, 999, 1)
+        if not ok:
+            return
+        blocked = []
+        for uid in uids:
+            filled = self._player_filled_count(uid)
+            if filled > new_count:
+                name = str(uid)
+                for p in self.players_data:
+                    if p.get('uid') == uid:
+                        name = f"{p.get('name', 'Unknown')} ({filled})"
+                        break
+                blocked.append(name)
+        if blocked:
+            QMessageBox.warning(self, t('player_item.modify_slots_title') if t else 'Modify Player Slots', t('player_item.modify_slots_blocked', slots=new_count) if t else f'Cannot shrink: these players have more items than {new_count} slots:\n{chr(10).join(blocked)}')
+            return
+        reply = QMessageBox.question(self, t('player_item.modify_slots_title') if t else 'Modify Player Slots', t('player_item.modify_slots_confirm', count=len(uids), slots=new_count) if t else f'Resize inventory to {new_count} slots for {len(uids)} player(s)?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            self.modify_slots_requested.emit(uids, new_count)

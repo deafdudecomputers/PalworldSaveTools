@@ -2044,5 +2044,20 @@
     "inventory.modify_slots_cancel": "Cancelar",
     "inventory.modify_slots_warning_items": "Advertencia: No se pueden reducir los espacios por debajo del recuento de artículos actual ({count})",
     "inventory.modify_slots_no_change": "No se necesitan cambios: el número de espacios es el mismo",
-    "inventory.modify_slots_no_container": "No se encontró ningún contenedor de inventario principal."
+    "inventory.modify_slots_no_container": "No se encontró ningún contenedor de inventario principal.",
+    "player_item.modify_slots_btn": "Modificar ranuras",
+    "player_item.modify_slots_title": "Modificar ranuras de jugador",
+    "player_item.modify_slots_prompt": "Ingrese el nuevo recuento de espacios de inventario (42-999):",
+    "player_item.modify_slots_confirm": "¿Cambiar el tamaño del inventario a {slots} espacios para {count} jugadores?",
+    "player_item.modify_slots_blocked": "No se puede reducir: estos jugadores tienen más elementos que {slots} espacios:\n{players}",
+    "player_item.modify_slots_done": "Redimensionado los inventarios de jugadores {count} a {slots} espacios",
+    "edit_pals.name_mode": "Nombre predeterminado:",
+    "edit_pals.name_mode_new": "Nuevo",
+    "edit_pals.name_mode_copy": "© Copiar",
+    "edit_pals.name_mode_none": "Sin apodo",
+    "edit_pals.bulk_sync_nickname": "Aplicar apodo",
+    "pal_name_settings.title": "Configuración de nombre de amigo",
+    "pal_name_settings.mode_label": "Nombra nuevos amigos con:",
+    "pal_name_settings.mode_hint": "Se aplica al crear amigos (Pal Editor, amigos base, Global Pal Storage) y clones. Un apodo escrito siempre lo anula.",
+    "pal_name_settings.sync_nickname": "Aplicar apodo durante la sincronización masiva"
 }

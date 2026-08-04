@@ -13,16 +13,15 @@ except ImportError:
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 LANGUAGES = {'zh_CN': {'name': 'Simplified Chinese', 'code': 'zh-CN'}, 'de_DE': {'name': 'German', 'code': 'de'}, 'es_ES': {'name': 'Spanish', 'code': 'es'}, 'fr_FR': {'name': 'French', 'code': 'fr'}, 'ru_RU': {'name': 'Russian', 'code': 'ru'}, 'ja_JP': {'name': 'Japanese', 'code': 'ja'}, 'ko_KR': {'name': 'Korean', 'code': 'ko'}, 'pt_BR': {'name': 'Portuguese (Brazil)', 'code': 'pt'}}
 NEW_TRANSLATIONS = {
-    'inventory.modify_slots_btn': 'Modify Slots',
-    'inventory.modify_slots_title': 'Modify Inventory Slots',
-    'inventory.modify_slots_current_slots': 'Current Slots: {count}',
-    'inventory.modify_slots_current_items': 'Current Items: {count}',
-    'inventory.modify_slots_new': 'New Slot Count',
-    'inventory.modify_slots_ok': 'OK',
-    'inventory.modify_slots_cancel': 'Cancel',
-    'inventory.modify_slots_warning_items': 'Warning: Cannot reduce slots below current item count ({count})',
-    'inventory.modify_slots_no_change': 'No change needed - slot count is the same',
-    'inventory.modify_slots_no_container': 'No main inventory container found.',
+    'edit_pals.name_mode': 'Default name:',
+    'edit_pals.name_mode_new': 'New',
+    'edit_pals.name_mode_copy': '© Copy',
+    'edit_pals.name_mode_none': 'No Nickname',
+    'edit_pals.bulk_sync_nickname': 'Apply Nickname',
+    'pal_name_settings.title': 'Pal Name Settings',
+    'pal_name_settings.mode_label': 'Name new pals with:',
+    'pal_name_settings.mode_hint': 'Applies when creating pals (Pal Editor, base pals, Global Pal Storage) and to clones. A typed nickname always overrides it.',
+    'pal_name_settings.sync_nickname': 'Apply nickname during Bulk Sync',
 }
 OLD_KEYS = []
 def _clean_uv_locks():

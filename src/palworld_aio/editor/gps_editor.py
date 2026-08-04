@@ -16,10 +16,10 @@ from palworld_aio.editor.pal_editor.pal_info_widget import PalInfoWidget
 from palworld_aio.editor.pal_editor.pal_ops import (
     _export_pal_raw, _import_pal_raw, _get_raw_from_item, _toggle_boss_raw,
     _toggle_lucky_raw, _toggle_awake_raw, _toggle_dna_raw, _set_fav_raw,
-    _learn_all_skills_raw, _set_work_suitability,
+    _learn_all_skills_raw, _set_work_suitability, creation_nickname,
 )
 from palworld_aio.editor.pal_editor import data as _gps_data
-from palworld_aio.utils import calculate_max_hp, safe_nested_get
+from palworld_aio.utils import calculate_max_hp, safe_nested_get, resolve_name
 from palworld_aio.editor.pal_editor.create_dialogs import PalCreateDialog, _show_learned_moves_dialog
 from palworld_aio.editor.pal_editor.legacy_frame import PalFrame
 from palsav import json_tools as _gps_json
@@ -701,6 +701,11 @@ class GpsEditorDialog(FramelessDialog):
             new_raw = copy.deepcopy(raw)
             from palworld_aio.managers.func_manager import _restore_one_pal
             _restore_one_pal(new_raw)
+            src_cid = extract_value(raw, 'CharacterID', '')
+            src_nick = extract_value(raw, 'NickName', '') or ''
+            clone_nick = creation_nickname(src_nick or (resolve_name(src_cid, PalFrame._NAMEMAP) or src_cid))
+            if clone_nick:
+                new_raw['NickName'] = {'id': None, 'type': 'StrProperty', 'value': clone_nick}
             if self._set_gps_slot(empty_idx, new_raw):
                 self.pals[empty_idx] = {'data': new_raw}
                 self._mark_modified()

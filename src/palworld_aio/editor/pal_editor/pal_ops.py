@@ -8,6 +8,57 @@ from . import data as _data
 
 _WORK_SUIT_ENUM_TYPE = 'EPalWorkSuitability'
 
+NAME_MODES = {'new': 'new', 'copy': 'copy', 'none': 'none'}
+NAME_MODE_DEFAULT = 'new'
+
+def get_name_mode() -> str:
+    return getattr(constants, 'pal_creation_name_mode', NAME_MODE_DEFAULT)
+
+def get_sync_nickname() -> bool:
+    return bool(getattr(constants, 'bulk_sync_apply_nickname', False))
+
+def creation_nickname(base_name, mode=None) -> str:
+    if not base_name:
+        return ''
+    if mode is None:
+        mode = get_name_mode()
+    base_name = str(base_name).strip()
+    if mode == 'new':
+        return f'New {base_name}'
+    if mode == 'copy':
+        return f'© {base_name}'
+    return ''
+
+def set_name_mode(mode: str) -> None:
+    if mode not in NAME_MODES:
+        mode = NAME_MODE_DEFAULT
+    constants.pal_creation_name_mode = mode
+    _persist_pal_settings({'pal_creation_name_mode': mode})
+
+def set_sync_nickname(flag: bool) -> None:
+    constants.bulk_sync_apply_nickname = bool(flag)
+    _persist_pal_settings({'bulk_sync_apply_nickname': bool(flag)})
+
+def _persist_pal_settings(patch: dict) -> None:
+    try:
+        from boot_paths import CONFIG_DIR, USER_CONFIG_DIR
+        from palsav import json_tools
+        path = str(USER_CONFIG_DIR / 'user.cfg')
+        if not os.path.exists(path):
+            path = os.path.join(str(CONFIG_DIR), 'user.cfg')
+        data = {}
+        if os.path.exists(path):
+            try:
+                data = json_tools.load(path)
+            except Exception:
+                data = {}
+        data.update(patch)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        json_tools.dump(data, path, indent=2)
+    except Exception:
+        pass
+
+
 def _learn_all_skills_raw(raw):
     _data._ensure_skill_data()
     mastered = []

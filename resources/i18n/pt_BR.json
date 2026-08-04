@@ -2337,5 +2337,20 @@
     "inventory.modify_slots_cancel": "Cancelar",
     "inventory.modify_slots_warning_items": "Aviso: não é possível reduzir os slots abaixo da contagem de itens atual ({count})",
     "inventory.modify_slots_no_change": "Nenhuma alteração necessária - a contagem de slots é a mesma",
-    "inventory.modify_slots_no_container": "Nenhum contêiner de inventário principal encontrado."
+    "inventory.modify_slots_no_container": "Nenhum contêiner de inventário principal encontrado.",
+    "player_item.modify_slots_btn": "Modificar slots",
+    "player_item.modify_slots_title": "Modificar slots de jogadores",
+    "player_item.modify_slots_prompt": "Insira a nova contagem de slots de inventário (42-999):",
+    "player_item.modify_slots_confirm": "Redimensionar o inventário para {slots} slots para {count} jogador(es)?",
+    "player_item.modify_slots_blocked": "Não é possível encolher: esses jogadores têm mais itens do que slots {slots}:\n{players}",
+    "player_item.modify_slots_done": "Inventários de jogadores {count} redimensionados para slots {slots}",
+    "edit_pals.name_mode": "Nome padrão:",
+    "edit_pals.name_mode_new": "Novo",
+    "edit_pals.name_mode_copy": "© Copiar",
+    "edit_pals.name_mode_none": "Sem apelido",
+    "edit_pals.bulk_sync_nickname": "Aplicar apelido",
+    "pal_name_settings.title": "Configurações de nome de amigo",
+    "pal_name_settings.mode_label": "Nomeie novos amigos com:",
+    "pal_name_settings.mode_hint": "Aplica-se ao criar amigos (Pal Editor, base pals, Global Pal Storage) e a clones. Um apelido digitado sempre o substitui.",
+    "pal_name_settings.sync_nickname": "Aplicar apelido durante a sincronização em massa"
 }

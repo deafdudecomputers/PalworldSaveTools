@@ -38,6 +38,7 @@ from .pal_ops import (
     _toggle_lucky_raw,
     _work_suit_short_key,
     build_pal_context_menu,
+    creation_nickname,
 )
 from .widgets import FramelessDialog, StrokedLabel
 from .card_widgets import PalIcon, PalCardWidget, TribeIcon
@@ -87,6 +88,8 @@ __all__ = [
     "build_pal_context_menu",
     "BulkOperationMixin",
     "BulkSyncAllDialog",
+    "BulkSyncPalDialog",
+    "creation_nickname",
     "BulkSyncPalDialog",
     "delete_pal_from_all",
     "EditPalsDialog",

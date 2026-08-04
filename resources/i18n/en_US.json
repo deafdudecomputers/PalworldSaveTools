@@ -2337,5 +2337,20 @@
     "inventory.modify_slots_cancel": "Cancel",
     "inventory.modify_slots_warning_items": "Warning: Cannot reduce slots below current item count ({count})",
     "inventory.modify_slots_no_change": "No change needed - slot count is the same",
-    "inventory.modify_slots_no_container": "No main inventory container found."
+    "inventory.modify_slots_no_container": "No main inventory container found.",
+    "player_item.modify_slots_btn": "Modify Slots",
+    "player_item.modify_slots_title": "Modify Player Slots",
+    "player_item.modify_slots_prompt": "Enter new inventory slot count (42-999):",
+    "player_item.modify_slots_confirm": "Resize inventory to {slots} slots for {count} player(s)?",
+    "player_item.modify_slots_blocked": "Cannot shrink: these players have more items than {slots} slots:\n{players}",
+    "player_item.modify_slots_done": "Resized {count} player inventories to {slots} slots",
+    "edit_pals.name_mode": "Default name:",
+    "edit_pals.name_mode_new": "New",
+    "edit_pals.name_mode_copy": "© Copy",
+    "edit_pals.name_mode_none": "No Nickname",
+    "edit_pals.bulk_sync_nickname": "Apply Nickname",
+    "pal_name_settings.title": "Pal Name Settings",
+    "pal_name_settings.mode_label": "Name new pals with:",
+    "pal_name_settings.mode_hint": "Applies when creating pals (Pal Editor, base pals, Global Pal Storage) and to clones. A typed nickname always overrides it.",
+    "pal_name_settings.sync_nickname": "Apply nickname during Bulk Sync"
 }

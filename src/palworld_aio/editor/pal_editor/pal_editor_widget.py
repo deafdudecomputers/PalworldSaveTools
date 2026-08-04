@@ -30,6 +30,7 @@ from .pal_ops import (
     _toggle_boss_raw,
     _toggle_dna_raw,
     _toggle_lucky_raw,
+    creation_nickname,
 )
 from .pal_info_widget import PalInfoWidget
 from .party_slot_widget import PartySlotWidget
@@ -695,6 +696,11 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
         new_raw = copy.deepcopy(source_raw)
         from palworld_aio.managers.func_manager import _restore_one_pal
         _restore_one_pal(new_raw)
+        src_cid = extract_value(source_raw, 'CharacterID', '')
+        src_nick = extract_value(source_raw, 'NickName', '') or ''
+        clone_nick = creation_nickname(src_nick or (resolve_name(src_cid, PalFrame._NAMEMAP) or src_cid))
+        if clone_nick:
+            new_raw['NickName'] = {'id': None, 'type': 'StrProperty', 'value': clone_nick}
         empty_slot = empty_idx - start
         if self.dps_gvas:
             arr = self.dps_gvas.properties.get('SaveParameterArray', {}).get('value', {}).get('values', [])
@@ -846,6 +852,9 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
             if field == 'OwnerPlayerUId':
                 continue
             new_raw[field] = copy.deepcopy(source_raw[field])
+        clone_nick = creation_nickname(nick or (resolve_name(cid, PalFrame._NAMEMAP) or cid))
+        if clone_nick:
+            new_raw['NickName'] = {'id': None, 'type': 'StrProperty', 'value': clone_nick}
         cmap = constants.loaded_level_json['properties']['worldSaveData']['value']['CharacterSaveParameterMap']['value']
         cmap.append(new_pal)
         char_containers = safe_nested_get(wsd, ['CharacterContainerSaveData', 'value'], [])
