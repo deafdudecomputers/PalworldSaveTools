@@ -10,6 +10,8 @@ from palworld_aio import constants
 from palworld_aio.utils import fast_deepcopy, are_equal_uuids, as_uuid
 from palworld_aio.managers.data_manager import delete_base_camp
 last_import_audit = None
+def get_last_import_audit():
+    return last_import_audit
 def _s(x):
     return str(x).lower()
 def _new_uuid():
@@ -198,7 +200,7 @@ def validate_imported_base(loaded_level_json, base_id=None):
                         stack.append(nb)
             for iid, refs in edges.items():
                 if iid not in seen:
-                    report['issues'].append('camp %s: %s (%s) is not connected to the palbox through any connector link (unsupported)' % (camp_id, iid, (model_owner.get(iid) or {}).get('MapObjectId', {}).get('value')))
+                    report['warnings'].append('camp %s: %s (%s) is not connected to the palbox through any connector link (unsupported)' % (camp_id, iid, (model_owner.get(iid) or {}).get('MapObjectId', {}).get('value')))
         elif camp_objs and not palbox:
             report['issues'].append('camp %s: no PalBoxV2 among its %d objects' % (camp_id, len(camp_objs)))
         # base camp -> palbox binding
@@ -473,10 +475,140 @@ def export_base_json(loaded_level_json, source_base_id):
         if wr and _s(wr.get('base_camp_id_belong_to', '')) == src_id_str:
             export_data['works'].append(_deep(we))
     return export_data
+def _empty_container(cid, is_item=False):
+    zero_s = '00000000-0000-0000-0000-000000000000'
+    key = {'key': {'ID': {'id': None, 'struct_id': zero_s, 'struct_type': 'Guid', 'type': 'StructProperty', 'value': str(cid)}}}
+    value = {}
+    if is_item:
+        value['BelongInfo'] = {'id': None, 'struct_id': zero_s, 'struct_type': 'PalItemContainerBelongInfo', 'type': 'StructProperty', 'value': {'GroupId': {'id': None, 'struct_id': zero_s, 'struct_type': 'Guid', 'type': 'StructProperty', 'value': zero_s}, 'bControllableOthers': {'id': None, 'type': 'BoolProperty', 'value': False}}}
+    value['CustomVersionData'] = {'array_type': 'ByteProperty', 'id': None, 'type': 'ArrayProperty', 'value': {'values': []}}
+    value['RawData'] = {'array_type': 'ByteProperty', 'id': None, 'type': 'ArrayProperty', 'value': {'values': []}}
+    if is_item:
+        value['RawData']['custom_type'] = '.worldSaveData.ItemContainerSaveData.Value.RawData'
+        value['RawData']['value'] = {'permission': {'type_a': [], 'type_b': [], 'item_static_ids': []}}
+    value['SlotNum'] = {'id': None, 'type': 'IntProperty', 'value': 20 if not is_item else 7}
+    value['Slots'] = {'array_type': 'StructProperty', 'id': None, 'type': 'ArrayProperty', 'value': {'id': zero_s, 'prop_name': 'Slots', 'prop_type': 'StructProperty', 'type_name': 'PalCharacterSlotSaveData' if not is_item else 'PalItemSlotSaveData', 'values': []}}
+    if not is_item:
+        value['bReferenceSlot'] = {'id': None, 'type': 'BoolProperty', 'value': False}
+    return dict(key, value=value)
+def validate_base_import(loaded_level_json, exported_data, target_guild_id):
+    """Pre-import integrity checks against the destination save and the exported
+    blueprint, BEFORE any mutation. An invalid import is aborted here so a
+    partially-corrupt save is never written.
+
+    Checks:
+      - the destination worldSaveData is readable
+      - the target guild exists in the destination save
+      - the blueprint has a usable base_camp record and transform
+      - the blueprint contains a PalBoxV2 (a base cannot exist without one)
+      - every exported map object has a non-zero, unique instance_id
+      - every worker-container pal slot resolves to an exported character
+      - every dynamic item referenced by an item slot is present in the export
+
+    Returns a list of error strings; an empty list means the import may proceed.
+    Never raises and never mutates the destination.
+    """
+    errors = []
+    if not isinstance(exported_data, dict):
+        errors.append('exported data is not a base blueprint object')
+        return errors
+    try:
+        raw_prop = loaded_level_json['properties']['worldSaveData']['value']
+    except Exception:
+        errors.append('destination save has no readable worldSaveData')
+        return errors
+    data = raw_prop if isinstance(raw_prop, dict) else {}
+    groups = data.get('GroupSaveDataMap', {}).get('value', [])
+    if not isinstance(groups, list) or not any(isinstance(g, dict) and _s(g.get('key')) == _s(target_guild_id) for g in groups):
+        errors.append('target guild %s does not exist in the destination save' % target_guild_id)
+    base_camp = exported_data.get('base_camp')
+    if not isinstance(base_camp, dict):
+        errors.append('exported data has no base_camp record')
+        return errors
+    try:
+        transform = base_camp['value']['RawData']['value']['transform']['translation']
+        if not isinstance(transform, dict):
+            raise TypeError('bad transform')
+    except Exception:
+        errors.append('base_camp record has no usable transform for placement')
+    map_objects = exported_data.get('map_objects', [])
+    if not isinstance(map_objects, list):
+        errors.append('exported data has no map_objects list')
+        return errors
+    if not any(isinstance(o, dict) and str(o.get('MapObjectId', {}).get('value', '')) == 'PalBoxV2' for o in map_objects):
+        errors.append('exported data has no PalBoxV2 - a base cannot be imported without its palbox')
+    seen_inst = set()
+    for o in map_objects:
+        if not isinstance(o, dict):
+            continue
+        oid = str(o.get('MapObjectId', {}).get('value', ''))
+        mr = _get_model_raw(o)
+        if not isinstance(mr, dict):
+            errors.append('map object %s has no readable Model.RawData' % oid)
+            continue
+        iid = _s(mr.get('instance_id', ''))
+        if not iid or iid == _s(_zero()):
+            errors.append('map object %s has a zero or missing instance_id' % oid)
+        elif iid in seen_inst:
+            errors.append('duplicate instance_id %s in the export' % iid)
+        else:
+            seen_inst.add(iid)
+    exported_char_ids = set()
+    for c in exported_data.get('characters', []):
+        if isinstance(c, dict):
+            try:
+                exported_char_ids.add(_s(c['key']['InstanceId']['value']))
+            except Exception:
+                pass
+    try:
+        wc_id = _s(base_camp['value']['WorkerDirector']['value']['RawData']['value']['container_id'])
+    except Exception:
+        wc_id = ''
+    if wc_id and wc_id != _s(_zero()):
+        w_cont = next((c for c in exported_data.get('char_containers', []) if isinstance(c, dict) and _s(c.get('key', {}).get('ID', {}).get('value')) == wc_id), None)
+        if w_cont is not None:
+            for slot in w_cont.get('value', {}).get('Slots', {}).get('value', {}).get('values', []):
+                try:
+                    sid = _s(slot['RawData']['value']['instance_id'])
+                except Exception:
+                    continue
+                if sid and sid != _s(_zero()) and sid not in exported_char_ids:
+                    errors.append('worker container slot references pal %s which is absent from the export' % sid)
+    dyn_ids = set()
+    for d in exported_data.get('dynamic_items', []):
+        if isinstance(d, dict):
+            try:
+                dyn_ids.add(_s(d['RawData']['value']['id']['local_id_in_created_world']))
+            except Exception:
+                pass
+    for c in exported_data.get('item_containers', []):
+        if not isinstance(c, dict):
+            continue
+        try:
+            slots = c['value']['Slots']['value']['values']
+        except Exception:
+            continue
+        for slot in slots:
+            try:
+                item = slot['RawData']['value']['item']
+                if str(item.get('static_id', '')).startswith('PalEgg_'):
+                    continue
+                loc_id = _s(item.get('dynamic_id', {}).get('local_id_in_created_world', _zero()))
+                if loc_id and loc_id != _s(_zero()) and loc_id not in dyn_ids:
+                    errors.append('item container slot references dynamic item %s which is absent from the export' % loc_id)
+            except Exception:
+                continue
+    return errors
 def import_base_json(loaded_level_json, exported_data, target_guild_id, offset=(8000, 0, 0), collision_threshold=5000):
+    global last_import_audit
     success, msg = validate_blueprint_version(exported_data)
     if not success:
         return False
+    errors = validate_base_import(loaded_level_json, exported_data, target_guild_id)
+    if errors:
+        last_import_audit = {'base_id': None, 'object_count': 0, 'issues': errors, 'warnings': ['import aborted before any data was written']}
+        return False
+    import_notes = []
     try:
         _deep = fast_deepcopy
     except:
@@ -504,6 +636,18 @@ def import_base_json(loaded_level_json, exported_data, target_guild_id, offset=(
     z = _zero()
     tgt_gid_str = _s(target_guild_id)
     target_group = next((g for g in groups if _s(g.get('key')) == tgt_gid_str), None)
+    guild_owner_uid = ''
+    if target_group:
+        try:
+            g_raw = target_group['value']['RawData']['value']
+            owner = g_raw.get('admin_player_uid', '') or ''
+            if not str(owner) or str(owner).replace('-', '').lower() == ('0' * 32):
+                players = g_raw.get('players', []) or []
+                if players:
+                    owner = players[0].get('player_uid', '')
+            guild_owner_uid = str(owner)
+        except Exception:
+            pass
     if target_group:
         try:
             imported_level = exported_data.get('base_camp_level', 1)
@@ -519,8 +663,6 @@ def import_base_json(loaded_level_json, exported_data, target_guild_id, offset=(
             if mr:
                 palbox_model_id = _s(mr.get('instance_id', ''))
                 break
-    exported_item_container_ids = set((_s(c['key']['ID']['value']) for c in exported_data.get('item_containers', [])))
-    exported_char_container_ids = set((_s(c['key']['ID']['value']) for c in exported_data.get('char_containers', [])))
     instance_id_map = {}
     concrete_id_map = {}
     for obj in exported_data.get('map_objects', []):
@@ -661,7 +803,7 @@ def import_base_json(loaded_level_json, exported_data, target_guild_id, offset=(
     except Exception:
         src_worker_container_id = ''
     worker_containers = exported_data.get('char_containers', [])
-    src_worker_container = next((c for c in worker_containers if _s(c.get('key', {}).get('ID', {}).get('value')) == src_worker_container_id), None)
+    src_worker_container = next((c for c in worker_containers if isinstance(c, dict) and _s(c.get('key', {}).get('ID', {}).get('value')) == src_worker_container_id), None)
     if src_worker_container:
         ncnt = _deep(src_worker_container)
         ncnt['key']['ID']['value'] = new_worker_container_id
@@ -677,18 +819,22 @@ def import_base_json(loaded_level_json, exported_data, target_guild_id, offset=(
             if old_inst == _s(z):
                 new_slots.append(slot)
                 continue
-            char_entry = next((c for c in exported_chars if _s(c['key']['InstanceId']['value']) == old_inst), None)
+            char_entry = next((c for c in exported_chars if isinstance(c, dict) and _s(c.get('key', {}).get('InstanceId', {}).get('value')) == old_inst), None)
             if not char_entry:
-                new_slots.append(slot)
+                import_notes.append('dropped worker slot referencing pal %s (pal absent from the export)' % old_inst)
                 continue
             try:
                 spv = char_entry['value']['RawData']['value']['object']['SaveParameter']['value']
                 cid = spv['CharacterID']['value']
                 nick = spv.get('NickName', {}).get('value', '')
-            except:
-                new_slots.append(slot)
+            except Exception:
+                import_notes.append('dropped worker slot referencing pal %s (unreadable pal data)' % old_inst)
                 continue
-            skeleton = _generate_pal_save_param(cid, nick, empty_uid, new_worker_container_id, slot_idx, target_guild_id)
+            try:
+                skeleton = _generate_pal_save_param(cid, nick, empty_uid, new_worker_container_id, slot_idx, target_guild_id)
+            except Exception:
+                import_notes.append('dropped worker slot referencing pal %s (could not regenerate pal)' % old_inst)
+                continue
             new_inst = skeleton['key']['InstanceId']['value']
             new_sp = skeleton['value']['RawData']['value']['object']['SaveParameter']['value']
             for k, v in spv.items():
@@ -717,6 +863,9 @@ def import_base_json(loaded_level_json, exported_data, target_guild_id, offset=(
             new_slots.append({'SlotIndex': {'id': None, 'type': 'IntProperty', 'value': slot_idx}, 'RawData': {'array_type': 'ByteProperty', 'id': None, 'value': {'player_uid': empty_uid, 'instance_id': new_inst, 'permission_tribe_id': 0}, 'custom_type': '.worldSaveData.CharacterContainerSaveData.Value.Slots.Slots.RawData', 'type': 'ArrayProperty'}})
         ncnt['value']['Slots']['value']['values'] = new_slots
         char_containers.append(ncnt)
+    else:
+        char_containers.append(_empty_container(new_worker_container_id))
+        import_notes.append('created empty worker container %s (source container absent from the export)' % str(new_worker_container_id))
     for nwe in cloned_works:
         work_root['value']['values'].append(nwe)
     for obj in exported_data.get('map_objects', []):
@@ -740,6 +889,10 @@ def import_base_json(loaded_level_json, exported_data, target_guild_id, offset=(
         nmr['concrete_model_instance_id'] = new_conc
         nmr['base_camp_id_belong_to'] = new_base_id
         nmr['group_id_belong_to'] = target_guild_id
+        if guild_owner_uid and guild_owner_uid.replace('-', '').lower() != ('0' * 32):
+            nmr['build_player_uid'] = guild_owner_uid
+        else:
+            nmr['build_player_uid'] = str(_zero())
         rw = _s(nmr.get('repair_work_id', ''))
         if rw and rw != _s(z) and rw in work_id_map:
             nmr['repair_work_id'] = work_id_map[rw]
@@ -770,42 +923,30 @@ def import_base_json(loaded_level_json, exported_data, target_guild_id, offset=(
                     cr['private_lock_player_uid'] = '00000000-0000-0000-0000-000000000000'
                 if 'is_private_lock' in cr:
                     cr['is_private_lock'] = 0
-            has_invalid = False
             try:
                 mm = no['ConcreteModel']['value']['ModuleMap']['value']
                 for mod in mm:
                     raw_mod = mod.get('value', {}).get('RawData', {}).get('value', {})
                     if 'work_ids' in raw_mod and isinstance(raw_mod['work_ids'], list):
-                        raw_mod['work_ids'] = [wid for wid in raw_mod['work_ids'] if _s(wid) in work_id_map]
-                    if 'target_work_id' in raw_mod:
-                        twid = _s(raw_mod['target_work_id'])
-                        if twid and twid not in work_id_map:
-                            raw_mod['target_work_id'] = '00000000-0000-0000-0000-000000000000'
-                    if 'target_container_id' in raw_mod:
-                        cid = _s(raw_mod['target_container_id'])
-                        if cid and cid not in exported_item_container_ids and (cid not in exported_char_container_ids):
-                            has_invalid = True
-            except:
-                pass
-            if has_invalid:
-                continue
-            try:
-                mm = no['ConcreteModel']['value']['ModuleMap']['value']
-                for mod in mm:
-                    raw_mod = mod.get('value', {}).get('RawData', {}).get('value', {})
+                        mapped = [work_id_map.get(_s(wid)) for wid in raw_mod['work_ids']]
+                        kept = [w for w in mapped if w is not None]
+                        if len(kept) != len(raw_mod['work_ids']):
+                            import_notes.append('%s: pruned %d work_ids whose works were not imported' % (oid, len(raw_mod['work_ids']) - len(kept)))
+                        raw_mod['work_ids'] = kept
                     if 'target_work_id' in raw_mod:
                         old_twid = _s(raw_mod['target_work_id'])
-                        if old_twid in work_id_map:
+                        if old_twid and old_twid in work_id_map:
                             raw_mod['target_work_id'] = work_id_map[old_twid]
-                    if 'work_ids' in raw_mod and isinstance(raw_mod['work_ids'], list):
-                        raw_mod['work_ids'] = [work_id_map.get(_s(wid), wid) for wid in raw_mod['work_ids']]
+                        elif old_twid and old_twid != _s(z):
+                            raw_mod['target_work_id'] = _zero()
+                            import_notes.append('%s: zeroed target_work_id %s (work not imported)' % (oid, old_twid))
                     if 'target_container_id' not in raw_mod:
                         continue
                     old_cid = _s(raw_mod.get('target_container_id', ''))
                     new_cid = _new_uuid()
                     raw_mod['target_container_id'] = new_cid
                     if 'ItemContainer' in str(mod.get('key', '')):
-                        src_ic = next((c for c in exported_data.get('item_containers', []) if _s(c.get('key', {}).get('ID', {}).get('value')) == old_cid), None)
+                        src_ic = next((c for c in exported_data.get('item_containers', []) if isinstance(c, dict) and _s(c.get('key', {}).get('ID', {}).get('value')) == old_cid), None)
                         if src_ic:
                             nic = _deep(src_ic)
                             nic['key']['ID']['value'] = new_cid
@@ -831,28 +972,42 @@ def import_base_json(loaded_level_json, exported_data, target_guild_id, offset=(
                                         dynamic_item_data.append(new_dyn)
                                 cleaned_slots.append(slot)
                             nic['value']['Slots']['value']['values'] = cleaned_slots
-                            item_containers.append(nic)
+                        else:
+                            nic = _empty_container(new_cid, is_item=True)
+                            import_notes.append('%s: created empty item container (source %s not in export)' % (oid, old_cid))
+                        item_containers.append(nic)
                     elif 'CharacterContainer' in str(mod.get('key', '')):
-                        src_cc = next((c for c in char_containers if _s(c.get('key', {}).get('ID', {}).get('value')) == old_cid), None)
+                        src_cc = next((c for c in exported_data.get('char_containers', []) if isinstance(c, dict) and _s(c.get('key', {}).get('ID', {}).get('value')) == old_cid), None)
                         if src_cc:
                             ncc = _deep(src_cc)
                             ncc['key']['ID']['value'] = new_cid
                             if 'instance_id' in ncc.get('value', {}):
                                 ncc['value']['instance_id'] = new_cid
                             _clear_char_container_slots(ncc)
-                            char_containers.append(ncc)
+                        else:
+                            ncc = _empty_container(new_cid)
+                            import_notes.append('%s: created empty character container (source %s not in export)' % (oid, old_cid))
+                        char_containers.append(ncc)
             except:
                 pass
         map_objs.append(no)
-    _run_post_import_validation(loaded_level_json, new_base_id)
+    report = _run_post_import_validation(loaded_level_json, new_base_id, notes=import_notes)
+    if report and report.get('issues'):
+        return False
     return True
-def _run_post_import_validation(loaded_level_json, base_id):
+def _run_post_import_validation(loaded_level_json, base_id, notes=None):
     global last_import_audit
     try:
+        repair_report = repair_base_references(loaded_level_json)
         report = validate_imported_base(loaded_level_json, base_id)
+        if notes:
+            report.setdefault('warnings', []).extend(notes)
+        report['repair'] = repair_report
         last_import_audit = report
+        return report
     except Exception as exc:
         last_import_audit = {'base_id': _s(base_id) if base_id else None, 'object_count': 0, 'issues': ['validation failed: %r' % exc], 'warnings': []}
+        return last_import_audit
 def clone_base_complete(loaded_level_json, source_base_id, target_guild_id, offset=(8000, 0, 0)):
     exported = export_base_json(loaded_level_json, source_base_id)
     if not exported:

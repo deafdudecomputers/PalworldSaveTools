@@ -25,7 +25,7 @@ from palworld_aio.managers.save_manager import save_manager
 from palworld_aio.managers.data_manager import get_guilds, get_guild_members, get_bases, delete_guild, delete_player, load_exclusions, save_exclusions, delete_base_camp
 from palworld_aio.managers.func_manager import delete_empty_guilds, delete_inactive_players, delete_inactive_bases, delete_duplicated_players, delete_unreferenced_data, delete_non_base_map_objects, delete_invalid_structure_map_objects, delete_all_skins, unlock_all_private_chests, remove_invalid_items_from_save, remove_invalid_pals_from_save, remove_invalid_passives_from_save, fix_missions, reset_anti_air_turrets, reset_dungeons, reset_oilrig, reset_invader, reset_supply, reset_lock_gimmick, unlock_viewing_cage_for_player, fix_all_negative_timestamps, reset_selected_player_timestamp, detect_and_trim_overfilled_inventories, unlock_all_technologies_for_player, unlock_all_lab_research_for_guild, modify_container_slots, fix_unassigned_pals, restore_all_pals, fix_all_pals_combined, max_all_pals, fix_illegal_pals_in_save, fix_illegal_player_stats, repair_structures, repair_items, edit_game_days, scan_illegal_pals_by_owner, scan_illegal_players_by_stats, fix_invalid_pal_active_skills
 from palworld_aio.managers.guild_manager import move_player_to_guild, rebuild_all_guilds, make_member_leader, rename_guild, set_guild_level
-from palworld_aio.managers.base_manager import export_base_json, import_base_json, clone_base_complete, update_base_area_range
+from palworld_aio.managers.base_manager import export_base_json, import_base_json, clone_base_complete, update_base_area_range, get_last_import_audit
 from palworld_aio.managers.backup_manager import export_base_backup, load_base_file, compress_to_pst3
 from palworld_aio.managers.player_manager import rename_player
 from palworld_aio.map.map_generator import generate_world_map
@@ -2041,7 +2041,11 @@ class MainWindow(QMainWindow):
                         successful_imports += 1
                     else:
                         failed_imports += 1
-                        failed_files.append(os.path.basename(file_path) + '(import failed)')
+                        suffix = ''
+                        audit = get_last_import_audit() or {}
+                        if audit.get('issues'):
+                            suffix = ': ' + '; '.join(audit['issues'])
+                        failed_files.append(os.path.basename(file_path) + '(import failed)' + suffix)
                 except Exception as e:
                     failed_imports += 1
                     failed_files.append(os.path.basename(file_path) + f'(error: {str(e)})')
@@ -2292,7 +2296,11 @@ class MainWindow(QMainWindow):
                 self.refresh_all()
                 self._show_info(t('success.title'), t('clone_base.msg'))
             else:
-                self._show_warning(t('error.title'), 'Failed to clone base')
+                audit = get_last_import_audit() or {}
+                msg = 'Failed to clone base'
+                if audit.get('issues'):
+                    msg += ': ' + '; '.join(audit['issues'])
+                self._show_warning(t('error.title'), msg)
         run_with_loading(on_finished, task)
     def _edit_player_pals(self, uid, name):
         from ..editor.edit_pals import EditPalsDialog

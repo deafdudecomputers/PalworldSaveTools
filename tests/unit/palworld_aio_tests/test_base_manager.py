@@ -13,6 +13,18 @@ TRANSFORM = {'rotation': {'x': 0.0, 'y': 0.0, 'z': 0.0, 'w': 1.0},
              'scale3d': {'x': 1.0, 'y': 1.0, 'z': 1.0}}
 
 
+def _loaded_world():
+    return {'properties': {'worldSaveData': {'value': {
+        'GroupSaveDataMap': {'value': [{'key': GID,
+            'value': {'RawData': {'value': {
+                'guild_name': 'Test Guild',
+                'base_camp_level': 1,
+                'base_ids': [],
+                'map_object_instance_ids_base_camp_points': [],
+            }}}}]},
+    }}}}
+
+
 def _map_object(oid, iid, cid, any_place):
     return {
         'MapObjectId': {'id': None, 'value': oid, 'type': 'NameProperty'},
@@ -58,7 +70,7 @@ def _exported():
 
 
 def test_import_base_json_remaps_connector_links():
-    loaded = {'properties': {'worldSaveData': {'value': {}}}}
+    loaded = _loaded_world()
     assert _bm.import_base_json(loaded, _exported(), GID), 'import failed'
     objs = loaded['properties']['worldSaveData']['value']['MapObjectSaveData']['value']['values']
     assert len(objs) == 2
@@ -91,7 +103,7 @@ def test_import_base_json_remaps_connector_raw_bytes():
         }},
         'ConcreteModel': {'value': {'ModuleMap': {'value': []}, 'RawData': {'value': {}}}},
     }
-    loaded = {'properties': {'worldSaveData': {'value': {}}}}
+    loaded = _loaded_world()
     exported = {
         'base_camp': {'key': 'ffffffff-ffff-ffff-ffff-ffffffffffff',
                       'value': {'RawData': {'value': {'transform': TRANSFORM}}}},
@@ -140,7 +152,7 @@ def _world_map_objects(loaded):
 
 
 def test_validate_imported_base_clean_after_remap():
-    loaded = {'properties': {'worldSaveData': {'value': {}}}}
+    loaded = _loaded_world()
     assert _bm.import_base_json(loaded, _linked_base_export(), GID), 'import failed'
     report = _bm.validate_imported_base(loaded)
     assert len(_world_map_objects(loaded)) == 3
@@ -150,11 +162,12 @@ def test_validate_imported_base_clean_after_remap():
 
 def test_validate_imported_base_flags_unremapped_connector_refs(monkeypatch):
     monkeypatch.setattr(_bm, '_remap_connector_links', lambda map_obj, instance_id_map, id_bytemap=None: None)
-    loaded = {'properties': {'worldSaveData': {'value': {}}}}
+    monkeypatch.setattr(_bm, '_run_post_import_validation', lambda *a, **k: None)
+    loaded = _loaded_world()
     assert _bm.import_base_json(loaded, _linked_base_export(), GID), 'import failed'
     report = _bm.validate_imported_base(loaded)
     assert any('dangles' in issue for issue in report['issues']), report['issues']
-    assert any('not connected to the palbox' in issue for issue in report['issues']), report['issues']
+    assert any('not connected to the palbox' in w for w in report['warnings']), report['warnings']
 
 
 def _raw_concrete_map_object(oid, iid, cid, raw_values):
@@ -181,7 +194,7 @@ def _raw_concrete_export(raw_values):
 
 
 def test_import_does_not_grow_empty_raw_concrete():
-    loaded = {'properties': {'worldSaveData': {'value': {}}}}
+    loaded = _loaded_world()
     assert _bm.import_base_json(loaded, _raw_concrete_export([]), GID), 'import failed'
     wall = next(o for o in _world_map_objects(loaded) if o['MapObjectId']['value'] == 'Wooden_wall')
     raw = wall['ConcreteModel']['value']['RawData']['value']
@@ -191,7 +204,7 @@ def test_import_does_not_grow_empty_raw_concrete():
 
 def test_import_patches_nonempty_raw_concrete():
     raw36 = list(range(36))
-    loaded = {'properties': {'worldSaveData': {'value': {}}}}
+    loaded = _loaded_world()
     assert _bm.import_base_json(loaded, _raw_concrete_export(raw36), GID), 'import failed'
     wall = next(o for o in _world_map_objects(loaded) if o['MapObjectId']['value'] == 'Wooden_wall')
     raw = wall['ConcreteModel']['value']['RawData']['value']
@@ -234,8 +247,9 @@ def _repairable_export():
     }
 
 
-def test_repair_base_references_drops_dangling_and_orphans():
-    loaded = {'properties': {'worldSaveData': {'value': {}}}}
+def test_repair_base_references_drops_dangling_and_orphans(monkeypatch):
+    monkeypatch.setattr(_bm, '_run_post_import_validation', lambda *a, **k: None)
+    loaded = _loaded_world()
     assert _bm.import_base_json(loaded, _repairable_export(), GID), 'import failed'
     report = _bm.repair_base_references(loaded)
     assert report['remaining'] == [], report['remaining']
@@ -247,3 +261,58 @@ def test_repair_base_references_drops_dangling_and_orphans():
     works = work_root['value']['values']
     assert works == [], 'orphan work (owner object missing) must be removed'
     assert any('orphan work' in f or 'connector' in f or 'repair_work_id' in f for f in report['fixed']), report['fixed']
+
+
+def test_validate_base_import_accepts_healthy_export():
+    assert _bm.validate_base_import(_loaded_world(), _exported(), GID) == []
+
+
+def test_import_aborts_missing_guild_without_mutating():
+    loaded = {'properties': {'worldSaveData': {'value': {}}}}
+    errors = _bm.validate_base_import(loaded, _exported(), GID)
+    assert any('guild' in e for e in errors), errors
+    assert _bm.import_base_json(loaded, _exported(), GID) is False
+    world = loaded['properties']['worldSaveData']['value']
+    assert 'BaseCampSaveData' not in world, 'import must not mutate on validation failure'
+
+
+def test_import_aborts_export_without_palbox():
+    loaded = _loaded_world()
+    exported = _exported()
+    exported['map_objects'] = [o for o in exported['map_objects'] if o['MapObjectId']['value'] != 'PalBoxV2']
+    errors = _bm.validate_base_import(loaded, exported, GID)
+    assert any('PalBoxV2' in e for e in errors), errors
+    assert _bm.import_base_json(loaded, exported, GID) is False
+
+
+def test_import_aborts_worker_slot_referencing_absent_pal():
+    loaded = _loaded_world()
+    exported = _exported()
+    wcid = 'dddddddd-1111-4ddd-8ddd-dddddddddddd'
+    exported['base_camp']['value']['WorkerDirector'] = {'value': {'RawData': {'value': {'container_id': wcid}}}}
+    exported['char_containers'] = [{'key': {'ID': {'value': wcid}},
+                                    'value': {'Slots': {'value': {'values': [
+                                        {'SlotIndex': {'value': 0},
+                                         'RawData': {'value': {'instance_id': 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'}}},
+                                    ]}}}}]
+    errors = _bm.validate_base_import(loaded, exported, GID)
+    assert any('worker container slot' in e for e in errors), errors
+    assert _bm.import_base_json(loaded, exported, GID) is False
+
+
+def test_import_self_heals_dangling_connector_and_orphan_work(monkeypatch):
+    real_post = _bm._run_post_import_validation
+    monkeypatch.setattr(_bm, '_run_post_import_validation', lambda *a, **k: None)
+    loaded = _loaded_world()
+    assert _bm.import_base_json(loaded, _repairable_export(), GID), 'import failed'
+    camps = loaded['properties']['worldSaveData']['value']['BaseCampSaveData']['value']
+    new_bid = str(camps[0]['key']).lower()
+    report = real_post(loaded, new_bid)
+    assert isinstance(report, dict)
+    assert not report.get('issues'), report.get('issues')
+    objs = _world_map_objects(loaded)
+    wall = next(o for o in objs if o['MapObjectId']['value'] == 'Wooden_wall')
+    any_place = wall['Model']['value']['Connector']['value']['RawData']['value']['connect']['any_place']
+    assert any_place == [], 'dangling connector ref must be dropped by the post-import repair'
+    work_root = loaded['properties']['worldSaveData']['value']['WorkSaveData']
+    assert work_root['value']['values'] == [], 'orphan work must be removed by the post-import repair'

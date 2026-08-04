@@ -299,6 +299,7 @@ class SaveManager(QObject):
             except Exception:
                 import traceback
                 traceback.print_exc()
+                raise
             duration = time.perf_counter() - t0
             self.save_finished.emit(duration)
             return duration

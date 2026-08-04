@@ -3,6 +3,12 @@
 - **Resize player inventory slots** — a new "Modify Slots" button in the Player Inventory tab lets you expand or shrink the main inventory anywhere from 42 up to 999 slots. Shrinking below the number of items you're carrying is blocked, and a manually resized inventory now keeps its size instead of snapping back to the default 42 slots on reload.
 - **Fix Overfilled Inventories now also fills underfilled inventories and trims overfull pal containers** — player inventories with fewer slots than expected are topped up with proper empty slots, and pal containers (party, palbox, base workers) holding more pals than their declared capacity are trimmed back down. Only containers that actually changed are counted.
 - **Tools tab descriptions now say what each tool actually does** — Restore Map is described as revealing the whole map for the current device, Fix Host Save as swapping UIDs between players, and Convert SteamID as converting IDs between NoSteam and SteamID formats, instead of the previous vague wording.
+- **Base Import now refuses to write a corrupt save** — before anything is written, the import checks that the target guild exists, the blueprint contains its palbox, and every pal and dynamic item it references is present. If anything is wrong, the import stops with a clear message instead of silently adding a broken base.
+- **Imported bases no longer carry dangling references that could crash servers** — pals, work stations, storage chests, and containers are all re-linked to the imported copy, and leftover work entries and stale connections are cleaned up automatically, so the imported base never points at a thing that doesn't exist in your save.
+- **Items in chests now transfer with an imported base** — imported bases were showing up with empty chests; the items from the source base's containers now carry over with their stats intact. Pal eggs are still excluded.
+- **Imported structures now belong to the destination guild** — buildings previously kept the source world's player as their owner. They are now owned by the target guild's leader, so nothing references a player who doesn't exist in your save.
+- **Save errors no longer hide behind "Saved successfully"** — if writing the save fails, a full error screen with details and a copy button appears instead of a false success message.
+- **Importing bases into a real save no longer fails** — the support check that treated normally-placed structures as unsupported has been relaxed, so existing bases import without being blocked.
 - Bumped version to 2.3.3
 
 #2.3.2

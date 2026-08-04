@@ -10,7 +10,7 @@ from loading_manager import show_information, show_warning, show_critical, show_
 import palworld_coord
 from palworld_aio import constants
 from palworld_aio.managers.data_manager import delete_base_camp, get_tick
-from palworld_aio.managers.base_manager import export_base_json, import_base_json, update_base_area_range, clone_base_complete
+from palworld_aio.managers.base_manager import export_base_json, import_base_json, update_base_area_range, clone_base_complete, get_last_import_audit
 from palworld_aio.managers.backup_manager import export_base_backup, load_base_file, compress_to_pst3
 from palworld_aio.managers.guild_manager import rename_guild
 from palworld_aio.widgets import BaseHoverOverlay, PlayerHoverOverlay
@@ -1608,7 +1608,11 @@ class MapTab(QWidget):
                 self._play_effect(ImportEffect, img_x, img_y)
                 show_information(self, t('success.title') if t else 'Success', t('clone_base.msg') if t else 'Base cloned successfully')
             else:
-                show_warning(self, t('error.title') if t else 'Error', 'Failed to clone base')
+                audit = get_last_import_audit() or {}
+                msg = 'Failed to clone base'
+                if audit.get('issues'):
+                    msg += ': ' + '; '.join(audit['issues'])
+                show_warning(self, t('error.title') if t else 'Error', msg)
         run_with_loading(on_finished, task)
     def _adjust_base_radius(self, base_data):
         bid = str(base_data['base_id'])
@@ -2282,7 +2286,11 @@ class MapTab(QWidget):
                             pass
                     else:
                         failed_imports += 1
-                        failed_files.append(os.path.basename(file_path) + '(import failed)')
+                        suffix = ''
+                        audit = get_last_import_audit() or {}
+                        if audit.get('issues'):
+                            suffix = ': ' + '; '.join(audit['issues'])
+                        failed_files.append(os.path.basename(file_path) + '(import failed)' + suffix)
                 except Exception as e:
                     failed_imports += 1
                     failed_files.append(os.path.basename(file_path) + f'(error: {str(e)})')

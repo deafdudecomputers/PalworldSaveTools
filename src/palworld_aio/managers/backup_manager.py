@@ -12,7 +12,7 @@ import zstandard
 from palsav.gvas import GvasFile
 from palsav.paltypes import PALWORLD_TYPE_HINTS
 from palobject import SKP_PALWORLD_CUSTOM_PROPERTIES
-from palworld_aio.managers.base_manager import export_base_json, import_base_json, validate_blueprint_version
+from palworld_aio.managers.base_manager import export_base_json, import_base_json, validate_blueprint_version, get_last_import_audit
 from palworld_aio.utils import fast_deepcopy
 VERSION = 1
 ZSTD_LEVEL = 22
@@ -102,6 +102,9 @@ def import_base_backup(pstz_path, target_level_sav_path, target_guild_id, compre
     level_wrapper = sav_to_gvas_wrapper(target_level_sav_path)
     import_result = import_base_json(level_wrapper, base_data, target_guild_id, offset)
     if not import_result:
+        audit = get_last_import_audit() or {}
+        if audit.get('issues'):
+            raise Exception('Failed to import base: ' + '; '.join(audit['issues']))
         raise Exception('Failed to import base')
     wrapper_to_sav(level_wrapper, target_level_sav_path)
     return True
