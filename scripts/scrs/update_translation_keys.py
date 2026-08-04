@@ -14,8 +14,9 @@ except ImportError:
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 LANGUAGES = {'zh_CN': {'name': 'Simplified Chinese', 'code': 'zh-CN'}, 'de_DE': {'name': 'German', 'code': 'de'}, 'es_ES': {'name': 'Spanish', 'code': 'es'}, 'fr_FR': {'name': 'French', 'code': 'fr'}, 'ru_RU': {'name': 'Russian', 'code': 'ru'}, 'ja_JP': {'name': 'Japanese', 'code': 'ja'}, 'ko_KR': {'name': 'Korean', 'code': 'ko'}, 'pt_BR': {'name': 'Portuguese (Brazil)', 'code': 'pt'}, 'pt_PT': {'name': 'Portuguese (Portugal)', 'code': 'pt'}}
 UPDATED_TRANSLATIONS = {
-    'deletion.menu.fix_overfilled_inventories': 'Fix Container Sizes',
-    'deletion.trimmed_inventories': 'Fixed {fixed} containers: filled underfilled inventories, trimmed overfilled inventories and pal containers',
+    'tool.restore_map.desc': 'Reveals the whole map for this device',
+    'tool.fix_host_save.desc': 'Swaps the uids from one player to another player',
+    'tool.convert.steamid.desc': 'Convert IDs for NoSteam / SteamID',
 }
 def translate_text(text: str, target_lang: str) -> str:
     placeholders = re.findall(r'\{[^}]+\}', text)
