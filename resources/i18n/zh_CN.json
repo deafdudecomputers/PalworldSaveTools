@@ -2060,7 +2060,7 @@
     "player_item.modify_slots_blocked": "无法缩小：这些玩家拥有的物品多于 {slots} 槽位：\n{players}",
     "player_item.modify_slots_done": "将 {count} 玩家库存调整为 {slots} 槽位",
     "edit_pals.name_mode": "默认名称：",
-    "edit_pals.name_mode_new": "新的",
+    "edit_pals.name_mode_new": "🆕 新",
     "edit_pals.name_mode_copy": "© 复制",
     "edit_pals.name_mode_none": "没有昵称",
     "edit_pals.bulk_sync_nickname": "申请昵称",

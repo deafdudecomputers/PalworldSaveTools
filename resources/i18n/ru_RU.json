@@ -2056,7 +2056,7 @@
     "player_item.modify_slots_blocked": "Невозможно сжать: у этих игроков больше предметов, чем слотов {slots}:\n{players}",
     "player_item.modify_slots_done": "Изменен размер инвентаря игроков {count} до {slots} слотов.",
     "edit_pals.name_mode": "Имя по умолчанию:",
-    "edit_pals.name_mode_new": "Новый",
+    "edit_pals.name_mode_new": "🆕 Новинка",
     "edit_pals.name_mode_copy": "© Копировать",
     "edit_pals.name_mode_none": "Нет псевдонима",
     "edit_pals.bulk_sync_nickname": "Применить псевдоним",

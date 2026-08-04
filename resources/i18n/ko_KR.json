@@ -2057,7 +2057,7 @@
     "player_item.modify_slots_blocked": "축소할 수 없습니다. 이 플레이어는 {slots} 슬롯보다 더 많은 항목을 가지고 있습니다.\n{players}",
     "player_item.modify_slots_done": "{count} 플레이어 인벤토리의 크기를 {slots} 슬롯으로 조정했습니다.",
     "edit_pals.name_mode": "기본 이름:",
-    "edit_pals.name_mode_new": "새로운",
+    "edit_pals.name_mode_new": "🆕 새로운",
     "edit_pals.name_mode_copy": "© 복사",
     "edit_pals.name_mode_none": "닉네임 없음",
     "edit_pals.bulk_sync_nickname": "닉네임 적용",

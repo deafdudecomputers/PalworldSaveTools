@@ -2345,7 +2345,7 @@
     "player_item.modify_slots_blocked": "Não é possível encolher: esses jogadores têm mais itens do que slots {slots}:\n{players}",
     "player_item.modify_slots_done": "Inventários de jogadores {count} redimensionados para slots {slots}",
     "edit_pals.name_mode": "Nome padrão:",
-    "edit_pals.name_mode_new": "Novo",
+    "edit_pals.name_mode_new": "🆕 Novo",
     "edit_pals.name_mode_copy": "© Copiar",
     "edit_pals.name_mode_none": "Sem apelido",
     "edit_pals.bulk_sync_nickname": "Aplicar apelido",

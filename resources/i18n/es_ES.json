@@ -2052,7 +2052,7 @@
     "player_item.modify_slots_blocked": "No se puede reducir: estos jugadores tienen más elementos que {slots} espacios:\n{players}",
     "player_item.modify_slots_done": "Redimensionado los inventarios de jugadores {count} a {slots} espacios",
     "edit_pals.name_mode": "Nombre predeterminado:",
-    "edit_pals.name_mode_new": "Nuevo",
+    "edit_pals.name_mode_new": "🆕 Nuevo",
     "edit_pals.name_mode_copy": "© Copiar",
     "edit_pals.name_mode_none": "Sin apodo",
     "edit_pals.bulk_sync_nickname": "Aplicar apodo",

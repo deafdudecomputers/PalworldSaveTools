@@ -2345,7 +2345,7 @@
     "player_item.modify_slots_blocked": "Cannot shrink: these players have more items than {slots} slots:\n{players}",
     "player_item.modify_slots_done": "Resized {count} player inventories to {slots} slots",
     "edit_pals.name_mode": "Default name:",
-    "edit_pals.name_mode_new": "New",
+    "edit_pals.name_mode_new": "🆕 New",
     "edit_pals.name_mode_copy": "© Copy",
     "edit_pals.name_mode_none": "No Nickname",
     "edit_pals.bulk_sync_nickname": "Apply Nickname",

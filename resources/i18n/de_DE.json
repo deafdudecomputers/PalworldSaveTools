@@ -2082,7 +2082,7 @@
     "player_item.modify_slots_blocked": "Kann nicht verkleinert werden: Diese Spieler haben mehr Gegenstände als {slots} Slots:\n{players}",
     "player_item.modify_slots_done": "Die Größe des Spielerinventars von {count} wurde auf {slots} Plätze geändert",
     "edit_pals.name_mode": "Standardname:",
-    "edit_pals.name_mode_new": "Neu",
+    "edit_pals.name_mode_new": "🆕 Neu",
     "edit_pals.name_mode_copy": "© Kopie",
     "edit_pals.name_mode_none": "Kein Spitzname",
     "edit_pals.bulk_sync_nickname": "Spitznamen anwenden",

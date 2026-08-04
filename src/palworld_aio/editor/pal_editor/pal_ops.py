@@ -24,7 +24,7 @@ def creation_nickname(base_name, mode=None) -> str:
         mode = get_name_mode()
     base_name = str(base_name).strip()
     if mode == 'new':
-        return f'New {base_name}'
+        return f'🆕 {base_name}'
     if mode == 'copy':
         return f'© {base_name}'
     return ''

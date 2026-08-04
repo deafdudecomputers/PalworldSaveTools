@@ -2058,7 +2058,7 @@
     "player_item.modify_slots_blocked": "縮小できません: これらのプレイヤーは {slots} スロットよりも多くのアイテムを持っています:\n{players}",
     "player_item.modify_slots_done": "{count} プレーヤーのインベントリのサイズを {slots} スロットに変更しました",
     "edit_pals.name_mode": "デフォルト名:",
-    "edit_pals.name_mode_new": "新しい",
+    "edit_pals.name_mode_new": "🆕 新しい",
     "edit_pals.name_mode_copy": "©コピー",
     "edit_pals.name_mode_none": "ニックネームなし",
     "edit_pals.bulk_sync_nickname": "ニックネームを適用する",

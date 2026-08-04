@@ -2040,7 +2040,7 @@
     "player_item.modify_slots_blocked": "Impossible de réduire : ces joueurs ont plus d'objets que {slots} emplacements :\n{players}",
     "player_item.modify_slots_done": "Redimensionnement des inventaires de joueurs {count} vers {slots} emplacements",
     "edit_pals.name_mode": "Nom par défaut :",
-    "edit_pals.name_mode_new": "Nouveau",
+    "edit_pals.name_mode_new": "🆕 Nouveau",
     "edit_pals.name_mode_copy": "© Copie",
     "edit_pals.name_mode_none": "Pas de pseudo",
     "edit_pals.bulk_sync_nickname": "Appliquer un pseudo",
