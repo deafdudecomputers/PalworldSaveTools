@@ -1775,3 +1775,140 @@ class FoodPickerDialog(FramelessDialog):
                 cat_match = cat == 'All' or w._cat_key == cat
                 text_match = not q or q in fid or q in display
                 w.setVisible(cat_match and text_match)
+
+
+_CB_SPIN_STYLE = 'QSpinBox { color: #e2e8f0; background: rgba(255,255,255,0.06); border: 1px solid rgba(125,211,252,0.2); border-radius: 4px; padding: 2px 4px; } QSpinBox::up-button, QSpinBox::down-button { border: none; background: rgba(255,255,255,0.05); } QSpinBox::up-arrow { image: none; border: none; } QSpinBox::down-arrow { image: none; border: none; }'
+
+
+class CloneBulkDialog(FramelessDialog):
+    def __init__(self, pals, free_slots, parent=None):
+        super().__init__('edit_pals.ctx.clone_bulk', parent)
+        self.setWindowTitle(t('edit_pals.ctx.clone_bulk'))
+        self.setModal(True)
+        self.setMinimumSize(460, 400)
+        self._pals = list(pals)
+        self._free = max(0, int(free_slots))
+        self.counts = None
+        self._spins = []
+
+        inner = QWidget()
+        outer = QVBoxLayout(inner)
+        outer.setContentsMargins(14, 10, 14, 12)
+        outer.setSpacing(8)
+
+        head = QLabel(t('edit_pals.clone_bulk_header', pals=len(self._pals), free=self._free))
+        head.setWordWrap(True)
+        head.setStyleSheet('font-size: 12px; font-weight: 600; color: #E2E8F0; background: transparent; border: none;')
+        outer.addWidget(head)
+
+        all_row = QHBoxLayout()
+        all_row.setSpacing(6)
+        all_lbl = QLabel(t('edit_pals.clone_bulk_set_all'))
+        all_lbl.setStyleSheet('font-size: 11px; color: #94A3B8; background: transparent; border: none;')
+        all_row.addWidget(all_lbl)
+        self._all_spin = QSpinBox()
+        self._all_spin.setRange(0, max(1, self._free))
+        self._all_spin.setValue(1)
+        self._all_spin.setFixedWidth(60)
+        self._all_spin.setStyleSheet(_CB_SPIN_STYLE)
+        all_row.addWidget(self._all_spin)
+        apply_all = QPushButton(t('edit_pals.clone_bulk_apply_all'))
+        apply_all.setCursor(Qt.PointingHandCursor)
+        apply_all.setStyleSheet('QPushButton { background: rgba(56,189,248,0.12); color: #38BDF8; border: 1px solid rgba(56,189,248,0.25); border-radius: 4px; padding: 3px 10px; font-size: 11px; font-weight: 600; } QPushButton:hover { background: rgba(56,189,248,0.25); color: #FFFFFF; }')
+        apply_all.clicked.connect(self._on_apply_all)
+        all_row.addWidget(apply_all)
+        all_row.addStretch()
+        outer.addLayout(all_row)
+
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setStyleSheet('QScrollArea { background: transparent; border: 1px solid rgba(125,211,252,0.15); border-radius: 6px; }')
+        listw = QWidget()
+        listw.setStyleSheet('background: transparent;')
+        ll = QVBoxLayout(listw)
+        ll.setContentsMargins(8, 6, 8, 6)
+        ll.setSpacing(4)
+        for pal in self._pals:
+            raw = _get_raw_from_item(pal)
+            ll.addLayout(self._build_row(raw))
+        ll.addStretch()
+        scroll.setWidget(listw)
+        outer.addWidget(scroll, 1)
+
+        self._total_lbl = QLabel()
+        self._total_lbl.setStyleSheet('font-size: 11px; font-weight: 700; color: #7DD3FC; background: transparent; border: none;')
+        outer.addWidget(self._total_lbl)
+
+        btn_row = QHBoxLayout()
+        btn_row.addStretch()
+        cancel = QPushButton(t('pal_editor.bulk_rename_cancel'))
+        cancel.setCursor(Qt.PointingHandCursor)
+        cancel.setStyleSheet('QPushButton { background: rgba(255,255,255,0.05); color: #9CA3AF; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 6px 16px; font-size: 12px; font-weight: 600; } QPushButton:hover { background: rgba(255,255,255,0.1); color: #FFFFFF; }')
+        cancel.clicked.connect(self.reject)
+        btn_row.addWidget(cancel)
+        self._ok = QPushButton(t('edit_pals.clone_bulk_apply'))
+        self._ok.setCursor(Qt.PointingHandCursor)
+        self._ok.setStyleSheet('QPushButton { background: rgba(16,185,129,0.15); color: #4ADE80; border: 1px solid rgba(16,185,129,0.3); border-radius: 4px; padding: 6px 20px; font-size: 12px; font-weight: 700; } QPushButton:hover { background: rgba(16,185,129,0.25); color: #FFFFFF; } QPushButton:disabled { background: rgba(255,255,255,0.03); color: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.06); }')
+        self._ok.clicked.connect(self._on_accept)
+        btn_row.addWidget(self._ok)
+        outer.addLayout(btn_row)
+
+        self.content_layout.addWidget(inner)
+        self._update_total()
+
+    def _build_row(self, raw):
+        row = QHBoxLayout()
+        row.setSpacing(8)
+        cid = extract_value(raw, 'CharacterID', '') if raw else ''
+        nick = (extract_value(raw, 'NickName', '') or '') if raw else ''
+        species = _strip_prefix_label(resolve_name(cid, PalFrame._NAMEMAP) or cid) or cid
+        try:
+            level = int(extract_value(raw, 'Level', 1) or 1)
+        except (TypeError, ValueError):
+            level = 1
+        label = f'{nick} ({species})' if nick and nick != species else species
+        name_lbl = QLabel(label)
+        name_lbl.setStyleSheet('font-size: 11px; color: #E2E8F0; background: transparent; border: none;')
+        row.addWidget(name_lbl, 1)
+        lv_lbl = QLabel(t('edit_pals.clone_bulk_level', level=level))
+        lv_lbl.setStyleSheet('font-size: 10px; color: #94A3B8; background: transparent; border: none;')
+        row.addWidget(lv_lbl)
+        spin = QSpinBox()
+        spin.setRange(0, max(1, self._free))
+        spin.setValue(1)
+        spin.setFixedWidth(60)
+        spin.setStyleSheet(_CB_SPIN_STYLE)
+        spin.valueChanged.connect(self._update_total)
+        row.addWidget(spin)
+        self._spins.append(spin)
+        return row
+
+    def _on_apply_all(self):
+        v = self._all_spin.value()
+        for s in self._spins:
+            s.setValue(v)
+        self._update_total()
+
+    def _total(self):
+        return sum(s.value() for s in self._spins)
+
+    def _update_total(self):
+        total = self._total()
+        over = total > self._free
+        self._total_lbl.setText(t('edit_pals.clone_bulk_total', total=total, free=self._free))
+        color = '#FB7185' if over else '#7DD3FC'
+        self._total_lbl.setStyleSheet(f'font-size: 11px; font-weight: 700; color: {color}; background: transparent; border: none;')
+        self._ok.setEnabled(total > 0 and not over)
+
+    def _on_accept(self):
+        if self._total() <= 0 or self._total() > self._free:
+            return
+        self.counts = [s.value() for s in self._spins]
+        self.accept()
+
+    @staticmethod
+    def ask(pals, free_slots, parent=None):
+        dlg = CloneBulkDialog(pals, free_slots, parent)
+        if dlg.exec() == QDialog.Accepted and dlg.counts:
+            return dlg.counts
+        return None
