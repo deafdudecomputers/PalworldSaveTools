@@ -528,7 +528,7 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
         self.pal_info.clear_hover()
     def _on_slot_right_clicked(self, slot_index, action):
         selected_before = self._gather_selected_pals()
-        if action != 'clone_bulk':
+        if action not in ('clone_bulk', 'clone'):
             self._clear_multi_selection()
         sender = self.sender()
         is_party = sender in self.party_slots
@@ -617,7 +617,9 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
                 self._bulk_sync_all_pal(raw)
         elif action == 'clone':
             if raw:
-                if is_dps:
+                if len(selected_before) > 1:
+                    self._clone_selected_once(selected_before, is_party)
+                elif is_dps:
                     self._clone_dps_pal(slot_index)
                 else:
                     self._clone_pal(sender)
@@ -1001,6 +1003,19 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
         counts = CloneBulkDialog.ask(pals, free, self)
         if not counts:
             return
+        self._clone_pals_counts(pals, counts, is_party, t('edit_pals.ctx.clone_bulk'))
+
+    def _clone_selected_once(self, pals, is_party):
+        if not pals:
+            return
+        is_dps = self._palbox_mode == 'dps'
+        if self._free_slot_count(is_party, is_dps) < 1:
+            show_warning(self, t('edit_pals.ctx.clone'), t('edit_pals.clone_bulk_full'))
+            return
+        self._clone_pals_counts(pals, [1] * len(pals), is_party, t('edit_pals.ctx.clone'))
+
+    def _clone_pals_counts(self, pals, counts, is_party, title):
+        is_dps = self._palbox_mode == 'dps'
         group_id = None if is_dps else self._owner_group_id()
         made = 0
         out_of_space = False
@@ -1048,9 +1063,9 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
         self._update_box_label()
         self._update_dashboard_stats()
         if out_of_space:
-            show_warning(self, t('edit_pals.ctx.clone_bulk'), t('edit_pals.clone_bulk_no_space', count=made))
+            show_warning(self, title, t('edit_pals.clone_bulk_no_space', count=made))
         else:
-            show_information(self, t('edit_pals.ctx.clone_bulk'), t('edit_pals.clone_bulk_done', count=made))
+            show_information(self, title, t('edit_pals.clone_bulk_done', count=made))
 
     def _export_pal(self, sender):
         if not hasattr(sender, 'pal_data') or sender.pal_data is None:

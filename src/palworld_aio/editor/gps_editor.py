@@ -778,6 +778,10 @@ class GpsEditorDialog(FramelessDialog):
             self._clone_bulk(pals)
 
         elif action == 'clone' and raw:
+            selected = self._gather_selected_pals()
+            if len(selected) > 1:
+                self._clone_each_selected(selected)
+                return
             empty_idx = None
             start_page = (self.current_page - 1) * PAGE_SIZE
             for offset in range(PAGE_SIZE):
@@ -903,6 +907,16 @@ class GpsEditorDialog(FramelessDialog):
             self._refresh_info()
             self._mark_modified()
 
+    def _clone_each_selected(self, pals):
+        pals = [p for p in pals if _get_raw_from_item(p)]
+        if not pals:
+            return
+        free = max(0, getattr(self, 'total_slots', 0) - len(self.pals))
+        if free < 1:
+            show_warning(self, t('edit_pals.ctx.clone'), t('edit_pals.clone_bulk_full'))
+            return
+        self._clone_with_counts(pals, [1] * len(pals), t('edit_pals.ctx.clone'))
+
     def _clone_bulk(self, pals):
         pals = [p for p in pals if _get_raw_from_item(p)]
         if not pals:
@@ -915,6 +929,9 @@ class GpsEditorDialog(FramelessDialog):
         counts = CloneBulkDialog.ask(pals, free, self)
         if not counts:
             return
+        self._clone_with_counts(pals, counts, t('edit_pals.ctx.clone_bulk'))
+
+    def _clone_with_counts(self, pals, counts, title):
         from palworld_aio.managers.func_manager import _restore_one_pal
         made = 0
         out_of_space = False
@@ -951,9 +968,9 @@ class GpsEditorDialog(FramelessDialog):
         self._update_page()
         self._mark_modified()
         if out_of_space:
-            show_warning(self, t('edit_pals.ctx.clone_bulk'), t('edit_pals.clone_bulk_no_space', count=made))
+            show_warning(self, title, t('edit_pals.clone_bulk_no_space', count=made))
         else:
-            show_information(self, t('edit_pals.ctx.clone_bulk'), t('edit_pals.clone_bulk_done', count=made))
+            show_information(self, title, t('edit_pals.clone_bulk_done', count=made))
 
     def _next_free_gps_slot(self, start):
         total = getattr(self, 'total_slots', 0)
