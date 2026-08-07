@@ -331,6 +331,8 @@
     "edit_pals.create_pal": "创建帕鲁",
     "edit_pals.create_success": "在{container_name}创建了新的{pal_name}。",
     "edit_pals.ctx.clone": "克隆",
+    "edit_pals.clone_storage_full": "该存储没有剩余空栏位。",
+    "edit_pals.clone_done_slot": "已将帕鲁克隆到第 {slot} 号栏位。",
     "edit_pals.ctx.create_new": "创建新帕鲁",
     "edit_pals.ctx.delete": "删除",
     "edit_pals.ctx.edit": "编辑帕鲁",

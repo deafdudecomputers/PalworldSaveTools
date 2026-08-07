@@ -329,6 +329,8 @@
     "edit_pals.create_pal": "팰 생성",
     "edit_pals.create_success": "{container_name}에 새 {pal_name}을 생성했습니다.",
     "edit_pals.ctx.clone": "복제",
+    "edit_pals.clone_storage_full": "이 보관함에 남은 빈 슬롯이 없습니다.",
+    "edit_pals.clone_done_slot": "{slot}번 슬롯에 팰을 복제했습니다.",
     "edit_pals.ctx.create_new": "새 팰 생성",
     "edit_pals.ctx.delete": "삭제",
     "edit_pals.ctx.edit": "팰 편집",

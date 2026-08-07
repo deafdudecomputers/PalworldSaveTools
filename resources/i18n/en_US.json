@@ -598,6 +598,8 @@
     "edit_pals.create_pal": "Create Pal",
     "edit_pals.create_success": "Created new {pal_name} in {container_name}.",
     "edit_pals.ctx.clone": "Clone",
+    "edit_pals.clone_storage_full": "There are no free slots left in this storage.",
+    "edit_pals.clone_done_slot": "Pal cloned into slot {slot}.",
     "edit_pals.ctx.create_new": "Create New Pal",
     "edit_pals.ctx.delete": "Delete",
     "edit_pals.ctx.edit": "Edit Pal",

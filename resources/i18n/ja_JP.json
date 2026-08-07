@@ -329,6 +329,8 @@
     "edit_pals.create_pal": "パルを作成",
     "edit_pals.create_success": "{container_name} に新しい {pal_name} を作成しました。",
     "edit_pals.ctx.clone": "クローン",
+    "edit_pals.clone_storage_full": "このストレージに空きスロットがありません。",
+    "edit_pals.clone_done_slot": "スロット {slot} にパルを複製しました。",
     "edit_pals.ctx.create_new": "新しいパルを作成",
     "edit_pals.ctx.delete": "削除",
     "edit_pals.ctx.edit": "パルを編集",

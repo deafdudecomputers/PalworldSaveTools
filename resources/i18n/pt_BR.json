@@ -598,6 +598,8 @@
     "edit_pals.create_pal": "Criar amigo",
     "edit_pals.create_success": "Criado novo {pal_name} em {container_name}.",
     "edit_pals.ctx.clone": "Clone",
+    "edit_pals.clone_storage_full": "Não há espaços livres neste armazenamento.",
+    "edit_pals.clone_done_slot": "Pal clonado no espaço {slot}.",
     "edit_pals.ctx.create_new": "Criar novo amigo",
     "edit_pals.ctx.delete": "Excluir",
     "edit_pals.ctx.edit": "Editar amigo",

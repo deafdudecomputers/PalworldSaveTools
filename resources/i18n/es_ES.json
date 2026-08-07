@@ -322,6 +322,8 @@
     "edit_pals.create_pal": "Crear Pal",
     "edit_pals.create_success": "Creado nuevo {pal_name} en {container_name}.",
     "edit_pals.ctx.clone": "Clonar",
+    "edit_pals.clone_storage_full": "No quedan ranuras libres en este almacenamiento.",
+    "edit_pals.clone_done_slot": "Pal clonado en la ranura {slot}.",
     "edit_pals.ctx.create_new": "Crear nuevo Pal",
     "edit_pals.ctx.delete": "Eliminar",
     "edit_pals.ctx.edit": "Editar Pal",

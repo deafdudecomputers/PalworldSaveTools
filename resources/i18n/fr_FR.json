@@ -331,6 +331,8 @@
     "edit_pals.create_pal": "Créer Pal",
     "edit_pals.create_success": "Nouveau {pal_name} créé dans {container_name}.",
     "edit_pals.ctx.clone": "Cloner",
+    "edit_pals.clone_storage_full": "Il n'y a plus d'emplacement libre dans ce stockage.",
+    "edit_pals.clone_done_slot": "Pal cloné dans l'emplacement {slot}.",
     "edit_pals.ctx.create_new": "Créer nouveau Pal",
     "edit_pals.ctx.delete": "Supprimer",
     "edit_pals.ctx.edit": "Modifier Pal",
