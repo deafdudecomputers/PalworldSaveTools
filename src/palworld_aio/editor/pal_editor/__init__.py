@@ -23,6 +23,8 @@ from .icons import (
     _strip_prefix_label,
 )
 from .pal_ops import (
+    _all_passive_skill_keys,
+    _apply_all_skills_raw,
     _export_pal_raw,
     _generate_pal_save_param,
     _get_raw_from_item,
@@ -52,6 +54,8 @@ from .pal_editor_bulk_ops import BulkOperationMixin
 from .legacy_frame import PalFrame
 
 __all__ = [
+    "_all_passive_skill_keys",
+    "_apply_all_skills_raw",
     "_BOSS_PREFIXES",
     "_clean_desc_for_tooltip",
     "_composite_badge",

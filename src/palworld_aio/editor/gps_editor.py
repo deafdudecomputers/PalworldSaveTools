@@ -17,6 +17,7 @@ from palworld_aio.editor.pal_editor.pal_ops import (
     _export_pal_raw, _import_pal_raw, _get_raw_from_item, _toggle_boss_raw,
     _toggle_lucky_raw, _toggle_awake_raw, _toggle_dna_raw, _set_fav_raw,
     _learn_all_skills_raw, _set_work_suitability, creation_nickname,
+    _all_passive_skill_keys, _apply_all_skills_raw,
 )
 from palworld_aio.editor.pal_editor import data as _gps_data
 from palworld_aio.utils import calculate_max_hp, safe_nested_get, resolve_name
@@ -44,6 +45,7 @@ class GpsEditorDialog(FramelessDialog):
 
         self.current_page = 1
         self.total_pages = 1
+        self.total_slots = 0
         self._modified = False
         self._selected_pal = None
         self._selected_slot = None
@@ -118,6 +120,28 @@ class GpsEditorDialog(FramelessDialog):
         self.max_buff_all_btn.clicked.connect(self._max_buff_all)
         header.addWidget(self.max_buff_all_btn)
 
+        self.all_skills_all_btn = QPushButton(t('edit_pals.all_skills_all'))
+        self.all_skills_all_btn.setFixedHeight(24)
+        self.all_skills_all_btn.setStyleSheet(
+            'QPushButton { background: rgba(245,158,11,0.12); color: #F59E0B; border: 1px solid rgba(245,158,11,0.25); border-radius: 5px; padding: 4px 10px; font-weight: 600; font-size: 10px; }'
+            'QPushButton:hover { background: rgba(245,158,11,0.25); border-color: rgba(245,158,11,0.5); color: #FFFFFF; }'
+        )
+        self.all_skills_all_btn.setCursor(Qt.PointingHandCursor)
+        self.all_skills_all_btn.setToolTip(t('edit_pals.all_skills_all_hint'))
+        self.all_skills_all_btn.clicked.connect(self._all_skills_all)
+        header.addWidget(self.all_skills_all_btn)
+
+        self.select_all_btn = QPushButton(t('pal_editor.select_all_btn'))
+        self.select_all_btn.setFixedHeight(24)
+        self.select_all_btn.setStyleSheet(
+            'QPushButton { background: rgba(56,189,248,0.12); color: #38BDF8; border: 1px solid rgba(56,189,248,0.25); border-radius: 5px; padding: 4px 10px; font-weight: 600; font-size: 10px; }'
+            'QPushButton:hover { background: rgba(56,189,248,0.25); border-color: rgba(56,189,248,0.5); color: #FFFFFF; }'
+        )
+        self.select_all_btn.setCursor(Qt.PointingHandCursor)
+        self.select_all_btn.setToolTip(t('pal_editor.select_all_hint'))
+        self.select_all_btn.clicked.connect(self._on_select_all)
+        header.addWidget(self.select_all_btn)
+
         self.multi_toolbar = QFrame()
         self.multi_toolbar.setObjectName('multiToolbar')
         self.multi_toolbar.setStyleSheet('QFrame#multiToolbar { background: transparent; border: none; }')
@@ -139,6 +163,7 @@ class GpsEditorDialog(FramelessDialog):
             mt_layout.addWidget(btn)
         _mt_btn('multi_max_btn', 'pal_editor.bulk_max_btn', self._on_bulk_max_selected, 'A78BFA')
         _mt_btn('multi_buff_btn', 'pal_editor.bulk_max_buff_btn', self._on_bulk_max_buff_selected, 'F97316')
+        _mt_btn('multi_skills_btn', 'pal_editor.bulk_skills_btn', self._on_bulk_all_skills_selected, 'F59E0B')
         _mt_btn('multi_heal_btn', 'pal_editor.bulk_heal_btn', self._on_bulk_heal_selected, '4ADE80')
         _mt_btn('multi_rename_btn', 'pal_editor.bulk_rename_btn', self._on_bulk_rename_selected, 'FBBF24')
         _mt_btn('multi_delete_btn', 'pal_editor.bulk_delete_btn', self._on_bulk_delete_selected, 'FB7185')
@@ -247,6 +272,7 @@ class GpsEditorDialog(FramelessDialog):
             slot.pal_data = pal
             slot.update_display()
             slot.set_selected(False)
+        self._apply_multi_highlights()
         from PySide6.QtWidgets import QApplication
         QApplication.processEvents()
 
@@ -308,9 +334,8 @@ class GpsEditorDialog(FramelessDialog):
         if mods & Qt.ShiftModifier and self._multi_select_anchor:
             anchor = self._multi_select_anchor
             self._clear_multi_selection(update_toolbar=False)
-            lo, hi = min(anchor[1], idx), max(anchor[1], idx)
-            for i in range(lo, hi + 1):
-                ai = start + i
+            lo, hi = min(anchor[1], abs_idx), max(anchor[1], abs_idx)
+            for ai in range(lo, hi + 1):
                 stype = 'gps' if self.pals.get(ai) else 'gps_empty'
                 self._toggle_multi(stype, ai, force_add=True)
             self._multi_select_anchor = ('gps', abs_idx)
@@ -342,20 +367,40 @@ class GpsEditorDialog(FramelessDialog):
             self.pal_info.set_clicked_pal(None)
             self.pal_info.clear_hover()
 
+    def _set_slot_multi_highlight(self, abs_idx, on):
+        rel = abs_idx - (self.current_page - 1) * PAGE_SIZE
+        if 0 <= rel < len(self.slots):
+            self.slots[rel].set_selected_multi(on)
+
+    def _apply_multi_highlights(self):
+        start = (self.current_page - 1) * PAGE_SIZE
+        for rel, slot in enumerate(self.slots):
+            abs_idx = start + rel
+            selected = ('gps', abs_idx) in self._multi_selected or ('gps_empty', abs_idx) in self._multi_selected
+            slot.set_selected_multi(selected)
+
+    def _on_select_all(self):
+        all_keys = {('gps', abs_idx) for abs_idx in self.pals}
+        if not all_keys:
+            return
+        if all_keys.issubset(self._multi_selected):
+            self._clear_multi_selection()
+            return
+        self._multi_selected = set(all_keys)
+        self._multi_select_anchor = None
+        self._apply_multi_highlights()
+        self._update_multi_toolbar()
+
     def _toggle_multi(self, slot_type, abs_idx, force_add=False):
         key = (slot_type, abs_idx)
         if key in self._multi_selected:
             if force_add:
                 return
             self._multi_selected.discard(key)
-            rel = abs_idx % PAGE_SIZE
-            if rel < len(self.slots):
-                self.slots[rel].set_selected_multi(False)
+            self._set_slot_multi_highlight(abs_idx, False)
         else:
             self._multi_selected.add(key)
-            rel = abs_idx % PAGE_SIZE
-            if rel < len(self.slots):
-                self.slots[rel].set_selected_multi(True)
+            self._set_slot_multi_highlight(abs_idx, True)
         self._update_multi_toolbar()
 
     def _clear_multi_selection(self, update_toolbar=True):
@@ -378,12 +423,14 @@ class GpsEditorDialog(FramelessDialog):
             self.restore_all_btn.setVisible(False)
             self.max_all_btn.setVisible(False)
             self.max_buff_all_btn.setVisible(False)
+            self.all_skills_all_btn.setVisible(False)
             self.save_btn.setVisible(False)
         else:
             self.multi_toolbar.setVisible(False)
             self.restore_all_btn.setVisible(True)
             self.max_all_btn.setVisible(True)
             self.max_buff_all_btn.setVisible(True)
+            self.all_skills_all_btn.setVisible(True)
             self.save_btn.setVisible(True)
 
     def _gather_selected_pals(self):
@@ -546,6 +593,50 @@ class GpsEditorDialog(FramelessDialog):
         self._clear_multi_selection()
         self._mark_modified()
 
+    def _on_bulk_all_skills_selected(self):
+        pals = self._gather_selected_pals()
+        if not pals:
+            return
+        count = self._apply_all_skills_to(pals)
+        if count is None:
+            return
+        self._update_page()
+        self._refresh_info()
+        self._clear_multi_selection()
+        self._mark_modified()
+        show_information(self, t('edit_pals.all_skills_all'), t('edit_pals.all_skills_all_done', count=count))
+
+    def _apply_all_skills_to(self, pals):
+        cheat = PalFrame._cheat_mode
+        key = 'edit_pals.all_skills_all_confirm_cheat' if cheat else 'edit_pals.all_skills_all_confirm'
+        if not show_question(self, t('edit_pals.all_skills_all'), t(key, n=len(pals))):
+            return None
+        passive_keys = _all_passive_skill_keys() if cheat else None
+        count = 0
+        for pal in pals:
+            tr = _get_raw_from_item(pal)
+            if not tr:
+                continue
+            try:
+                _apply_all_skills_raw(tr, passive_keys)
+            except Exception as e:
+                print(f'GPS all-skills error: {e}')
+                continue
+            count += 1
+        return count
+
+    def _all_skills_all(self):
+        pals = list(self.pals.values())
+        if not pals:
+            return
+        count = self._apply_all_skills_to(pals)
+        if count is None:
+            return
+        self._update_page()
+        self._refresh_info()
+        self._mark_modified()
+        show_information(self, t('edit_pals.all_skills_all'), t('edit_pals.all_skills_all_done', count=count))
+
     def _on_bulk_rename_selected(self):
         pals = self._gather_selected_pals()
         if not pals:
@@ -607,13 +698,9 @@ class GpsEditorDialog(FramelessDialog):
                     self._clear_gps_instance(abs_idx)
                     del self.pals[abs_idx]
                     break
-            rel = abs_idx % PAGE_SIZE
-            if rel < len(self.slots):
-                self.slots[rel].pal_data = None
-                self.slots[rel].update_display()
-                self.slots[rel].set_selected(False)
         self._clear_multi_selection()
         self._clear_selection()
+        self._update_page()
         self._mark_modified()
 
     def _on_bulk_add_selected(self):
@@ -738,7 +825,14 @@ class GpsEditorDialog(FramelessDialog):
             fps, _ = QFileDialog.getOpenFileNames(self, t('edit_pals.import_pal'), '', 'Pal Files (*.pstpal *.json)')
             if not fps:
                 return
+            target = abs_idx
+            imported_count = 0
+            out_of_space = False
             for fp in fps:
+                target = self._next_free_gps_slot(target)
+                if target is None:
+                    out_of_space = True
+                    break
                 try:
                     imported = _import_pal_raw(fp) if fp.endswith('.pstpal') else _gps_json.load(fp)
                 except Exception as e:
@@ -746,14 +840,20 @@ class GpsEditorDialog(FramelessDialog):
                     continue
                 cid = extract_value(imported, 'CharacterID', 'None')
                 if cid == 'None' or not cid:
+                    show_warning(self, t('edit_pals.import_pal'), f'Invalid pal file: {os.path.basename(fp)}')
                     continue
-                if self._set_gps_slot(abs_idx, imported):
+                if self._set_gps_slot(target, imported):
                     from palworld_aio.managers.func_manager import _restore_one_pal
                     _restore_one_pal(imported)
-                    self.pals[abs_idx] = {'data': imported}
+                    self.pals[target] = {'data': imported}
                     self._mark_modified()
+                    imported_count += 1
+                    target += 1
             self._update_page()
-            show_information(self, t('edit_pals.import_pal'), t('edit_pals.import_pal.success', count=len(fps)))
+            if out_of_space:
+                show_warning(self, t('edit_pals.import_pal'), t('edit_pals.import_pal_no_space', count=imported_count))
+            else:
+                show_information(self, t('edit_pals.import_pal'), t('edit_pals.import_pal.success', count=imported_count))
 
         elif action == 'boss_toggle' and raw:
             cid = extract_value(raw, 'CharacterID', '')
@@ -799,6 +899,15 @@ class GpsEditorDialog(FramelessDialog):
             self._update_page()
             self._refresh_info()
             self._mark_modified()
+
+    def _next_free_gps_slot(self, start):
+        total = getattr(self, 'total_slots', 0)
+        if total <= 0:
+            return None
+        for abs_idx in list(range(start, total)) + list(range(0, min(start, total))):
+            if abs_idx not in self.pals:
+                return abs_idx
+        return None
 
     def _set_gps_slot(self, abs_idx, raw_data):
         if not constants.gps_gvas:
