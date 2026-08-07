@@ -1522,6 +1522,8 @@ class _BasePalIcon(QFrame):
                 self.rightClicked.emit(self.slot_index, 'import_pal')
             elif key == 'clone':
                 self.rightClicked.emit(self.slot_index, 'clone')
+            elif key == 'clone_bulk':
+                self.rightClicked.emit(self.slot_index, 'clone_bulk')
             elif key == 'bulk_rename':
                 self.rightClicked.emit(self.slot_index, 'bulk_rename')
             elif key == 'bulk_heal':
@@ -2261,6 +2263,8 @@ class BasePalsContentWidget(QFrame):
                 show_warning(self, t('edit_pals.ctx.learn_all_moves'), t('edit_pals.learn_all_fail'))
         elif action == 'learnt_skills':
             _show_learned_moves_dialog(raw, self)
+        elif action == 'clone_bulk':
+            show_warning(self, t('edit_pals.ctx.clone_bulk'), t('edit_pals.clone_bulk_base_unsupported'))
         elif action == 'clone':
             from palworld_aio.editor.edit_pals import _get_raw_from_item
             import uuid as _uuid_mod
