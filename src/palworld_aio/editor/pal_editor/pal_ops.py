@@ -148,6 +148,64 @@ def _apply_all_skills_raw(raw, passive_keys=None):
     if passive_keys:
         raw['PassiveSkillList'] = {'array_type': 'NameProperty', 'id': None, 'value': {'values': list(passive_keys)}, 'type': 'ArrayProperty'}
 
+PAL_SORT_MODES = (
+    ('paldeck', 'edit_pals.sort.paldeck'),
+    ('level', 'edit_pals.sort.level'),
+    ('name', 'edit_pals.sort.name'),
+    ('rarity', 'edit_pals.sort.rarity'),
+)
+
+def _sort_base_cid(cid):
+    base = (cid or '').lower()
+    for pfx in ('boss_', 'predator_', 'gym_', 'raid_', 'tower_'):
+        if base.startswith(pfx):
+            return base[len(pfx):]
+    return base
+
+def pal_sort_key(raw, mode):
+    from .legacy_frame import PalFrame
+    if not isinstance(raw, dict):
+        return (9999, '', 0)
+    cid = str(extract_value(raw, 'CharacterID', '') or '')
+    base_cid = _sort_base_cid(cid)
+    try:
+        level = int(extract_value(raw, 'Level', 1) or 1)
+    except (TypeError, ValueError):
+        level = 1
+    if mode == 'level':
+        return (-level, base_cid, 0)
+    if mode == 'name':
+        nick = str(extract_value(raw, 'NickName', '') or '')
+        if not nick:
+            PalFrame._load_maps()
+            from palworld_aio.utils import resolve_name
+            nick = resolve_name(cid, PalFrame._NAMEMAP) or cid
+        return (nick.lower(), base_cid, -level)
+    if mode == 'rarity':
+        is_lucky = bool(extract_value(raw, 'IsRarePal', False))
+        is_boss = cid.upper().startswith('BOSS_')
+        rarity = 2 if is_lucky else (1 if is_boss else 0)
+        ivs = 0
+        for k in ('Talent_HP', 'Talent_Shot', 'Talent_Defense'):
+            try:
+                ivs += int(extract_value(raw, k, 0) or 0)
+            except (TypeError, ValueError):
+                pass
+        return (-rarity, -ivs, -level)
+    PalFrame._load_maps()
+    zukan = PalFrame._PAL_ZUKAN.get(base_cid)
+    if not isinstance(zukan, (int, float)) or zukan <= 0:
+        zukan = 9999
+    return (zukan, base_cid, -level)
+
+def set_pal_slot_index(raw, slot_index):
+    if not isinstance(raw, dict):
+        return
+    slot = raw.get('SlotId', {}).get('value', {}) if isinstance(raw.get('SlotId'), dict) else {}
+    si = slot.get('SlotIndex') if isinstance(slot, dict) else None
+    if isinstance(si, dict):
+        si['value'] = slot_index
+
 def _toggle_boss_raw(raw, enable):
     cid = extract_value(raw, 'CharacterID', '')
     if enable:

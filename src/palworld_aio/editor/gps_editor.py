@@ -18,6 +18,7 @@ from palworld_aio.editor.pal_editor.pal_ops import (
     _toggle_lucky_raw, _toggle_awake_raw, _toggle_dna_raw, _set_fav_raw,
     _learn_all_skills_raw, _set_work_suitability, creation_nickname,
     _all_passive_skill_keys, _apply_all_skills_raw,
+    PAL_SORT_MODES, pal_sort_key, set_pal_slot_index,
 )
 from palworld_aio.editor.pal_editor import data as _gps_data
 from palworld_aio.utils import calculate_max_hp, safe_nested_get, resolve_name
@@ -130,6 +131,17 @@ class GpsEditorDialog(FramelessDialog):
         self.all_skills_all_btn.setToolTip(t('edit_pals.all_skills_all_hint'))
         self.all_skills_all_btn.clicked.connect(self._all_skills_all)
         header.addWidget(self.all_skills_all_btn)
+
+        self.sort_btn = QPushButton(t('edit_pals.sort_btn'))
+        self.sort_btn.setFixedHeight(24)
+        self.sort_btn.setStyleSheet(
+            'QPushButton { background: rgba(148,163,184,0.12); color: #94A3B8; border: 1px solid rgba(148,163,184,0.25); border-radius: 5px; padding: 4px 10px; font-weight: 600; font-size: 10px; }'
+            'QPushButton:hover { background: rgba(148,163,184,0.25); border-color: rgba(148,163,184,0.5); color: #FFFFFF; }'
+        )
+        self.sort_btn.setCursor(Qt.PointingHandCursor)
+        self.sort_btn.setToolTip(t('edit_pals.sort_hint'))
+        self.sort_btn.clicked.connect(self._on_sort_clicked)
+        header.addWidget(self.sort_btn)
 
         self.select_all_btn = QPushButton(t('pal_editor.select_all_btn'))
         self.select_all_btn.setFixedHeight(24)
@@ -424,6 +436,7 @@ class GpsEditorDialog(FramelessDialog):
             self.max_all_btn.setVisible(False)
             self.max_buff_all_btn.setVisible(False)
             self.all_skills_all_btn.setVisible(False)
+            self.sort_btn.setVisible(False)
             self.save_btn.setVisible(False)
         else:
             self.multi_toolbar.setVisible(False)
@@ -431,6 +444,7 @@ class GpsEditorDialog(FramelessDialog):
             self.max_all_btn.setVisible(True)
             self.max_buff_all_btn.setVisible(True)
             self.all_skills_all_btn.setVisible(True)
+            self.sort_btn.setVisible(True)
             self.save_btn.setVisible(True)
 
     def _gather_selected_pals(self):
@@ -894,6 +908,60 @@ class GpsEditorDialog(FramelessDialog):
             self._update_page()
             self._refresh_info()
             self._mark_modified()
+
+    def _on_sort_clicked(self):
+        if not self.pals:
+            return
+        from palworld_aio.widgets.scrollable_context_menu import ScrollableContextMenu
+        popup = ScrollableContextMenu(self)
+        for key, label_key in PAL_SORT_MODES:
+            popup.add_item(key, t(label_key))
+        mode = popup.exec_(self.sort_btn.mapToGlobal(self.sort_btn.rect().bottomLeft()))
+        if not mode:
+            return
+        self._sort_pals(mode)
+
+    def _sort_pals(self, mode):
+        if not constants.gps_gvas:
+            return
+        arr = constants.gps_gvas.properties.get('SaveParameterArray', {}).get('value', {}).get('values', [])
+        if not arr:
+            return
+        entries = []
+        for abs_idx in sorted(self.pals):
+            raw = _get_raw_from_item(self.pals[abs_idx])
+            if not isinstance(raw, dict):
+                continue
+            inst = None
+            if abs_idx < len(arr) and isinstance(arr[abs_idx], dict):
+                inst = copy.deepcopy(arr[abs_idx].get('InstanceId'))
+            entries.append((copy.deepcopy(raw), inst))
+        if not entries:
+            return
+        entries.sort(key=lambda e: pal_sort_key(e[0], mode))
+        for idx in range(len(arr)):
+            self._clear_gps_instance(idx)
+        self.pals = {}
+        placed = 0
+        for idx, (raw, inst) in enumerate(entries):
+            if idx >= len(arr) or not isinstance(arr[idx], dict):
+                break
+            sp = arr[idx].get('SaveParameter', {}).get('value', {})
+            if not isinstance(sp, dict):
+                continue
+            sp.clear()
+            sp.update(raw)
+            set_pal_slot_index(sp, idx)
+            if inst is not None:
+                arr[idx]['InstanceId'] = inst
+            self.pals[idx] = {'data': sp}
+            placed += 1
+        self.current_page = 1
+        self._clear_multi_selection()
+        self._clear_selection()
+        self._update_page()
+        self._mark_modified()
+        show_information(self, t('edit_pals.sort_btn'), t('edit_pals.sort_done', count=placed))
 
     def _next_free_gps_slot(self, start):
         total = getattr(self, 'total_slots', 0)
