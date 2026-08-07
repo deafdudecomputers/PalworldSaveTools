@@ -663,11 +663,6 @@ class GpsEditorDialog(FramelessDialog):
         elif action == 'delete' and raw:
             if not show_question(self, t('edit_pals.confirm_delete'), 'Delete this GPS pal?'):
                 return
-            for k in list(raw.keys()):
-                if k != 'SlotId':
-                    del raw[k]
-            raw['CharacterID'] = {'id': None, 'type': 'NameProperty', 'value': 'None'}
-            raw['Level'] = {'id': None, 'type': 'ByteProperty', 'value': {'type': 'None', 'value': 1}}
             self._clear_gps_instance(abs_idx)
             self.pals.pop(abs_idx, None)
             self.slots[slot_idx].pal_data = None
@@ -823,6 +818,13 @@ class GpsEditorDialog(FramelessDialog):
             return
         arr = constants.gps_gvas.properties.get('SaveParameterArray', {}).get('value', {}).get('values', [])
         if abs_idx < len(arr) and isinstance(arr[abs_idx], dict):
+            sp = arr[abs_idx].get('SaveParameter', {}).get('value', {})
+            if isinstance(sp, dict):
+                for k in list(sp.keys()):
+                    if k != 'SlotId':
+                        del sp[k]
+                sp['CharacterID'] = {'id': None, 'type': 'NameProperty', 'value': 'None'}
+                sp['Level'] = {'id': None, 'type': 'ByteProperty', 'value': {'type': 'None', 'value': 1}}
             inst = arr[abs_idx].get('InstanceId')
             if isinstance(inst, dict):
                 empty = '00000000-0000-0000-0000-000000000000'

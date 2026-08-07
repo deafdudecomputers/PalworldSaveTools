@@ -616,6 +616,28 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
             self._bulk_heal_pal(sender)
         elif action == 'bulk_max_buff':
             self._bulk_max_buff_pal(sender)
+    def _clear_dps_slot(self, abs_idx):
+        if not self.dps_gvas:
+            return
+        arr = self.dps_gvas.properties.get('SaveParameterArray', {}).get('value', {}).get('values', [])
+        if abs_idx >= len(arr) or not isinstance(arr[abs_idx], dict):
+            return
+        sp = arr[abs_idx].get('SaveParameter', {}).get('value', {})
+        if isinstance(sp, dict):
+            for k in list(sp.keys()):
+                if k != 'SlotId':
+                    del sp[k]
+            sp['CharacterID'] = {'id': None, 'type': 'NameProperty', 'value': 'None'}
+            sp['Level'] = {'id': None, 'type': 'ByteProperty', 'value': {'type': 'None', 'value': 1}}
+        inst = arr[abs_idx].get('InstanceId')
+        if isinstance(inst, dict):
+            empty_guid = '00000000-0000-0000-0000-000000000000'
+            inst_val = inst.get('value', {})
+            if isinstance(inst_val, dict):
+                inst_val['PlayerUId'] = {'struct_type': 'Guid', 'struct_id': empty_guid, 'id': None, 'value': empty_guid, 'type': 'StructProperty'}
+                inst_val['InstanceId'] = {'struct_type': 'Guid', 'struct_id': empty_guid, 'id': None, 'value': empty_guid, 'type': 'StructProperty'}
+                inst_val['DebugName'] = {'id': None, 'type': 'StrProperty', 'value': ''}
+
     def _delete_dps_pal(self, slot_index):
         abs_idx = (self.current_box_index - 1) * 30 + slot_index
         target = self.dps_pals.get(abs_idx)
@@ -625,22 +647,7 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
         reply = show_question(self, t('edit_pals.confirm_delete'), 'Delete this DPS pal?')
         if not reply:
             return
-        for k in list(raw.keys()):
-            if k != 'SlotId':
-                del raw[k]
-        raw['CharacterID'] = {'id': None, 'type': 'NameProperty', 'value': 'None'}
-        raw['Level'] = {'id': None, 'type': 'ByteProperty', 'value': {'type': 'None', 'value': 1}}
-        if self.dps_gvas:
-            arr = self.dps_gvas.properties.get('SaveParameterArray', {}).get('value', {}).get('values', [])
-            if abs_idx < len(arr) and isinstance(arr[abs_idx], dict):
-                inst = arr[abs_idx].get('InstanceId')
-                if isinstance(inst, dict):
-                    empty_guid = '00000000-0000-0000-0000-000000000000'
-                    inst_val = inst.get('value', {})
-                    if isinstance(inst_val, dict):
-                        inst_val['PlayerUId'] = {'struct_type': 'Guid', 'struct_id': empty_guid, 'id': None, 'value': empty_guid, 'type': 'StructProperty'}
-                        inst_val['InstanceId'] = {'struct_type': 'Guid', 'struct_id': empty_guid, 'id': None, 'value': empty_guid, 'type': 'StructProperty'}
-                        inst_val['DebugName'] = {'id': None, 'type': 'StrProperty', 'value': ''}
+        self._clear_dps_slot(abs_idx)
         del self.dps_pals[abs_idx]
         self.palbox_slots[slot_index].pal_data = None
         self.palbox_slots[slot_index].update_display()
@@ -1401,19 +1408,9 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
             self.palbox_pal_dict.pop(abs_idx, None)
         for abs_idx in removed_dps:
             self.dps_pals.pop(abs_idx, None)
-            if self.dps_gvas:
-                arr = self.dps_gvas.properties.get('SaveParameterArray', {}).get('value', {}).get('values', [])
-                if abs_idx < len(arr) and isinstance(arr[abs_idx], dict):
-                    inst = arr[abs_idx].get('InstanceId')
-                    if isinstance(inst, dict):
-                        empty_guid = '00000000-0000-0000-0000-000000000000'
-                        inst_val = inst.get('value', {})
-                        if isinstance(inst_val, dict):
-                            inst_val['PlayerUId'] = {'struct_type': 'Guid', 'struct_id': empty_guid, 'id': None, 'value': empty_guid, 'type': 'StructProperty'}
-                            inst_val['InstanceId'] = {'struct_type': 'Guid', 'struct_id': empty_guid, 'id': None, 'value': empty_guid, 'type': 'StructProperty'}
-                            inst_val['DebugName'] = {'id': None, 'type': 'StrProperty', 'value': ''}
-            if self.dps_pals and hasattr(self, '_save_dps'):
-                self._save_dps(force=True)
+            self._clear_dps_slot(abs_idx)
+        if removed_dps and self.dps_gvas:
+            self._save_dps(force=True)
         self._clear_multi_selection()
         self._clicked_pal = None
         self.selected_pal_slot = None

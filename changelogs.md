@@ -10,6 +10,7 @@
 - **Save errors no longer hide behind "Saved successfully"** — if writing the save fails, a full error screen with details and a copy button appears instead of a false success message.
 - **Importing bases into a real save no longer fails** — the support check that treated normally-placed structures as unsupported has been relaxed, so existing bases import without being blocked.
 - **Newer work records now decode correctly** — the work entries the game creates for multi-recipe workbenches and fish ponds used to show up as unreadable raw data. They now load like any other work and roundtrip byte-for-byte, so editing, validation, and reference checks see every work in the save.
+- **Deleted pals stay deleted** — deleting a pal from Global Pal Storage or DPS storage looked like it worked, but the pal was back, fully intact, the next time you loaded the save. The slot was only half-cleared, so the pal's data was still sitting in the file and got read straight back in. Deleting now wipes the slot properly, whether you delete one pal, use the right-click delete, or delete a whole selection at once. Emptying DPS storage completely also failed to save at all, and now does.
 - Bumped version to 2.3.3
 
 #2.3.2
