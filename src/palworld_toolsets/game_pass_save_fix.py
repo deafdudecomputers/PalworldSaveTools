@@ -196,7 +196,8 @@ class GamePassSaveFixWidget(QWidget):
     def get_save_steam(self):
         self.raise_()
         self.activateWindow()
-        folder = QFileDialog.getExistingDirectory(self, t('xgp.ui.select_steam_folder'))
+        from common import get_preferred_save_path
+        folder = QFileDialog.getExistingDirectory(self, t('xgp.ui.select_steam_folder'), get_preferred_save_path())
         if not folder:
             return
         self.conversion_direction = 'steam_to_xgp'

@@ -2,7 +2,7 @@ import os
 import sys
 import traceback
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QFrame, QScrollArea, QSizePolicy, QSpacerItem, QGridLayout, QApplication, QDialog, QStylePainter, QStyleOptionButton, QStyle
-from PySide6.QtCore import Qt, QSize, Signal, QPropertyAnimation, QEasingCurve, QRectF, QObject, QEvent
+from PySide6.QtCore import Qt, QSize, Signal, QPropertyAnimation, QEasingCurve, QRectF, QObject, QEvent, QTimer
 from PySide6.QtGui import QPixmap, QIcon, QFont, QCursor, QDragEnterEvent, QDropEvent, QDragLeaveEvent, QPainter, QColor, QPen, QPainterPath, QFontMetrics, QFontDatabase, QGuiApplication
 from i18n import t
 from loading_manager import show_critical
@@ -450,6 +450,9 @@ class ToolsTab(QWidget):
         if constants.loaded_level_json is None:
             return
         from palworld_aio.managers.save_manager import save_manager
+        from common import is_restorable_save_dir
+        prev = constants.current_save_path
+        self._pending_save_restore = prev if is_restorable_save_dir(prev) else None
         save_manager._reset_state()
         constants.invalidate_container_lookup()
         self._save_status_label.setText(t('dashboard.no_save') if t else 'No Save Loaded')
@@ -459,6 +462,24 @@ class ToolsTab(QWidget):
             self._stats_frame.setVisible(False)
         for key in self._stat_cards:
             self._stat_cards[key].setText('0')
+    def _restore_save_session(self):
+        path = getattr(self, '_pending_save_restore', None)
+        self._pending_save_restore = None
+        if not path or constants.loaded_level_json is not None:
+            return
+        from common import is_restorable_save_dir
+        if not is_restorable_save_dir(path):
+            return
+        from palworld_aio.managers.save_manager import save_manager
+        save_manager.load_save(os.path.join(path, 'Level.sav'), parent=self.window())
+    def _arm_save_restore(self, dialog):
+        if dialog is None:
+            QTimer.singleShot(0, self._restore_save_session)
+            return
+        if isinstance(dialog, QDialog):
+            dialog.finished.connect(lambda _r: self._restore_save_session())
+        else:
+            dialog.destroyed.connect(lambda: self._restore_save_session())
     def _run_converting_tool(self, index):
         self._reset_save_session()
         try:
@@ -483,6 +504,7 @@ class ToolsTab(QWidget):
                 if not hasattr(self, '_active_dialogs'):
                     self._active_dialogs = []
                 self._active_dialogs.append(dialog)
+            self._arm_save_restore(dialog)
         except Exception as e:
             print(f'Error running converting tool {index}: {e}')
     def _run_management_tool(self, index):
@@ -500,6 +522,7 @@ class ToolsTab(QWidget):
                 if not hasattr(self, '_active_dialogs'):
                     self._active_dialogs = []
                 self._active_dialogs.append(dialog)
+            self._arm_save_restore(dialog)
         except Exception as e:
             print(f'Error running management tool {index}: {e}')
     def _animate_dialog_slide_in(self, dialog):

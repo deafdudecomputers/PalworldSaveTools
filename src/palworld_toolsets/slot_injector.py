@@ -360,7 +360,8 @@ class SlotNumUpdaterApp(QDialog):
         self.save_folder = tmp
         self.load_selected_save()
     def browse_file(self):
-        file, _ = QFileDialog.getOpenFileName(self, t('slot.select_level_sav_title'), '', 'SAV Files(Level.sav)')
+        from common import get_preferred_save_path
+        file, _ = QFileDialog.getOpenFileName(self, t('slot.select_level_sav_title'), get_preferred_save_path(), 'SAV Files(Level.sav)')
         if file:
             self.file_entry.setText(file)
             self.save_folder = os.path.dirname(file)
