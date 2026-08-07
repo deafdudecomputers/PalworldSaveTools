@@ -108,6 +108,7 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
             slot.clicked.connect(partial(self._on_party_slot_clicked, i))
             slot.rightClicked.connect(self._on_slot_right_clicked)
             slot.entered.connect(partial(self._on_party_slot_entered, i))
+            slot.slotDropped.connect(self._on_party_slot_dropped)
             slot.left.connect(self._on_party_slot_left)
             party_layout.addWidget(slot)
             self.party_slots.append(slot)
@@ -238,6 +239,7 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
                 slot.clicked.connect(partial(self._on_palbox_slot_clicked, idx))
                 slot.rightClicked.connect(self._on_slot_right_clicked)
                 slot.entered.connect(partial(self._on_palbox_slot_entered, idx))
+                slot.slotDropped.connect(self._on_palbox_slot_dropped)
                 slot.left.connect(self._on_palbox_slot_left)
                 self.grid_layout.addWidget(slot, row, col)
                 self.palbox_slots.append(slot)
@@ -878,6 +880,96 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
         self._update_dashboard_stats()
         self._increment_pal_count()
         show_information(self, 'Clone Pal', 'Pal cloned successfully.')
+    def _on_party_slot_dropped(self, src_idx, dst_idx):
+        if self._move_container_pal(self.party_pals, self.party_container, src_idx, dst_idx):
+            self._after_slot_move()
+
+    def _on_palbox_slot_dropped(self, src_rel, dst_rel):
+        start = (self.current_box_index - 1) * 30
+        src, dst = start + src_rel, start + dst_rel
+        if self._palbox_mode == 'dps':
+            moved = self._swap_dps_slots(src, dst)
+        else:
+            moved = self._move_container_pal(self.palbox_pal_dict, self.palbox_container, src, dst)
+        if moved:
+            if self._palbox_mode == 'dps':
+                self._mark_dps_modified()
+            self._after_slot_move()
+
+    def _after_slot_move(self):
+        self._clear_multi_selection()
+        self._clicked_pal = None
+        self.selected_pal_slot = None
+        self.pal_info.set_clicked_pal(None)
+        self._update_party_slots()
+        self._update_palbox_page()
+        self._update_box_label()
+        constants.dirty = True
+
+    def _container_slot_entries(self, container_id):
+        if not container_id or not constants.loaded_level_json:
+            return []
+        target = str(container_id).replace('-', '').lower()
+        wsd = constants.loaded_level_json['properties']['worldSaveData']['value']
+        for cont in safe_nested_get(wsd, ['CharacterContainerSaveData', 'value'], []) or []:
+            cid = safe_nested_get(cont, ['key', 'ID', 'value'])
+            if cid and str(cid).replace('-', '').lower() == target:
+                return safe_nested_get(cont, ['value', 'Slots', 'value', 'values'], []) or []
+        return []
+
+    def _move_container_pal(self, pal_dict, container_id, src, dst):
+        if src == dst or src not in pal_dict:
+            return False
+        src_pal = pal_dict[src]
+        dst_pal = pal_dict.get(dst)
+        moves = {self._instance_key(src_pal): dst}
+        if dst_pal is not None:
+            moves[self._instance_key(dst_pal)] = src
+        for entry in self._container_slot_entries(container_id):
+            inst = safe_nested_get(entry, ['RawData', 'value', 'instance_id'])
+            key = str(inst).replace('-', '').lower() if inst else ''
+            if key in moves:
+                si = entry.get('SlotIndex')
+                if isinstance(si, dict):
+                    si['value'] = moves[key]
+        for pal, new_idx in ((src_pal, dst), (dst_pal, src)):
+            if pal is None:
+                continue
+            raw = _get_raw_from_item(pal)
+            si = safe_nested_get(raw, ['SlotId', 'value', 'SlotIndex'])
+            if isinstance(si, dict):
+                si['value'] = new_idx
+        pal_dict[dst] = src_pal
+        if dst_pal is not None:
+            pal_dict[src] = dst_pal
+        else:
+            pal_dict.pop(src, None)
+        return True
+
+    @staticmethod
+    def _instance_key(pal):
+        inst = safe_nested_get(pal, ['key', 'InstanceId', 'value'])
+        return str(inst).replace('-', '').lower() if inst else ''
+
+    def _swap_dps_slots(self, a, b):
+        if a == b or not self.dps_gvas:
+            return False
+        arr = self.dps_gvas.properties.get('SaveParameterArray', {}).get('value', {}).get('values', [])
+        if not (0 <= a < len(arr) and 0 <= b < len(arr)):
+            return False
+        arr[a], arr[b] = arr[b], arr[a]
+        for idx in (a, b):
+            sp = arr[idx].get('SaveParameter', {}).get('value', {})
+            cid = extract_value(sp, 'CharacterID', 'None') if isinstance(sp, dict) else 'None'
+            if not cid or cid == 'None':
+                self.dps_pals.pop(idx, None)
+                continue
+            si = safe_nested_get(sp, ['SlotId', 'value', 'SlotIndex'])
+            if isinstance(si, dict):
+                si['value'] = idx
+            self.dps_pals[idx] = {'data': sp}
+        return True
+
     def _export_pal(self, sender):
         if not hasattr(sender, 'pal_data') or sender.pal_data is None:
             return

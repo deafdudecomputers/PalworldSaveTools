@@ -96,3 +96,7 @@ PST_standalone*.zip
 # Rust migration workspace + web frontend (developed on the rust/tauri branch)
 /rust/
 /web/
+
+# Pal exports created while testing
+*.pstpal
+*.pstbase

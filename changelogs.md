@@ -10,6 +10,7 @@
 - **Save errors no longer hide behind "Saved successfully"** — if writing the save fails, a full error screen with details and a copy button appears instead of a false success message.
 - **Importing bases into a real save no longer fails** — the support check that treated normally-placed structures as unsupported has been relaxed, so existing bases import without being blocked.
 - **Newer work records now decode correctly** — the work entries the game creates for multi-recipe workbenches and fish ponds used to show up as unreadable raw data. They now load like any other work and roundtrip byte-for-byte, so editing, validation, and reference checks see every work in the save.
+- **Drag pals between slots** — you can now pick a pal up and drop it on another slot to rearrange your storage. Dropping it on an empty slot moves it there, dropping it on another pal swaps the two. Works in Global Pal Storage, the palbox, DPS storage and your party, and the new positions are saved so the game sees the same order. Dragging is limited to the grid you started in, so a pal cannot accidentally be dropped into a different storage.
 - Bumped version to 2.3.3
 
 #2.3.2

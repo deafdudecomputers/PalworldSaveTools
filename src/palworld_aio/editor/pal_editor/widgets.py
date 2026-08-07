@@ -7,6 +7,9 @@ from palworld_aio import constants
 from resource_resolver import resource_path
 from palworld_aio.ui.chrome.styles import TOOLTIP_STYLE
 
+PAL_SLOT_MIME = 'application/x-pst-pal-slot'
+
+
 class FramelessDialog(QDialog):
 
     def __init__(self, title_key='edit_pals.title', parent=None):
