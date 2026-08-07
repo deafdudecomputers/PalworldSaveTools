@@ -1,3 +1,4 @@
+import copy
 import os
 from functools import partial
 from PySide6.QtWidgets import QApplication, QDialog, QFrame, QGridLayout, QHBoxLayout, QInputDialog, QLabel, QListWidget, QListWidgetItem, QPushButton, QVBoxLayout, QWidget
@@ -15,7 +16,7 @@ from palsav import json_tools
 from . import data as _data
 from . import icons as _icons
 from .data import _ensure_passive_data, _ensure_friendship_thresholds, _ensure_skill_data
-from .pal_ops import _get_effective_work_suitabilities, _set_work_suitability, _learn_all_skills_raw, _toggle_boss_raw, _toggle_lucky_raw, _toggle_predator_raw
+from .pal_ops import _get_effective_work_suitabilities, _set_work_suitability, _learn_all_skills_raw, _toggle_boss_raw, _toggle_lucky_raw, _toggle_predator_raw, _get_raw_from_item
 from .widgets import PassiveEffectOverlay
 from .legacy_frame import PalFrame
 from .icons import _strip_prefix_label
@@ -215,6 +216,53 @@ class PalInfoHandlerMixin:
             fp = thr[rank] if rank < len(thr) else 200000
             self._raw['FriendshipPoint'] = {'id': None, 'type': 'IntProperty', 'value': fp}
             self._recalc_hp()
+
+    def _recalc_hp_for(self, raw):
+        if not raw:
+            return
+        cid = extract_value(raw, 'CharacterID', '')
+        base = _data.get_pal_base_data(cid)
+        if not base:
+            return
+        value = int(extract_value(raw, 'Level', 1))
+        talent_hp = extract_value(raw, 'Talent_HP', 0)
+        rank_hp = extract_value(raw, 'Rank_HP', 0)
+        is_boss = cid.upper().startswith('BOSS_')
+        is_lucky = extract_value(raw, 'IsRarePal', False)
+        trust_points = extract_value(raw, 'FriendshipPoint', 0)
+        friendship_rank = 0
+        thr = _ensure_friendship_thresholds()
+        for r in range(len(thr) - 1, 0, -1):
+            if int(trust_points) >= thr[r]:
+                friendship_rank = r
+                break
+        rank_raw = extract_value(raw, 'Rank', 0)
+        condenser_rank = int(rank_raw) if isinstance(rank_raw, (int, float)) else 0
+        is_awake_val = bool(extract_value(raw, 'bIsAwakening', False))
+        _ensure_passive_data()
+        p_skills = raw.get('PassiveSkillList', {})
+        if isinstance(p_skills, dict):
+            p_list = p_skills.get('value', {}).get('values', [])
+        elif isinstance(p_skills, list):
+            p_list = p_skills
+        else:
+            p_list = []
+        passive_hp_bonus = 0
+        for pv in p_list:
+            p_clean = str(pv.get('value', pv) if isinstance(pv, dict) else pv).lower() if pv else ''
+            if p_clean and p_clean in _data._PASSIVE_DATA:
+                p_info = _data._PASSIVE_DATA[p_clean]
+                for ei in range(1, 5):
+                    etype = str(p_info.get(f'efftype{ei}', ''))
+                    ev = p_info.get(f'effect{ei}', 0)
+                    tt = str(p_info.get(f'target_type{ei}', '') or '')
+                    if 'ToTrainer' in tt and 'ToSelf' not in tt and 'ToSelfAndTrainer' not in tt:
+                        continue
+                    if 'MaxHP' in etype:
+                        passive_hp_bonus += float(ev)
+        new_max_hp = calculate_max_hp(base, value, talent_hp, rank_hp, is_boss, is_lucky, friendship_rank, condenser_rank, is_awake_val, passive_bonus=passive_hp_bonus / 100)
+        raw['Hp'] = {'struct_type': 'FixedPoint64', 'struct_id': '00000000-0000-0000-0000-000000000000', 'id': None, 'value': {'Value': {'id': None, 'value': int(new_max_hp), 'type': 'Int64Property'}}, 'type': 'StructProperty'}
+        raw['MaxHP'] = raw['Hp']
 
     def _set_level(self, value):
         raw = self._raw
@@ -818,10 +866,99 @@ class PalInfoHandlerMixin:
             _apply_food_buff(self._raw, dlg.selected_food)
             self._refresh()
 
+    _FANOUT_KEYS = ('Level', 'Exp', 'Gender', 'Talent_HP', 'Talent_Shot', 'Talent_Defense',
+                    'Rank_HP', 'Rank_Attack', 'Rank_Defence', 'Rank_CraftSpeed', 'Rank',
+                    'FriendshipPoint', 'bIsAwakening', 'bImportedCharacter', 'FavoriteIndex',
+                    'EquipWaza', 'MasteredWaza', 'PassiveSkillList', 'NickName')
+    _FANOUT_SPECIES_KEYS = ('CharacterID', 'IsRarePal')
+    _FANOUT_WORK_KEY = 'GotWorkSuitabilityAddRankList'
+
+    def _snapshot_for_fanout(self):
+        raw = self._raw
+        if not isinstance(raw, dict):
+            self._fanout_snapshot = None
+            return
+        snap = {}
+        for key in self._FANOUT_KEYS + self._FANOUT_SPECIES_KEYS:
+            if key in raw:
+                snap[key] = copy.deepcopy(raw[key])
+        snap[self._FANOUT_WORK_KEY] = copy.deepcopy(_get_effective_work_suitabilities(raw))
+        self._fanout_snapshot = snap
+
+    def _fanout_owner(self):
+        parent = self.parent()
+        while parent is not None:
+            if hasattr(parent, '_gather_selected_pals'):
+                return parent
+            try:
+                parent = parent.parentWidget() if hasattr(parent, 'parentWidget') else parent.parent()
+            except TypeError:
+                return None
+        return None
+
+    def _apply_fanout(self):
+        raw = self._raw
+        snap = self._fanout_snapshot
+        if not isinstance(raw, dict) or not snap:
+            return 0
+        if self._hovered_data is not None:
+            return 0
+        owner = self._fanout_owner()
+        if owner is None:
+            return 0
+        try:
+            selected = owner._gather_selected_pals()
+        except Exception:
+            return 0
+        targets = [t for t in (_get_raw_from_item(p) for p in selected) if isinstance(t, dict) and t is not raw]
+        if not targets:
+            return 0
+        changed = [k for k in self._FANOUT_KEYS if snap.get(k) != raw.get(k)]
+        work_now = _get_effective_work_suitabilities(raw)
+        work_changed = {k: v for k, v in work_now.items() if snap.get(self._FANOUT_WORK_KEY, {}).get(k) != v}
+        snap_raw = {k: v for k, v in snap.items() if k != self._FANOUT_WORK_KEY and v is not None}
+        old_cid = str(extract_value(snap_raw, 'CharacterID', '') or '')
+        new_cid = str(extract_value(raw, 'CharacterID', '') or '')
+        boss_changed = old_cid.upper().startswith('BOSS_') != new_cid.upper().startswith('BOSS_')
+        predator_changed = old_cid.upper().startswith('PREDATOR_') != new_cid.upper().startswith('PREDATOR_')
+        old_lucky = bool(extract_value(snap_raw, 'IsRarePal', False))
+        new_lucky = bool(extract_value(raw, 'IsRarePal', False))
+        lucky_changed = old_lucky != new_lucky
+        if not changed and not work_changed and not (boss_changed or predator_changed or lucky_changed):
+            return 0
+        for target in targets:
+            for key in changed:
+                if key in raw:
+                    target[key] = copy.deepcopy(raw[key])
+                else:
+                    target.pop(key, None)
+            for ws_key, level in work_changed.items():
+                _set_work_suitability(target, ws_key, level)
+            if lucky_changed:
+                _toggle_lucky_raw(target, new_lucky)
+            elif boss_changed:
+                _toggle_boss_raw(target, new_cid.upper().startswith('BOSS_'))
+            if predator_changed:
+                _toggle_predator_raw(target, new_cid.upper().startswith('PREDATOR_'))
+            self._recalc_hp_for(target)
+        return len(targets)
+
     def _refresh(self):
         constants.dirty = True
+        fanned = self._apply_fanout()
+        if self._hovered_data is None:
+            self._snapshot_for_fanout()
         if self.last_clicked_data:
             self._update_display(self.last_clicked_data)
+        if fanned:
+            owner = self._fanout_owner()
+            for meth in ('_update_party_slots', '_update_palbox_page', '_update_page'):
+                fn = getattr(owner, meth, None)
+                if callable(fn):
+                    try:
+                        fn()
+                    except Exception:
+                        pass
         parent = self.parent()
         while parent:
             if hasattr(parent, 'tools_tab'):

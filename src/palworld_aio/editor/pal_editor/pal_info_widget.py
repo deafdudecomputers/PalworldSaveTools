@@ -36,6 +36,7 @@ class PalInfoWidget(PalInfoDisplayMixin, PalInfoHandlerMixin, QFrame):
         self._hovered_data = None
         self.setObjectName('palInfoPanel')
         self._raw = None
+        self._fanout_snapshot = None
         self._build()
         self.installEventFilter(self)
     def set_hover_pal(self, pal_data):
@@ -55,9 +56,11 @@ class PalInfoWidget(PalInfoDisplayMixin, PalInfoHandlerMixin, QFrame):
         if pal_data is None:
             self._update_stack_state()
             self._clear_display()
+            self._fanout_snapshot = None
             return
         self._update_stack_state()
         self._update_display(pal_data)
+        self._snapshot_for_fanout()
     def clear_hover(self):
         self._hovered_data = None
         if self.last_clicked_data is not None:
