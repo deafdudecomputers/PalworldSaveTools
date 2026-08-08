@@ -415,7 +415,8 @@ def background_load_task(path):
     player_files, _ = _build_player_list_from_level(level_json)
     return (player_files, level_json)
 def choose_level_file(window, level_sav_entry, old_tree, new_tree):
-    path, _ = QFileDialog.getOpenFileName(window, t('Select Level.sav file'), '', 'SAV Files(*.sav)')
+    from common import get_preferred_save_path
+    path, _ = QFileDialog.getOpenFileName(window, t('Select Level.sav file'), get_preferred_save_path(), 'SAV Files(*.sav)')
     if not path:
         return
     players_dir = os.path.join(os.path.dirname(path), 'Players')

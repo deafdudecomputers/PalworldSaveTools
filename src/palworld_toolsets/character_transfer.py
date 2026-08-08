@@ -1440,7 +1440,8 @@ def finalize_save_task():
         )
     return True
 def select_file():
-    return QFileDialog.getOpenFileName(None, 'Select Palworld Save File', '', 'Palworld Saves(*.sav *.json);;All Files(*)')[0]
+    from common import get_preferred_save_path
+    return QFileDialog.getOpenFileName(None, 'Select Palworld Save File', get_preferred_save_path(), 'Palworld Saves(*.sav *.json);;All Files(*)')[0]
 def load_player_file(level_sav_path, player_uid):
     base_folder = os.path.join(os.path.dirname(level_sav_path), 'Players')
     player_file_path = os.path.join(base_folder, f'{player_uid.upper()}.sav')

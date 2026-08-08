@@ -230,6 +230,7 @@ class MainWindow(QMainWindow):
         self._setup_menus()
         self._setup_connections()
         QTimer.singleShot(0, self._check_update)
+        QTimer.singleShot(0, self._restore_last_save)
         self.status_stream = StatusBarStream(self.status_bar, self)
         self.status_stream.detach_state_changed.connect(self._on_detach_state_changed)
         sys.stdout = self.status_stream
@@ -1275,6 +1276,14 @@ class MainWindow(QMainWindow):
         menu.exec(panel.tree.viewport().mapToGlobal(pos))
     def _load_save(self):
         save_manager.load_save(parent=self)
+    def _restore_last_save(self):
+        if constants.loaded_level_json is not None:
+            return
+        from common import get_restorable_save_path
+        d = get_restorable_save_path()
+        if not d:
+            return
+        save_manager.load_save(os.path.join(d, 'Level.sav'), parent=self)
     def _load_xgp_save(self):
         from palworld_xgp_import.gamepass_manager import pick_xgp_world
         pick = pick_xgp_world(self, 'Load GamePass Save')
@@ -1380,7 +1389,8 @@ class MainWindow(QMainWindow):
             self.refresh_all()
             self._show_info(t('Done'), t('gamedays.success', old=result['old'], new=result['new']))
     def _load_gps(self):
-        path, _ = QFileDialog.getOpenFileName(self, t('menu.file.load_gps') if t else 'Load Global Pal Storage', '', 'GlobalPalStorage.sav (GlobalPalStorage.sav)')
+        from common import get_preferred_save_path
+        path, _ = QFileDialog.getOpenFileName(self, t('menu.file.load_gps') if t else 'Load Global Pal Storage', get_preferred_save_path(), 'GlobalPalStorage.sav (GlobalPalStorage.sav)')
         if not path:
             return
         if not os.path.basename(path).startswith('GlobalPalStorage'):
@@ -1394,7 +1404,8 @@ class MainWindow(QMainWindow):
 
     def _load_worldoption(self):
         from ..utils import sav_to_json
-        sav_path, _ = QFileDialog.getOpenFileName(self, t('menu.file.load_worldoption') if t else 'Load WorldOption', '', 'WorldOption.sav (WorldOption.sav)')
+        from common import get_preferred_save_path
+        sav_path, _ = QFileDialog.getOpenFileName(self, t('menu.file.load_worldoption') if t else 'Load WorldOption', get_preferred_save_path(), 'WorldOption.sav (WorldOption.sav)')
         if not sav_path:
             return
         if not os.path.basename(sav_path).startswith('WorldOption'):
