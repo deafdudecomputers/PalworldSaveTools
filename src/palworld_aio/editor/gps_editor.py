@@ -791,6 +791,10 @@ class GpsEditorDialog(FramelessDialog):
                     self._mark_modified()
                     self._update_page()
 
+        elif action == 'clone_bulk' and raw:
+            pals = self._gather_selected_pals() or [pal]
+            self._clone_bulk(pals)
+
         elif action == 'clone' and raw:
             empty_idx = None
             start_page = (self.current_page - 1) * PAGE_SIZE
@@ -917,59 +921,59 @@ class GpsEditorDialog(FramelessDialog):
             self._refresh_info()
             self._mark_modified()
 
-    def _on_sort_clicked(self):
-        if not self.pals:
+    def _clone_bulk(self, pals):
+        pals = [p for p in pals if _get_raw_from_item(p)]
+        if not pals:
             return
-        from palworld_aio.widgets.scrollable_context_menu import ScrollableContextMenu
-        popup = ScrollableContextMenu(self)
-        for key, label_key in PAL_SORT_MODES:
-            popup.add_item(key, t(label_key))
-        mode = popup.exec_(self.sort_btn.mapToGlobal(self.sort_btn.rect().bottomLeft()))
-        if not mode:
+        free = max(0, getattr(self, 'total_slots', 0) - len(self.pals))
+        if free < 1:
+            show_warning(self, t('edit_pals.ctx.clone_bulk'), t('edit_pals.clone_bulk_full'))
             return
-        self._sort_pals(mode)
-
-    def _sort_pals(self, mode):
-        if not constants.gps_gvas:
+        max_each = max(1, free // len(pals))
+        from palworld_aio.editor.dialogs import LevelInputDialog
+        count = LevelInputDialog.get_level(
+            t('edit_pals.ctx.clone_bulk'),
+            t('edit_pals.clone_bulk_prompt', pals=len(pals), max=max_each),
+            1, self, minimum=1, maximum=max_each)
+        if not count:
             return
-        arr = constants.gps_gvas.properties.get('SaveParameterArray', {}).get('value', {}).get('values', [])
-        if not arr:
-            return
-        entries = []
-        for abs_idx in sorted(self.pals):
-            raw = _get_raw_from_item(self.pals[abs_idx])
-            if not isinstance(raw, dict):
-                continue
-            inst = None
-            if abs_idx < len(arr) and isinstance(arr[abs_idx], dict):
-                inst = copy.deepcopy(arr[abs_idx].get('InstanceId'))
-            entries.append((copy.deepcopy(raw), inst))
-        if not entries:
-            return
-        entries.sort(key=lambda e: pal_sort_key(e[0], mode))
-        for idx in range(len(arr)):
-            self._clear_gps_instance(idx)
-        self.pals = {}
-        placed = 0
-        for idx, (raw, inst) in enumerate(entries):
-            if idx >= len(arr) or not isinstance(arr[idx], dict):
+        from palworld_aio.managers.func_manager import _restore_one_pal
+        made = 0
+        out_of_space = False
+        for pal in pals:
+            raw = _get_raw_from_item(pal)
+            template = copy.deepcopy(raw)
+            _restore_one_pal(template)
+            src_cid = extract_value(raw, 'CharacterID', '')
+            src_nick = extract_value(raw, 'NickName', '') or ''
+            clone_nick = creation_nickname(src_nick or (resolve_name(src_cid, PalFrame._NAMEMAP) or src_cid))
+            if clone_nick:
+                template['NickName'] = {'id': None, 'type': 'StrProperty', 'value': clone_nick}
+            for _ in range(count):
+                idx = self._next_free_gps_slot(0)
+                if idx is None:
+                    out_of_space = True
+                    break
+                if not self._set_gps_slot(idx, template):
+                    out_of_space = True
+                    break
+                arr = constants.gps_gvas.properties.get('SaveParameterArray', {}).get('value', {}).get('values', [])
+                sp = arr[idx].get('SaveParameter', {}).get('value', {})
+                si = safe_nested_get(sp, ['SlotId', 'value', 'SlotIndex'])
+                if isinstance(si, dict):
+                    si['value'] = idx
+                self.pals[idx] = {'data': sp}
+                made += 1
+            if out_of_space:
                 break
-            sp = arr[idx].get('SaveParameter', {}).get('value', {})
-            if not isinstance(sp, dict):
-                continue
-            sp.clear()
-            sp.update(raw)
-            set_pal_slot_index(sp, idx)
-            if inst is not None:
-                arr[idx]['InstanceId'] = inst
-            self.pals[idx] = {'data': sp}
-            placed += 1
-        self.current_page = 1
         self._clear_multi_selection()
         self._clear_selection()
         self._update_page()
         self._mark_modified()
-        show_information(self, t('edit_pals.sort_btn'), t('edit_pals.sort_done', count=placed))
+        if out_of_space:
+            show_warning(self, t('edit_pals.ctx.clone_bulk'), t('edit_pals.clone_bulk_no_space', count=made))
+        else:
+            show_information(self, t('edit_pals.ctx.clone_bulk'), t('edit_pals.clone_bulk_done', count=made))
 
     def _next_free_gps_slot(self, start):
         total = getattr(self, 'total_slots', 0)

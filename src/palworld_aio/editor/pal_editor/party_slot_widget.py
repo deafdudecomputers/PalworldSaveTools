@@ -213,6 +213,10 @@ class PartySlotWidget(QFrame):
 
                 self.rightClicked.emit(self.slot_index, 'clone')
 
+            elif key == 'clone_bulk':
+
+                self.rightClicked.emit(self.slot_index, 'clone_bulk')
+
             elif key == 'bulk_rename':
 
                 self.rightClicked.emit(self.slot_index, 'bulk_rename')

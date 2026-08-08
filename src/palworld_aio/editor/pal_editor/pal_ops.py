@@ -386,6 +386,7 @@ def build_pal_context_menu(parent, raw):
     popup.add_item('export_pal', t('edit_pals.ctx.export_pal'))
     popup.add_sep()
     popup.add_item('clone', t('edit_pals.ctx.clone'))
+    popup.add_item('clone_bulk', t('edit_pals.ctx.clone_bulk'))
     popup.add_sep()
     popup.add_item('bulk_sync_pal', t('edit_pals.ctx.bulk_sync_pal'))
     popup.add_item('bulk_sync_all', t('edit_pals.ctx.bulk_sync_all'))
