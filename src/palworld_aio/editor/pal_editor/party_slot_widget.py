@@ -273,7 +273,7 @@ class PartySlotWidget(QFrame):
 
         if not raw or not isinstance(raw, dict):
 
-            self.setStyleSheet(slot_full('QFrame#partySlot'))
+            self._apply_slot_style()
 
             self.setToolTip('')
 
@@ -705,13 +705,11 @@ class PartySlotWidget(QFrame):
 
                     el_x += 14
 
-        self.setStyleSheet(slot_full('QFrame#partySlot'))
+        self._apply_slot_style()
 
-    def set_selected(self, selected):
+    def _apply_slot_style(self):
 
-        self.selected = selected
-
-        if selected:
+        if self.selected:
 
             self.setStyleSheet(slot_selected('QFrame#partySlot'))
 
@@ -723,21 +721,17 @@ class PartySlotWidget(QFrame):
 
             self.setStyleSheet(slot_full('QFrame#partySlot'))
 
+    def set_selected(self, selected):
+
+        self.selected = selected
+
+        self._apply_slot_style()
+
     def set_selected_multi(self, selected):
 
         self.multi_selected = selected
 
-        if self.selected:
-
-            return
-
-        if selected:
-
-            self.setStyleSheet(slot_multi_selected('QFrame#partySlot'))
-
-        else:
-
-            self.setStyleSheet(slot_full('QFrame#partySlot'))
+        self._apply_slot_style()
 
     def update_display(self):
 

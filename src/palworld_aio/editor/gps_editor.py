@@ -390,6 +390,14 @@ class GpsEditorDialog(FramelessDialog):
             abs_idx = start + rel
             selected = ('gps', abs_idx) in self._multi_selected or ('gps_empty', abs_idx) in self._multi_selected
             slot.set_selected_multi(selected)
+        self._reapply_selected_highlight()
+
+    def _reapply_selected_highlight(self):
+        if self._selected_slot is None:
+            return
+        rel = self._selected_slot - (self.current_page - 1) * PAGE_SIZE
+        if 0 <= rel < len(self.slots):
+            self.slots[rel].set_selected(True)
 
     def _on_select_all(self):
         all_keys = {('gps', abs_idx) for abs_idx in self.pals}

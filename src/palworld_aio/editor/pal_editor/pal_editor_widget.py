@@ -1417,7 +1417,20 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
                 rel = abs_idx % 30
                 if page == self.current_box_index and rel < len(self.palbox_slots):
                     self.palbox_slots[rel].set_selected_multi(True)
+        self._reapply_selected_highlight()
         self._update_multi_toolbar()
+    def _reapply_selected_highlight(self):
+        if not self.selected_pal_slot:
+            return
+        stype, idx = self.selected_pal_slot
+        if stype == 'party':
+            if 0 <= idx < len(self.party_slots):
+                self.party_slots[idx].set_selected(True)
+        elif stype in ('palbox', 'dps'):
+            if (idx // 30) + 1 == self.current_box_index:
+                rel = idx % 30
+                if 0 <= rel < len(self.palbox_slots):
+                    self.palbox_slots[rel].set_selected(True)
     def _update_multi_toolbar(self):
         count = len(self._multi_selected)
         if self.selected_pal_slot:
