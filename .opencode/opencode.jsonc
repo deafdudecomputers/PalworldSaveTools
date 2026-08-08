@@ -8,5 +8,14 @@
   "instructions": [
     "AGENTS.md"
   ],
-  "lsp": true
+  "lsp": true,
+  "mcp": {
+    "mempalace": {
+      "type": "local",
+      "command": [
+        "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python314\\Scripts\\mempalace-mcp.exe"
+      ],
+      "enabled": true
+    }
+  }
 }
