@@ -224,7 +224,7 @@ def validate_imported_base(loaded_level_json, base_id=None):
             if c_model and c_model != _s(mr.get('instance_id', '')):
                 report['issues'].append('camp %s: %s concrete.model_instance_id %s != model.instance_id %s' % (camp_id, obj.get('MapObjectId', {}).get('value'), c_model, _s(mr.get('instance_id', ''))))
     return report
-def repair_base_references(loaded_level_json):
+def repair_base_references(loaded_level_json, scope_base_camp_id=None):
     """Scan the whole save and fix every broken reference in place.
 
     Runs against the mutated world (typically after import_base_json). Fixes:
@@ -233,7 +233,10 @@ def repair_base_references(loaded_level_json):
       - map object repair_work_id to a missing work               -> zeroed
       - module target_container_id / target_work_id to missing    -> zeroed
       - module work_ids entries that are not live works           -> pruned
-      - orphan works (owner object missing from the world)        -> removed
+      - orphan works whose base camp was just imported (owner      -> removed
+        object missing from the world). When scope_base_camp_id is
+        given, only the works of that imported camp are eligible;
+        works belonging to pre-existing camps are never touched.
       - base camp WorkCollection.work_ids to missing works        -> pruned
       - base camp owner_map_object_instance_id not matching the
         camp's PalBox                                            -> corrected
@@ -331,24 +334,23 @@ def repair_base_references(loaded_level_json):
                     rm['work_ids'] = kept_w
         except:
             pass
-    # 2. orphan works
-    orphans = []
+    # 2. orphan works (via shared helper; scoped to an imported camp)
+    missing_owner_ids = set()
     for we in works:
         wr = _get_work_raw(we)
         if not isinstance(wr, dict) or 'id' not in wr:
             continue
         om = _s(wr.get('owner_map_object_model_id', ''))
+        if om and om != zero and om not in live_obj:
+            missing_owner_ids.add(om.replace('-', ''))
         oc = _s(wr.get('owner_map_object_concrete_model_id', ''))
-        if (om and om != zero and om not in live_obj) or (oc and oc != zero and oc not in live_concrete):
-            orphans.append(we)
-    if orphans:
-        orphan_ids = {_s((_get_work_raw(w) or {}).get('id', '')) for w in orphans}
-        try:
-            work_vals = work_root['value']['values']
-            work_vals[:] = [w for w in work_vals if w not in orphans]
-        except:
-            pass
-        report['fixed'].append('removed %d orphan works (owner object missing)' % len(orphans))
+        if oc and oc != zero and oc not in live_concrete:
+            missing_owner_ids.add(oc.replace('-', ''))
+    if missing_owner_ids:
+        from palworld_aio.managers.func_manager import _cleanup_orphaned_works
+        removed = _cleanup_orphaned_works(data, deleted_instance_ids=missing_owner_ids, scope_base_camp_id=scope_base_camp_id)
+        if removed:
+            report['fixed'].append('removed %d orphan works (owner object missing)' % removed)
     # 3. base camp WorkCollection pruning + palbox binding
     for camp in base_camps:
         camp_id = _s(camp.get('key', ''))
@@ -996,7 +998,7 @@ def import_base_json(loaded_level_json, exported_data, target_guild_id, offset=(
 def _run_post_import_validation(loaded_level_json, base_id, notes=None):
     global last_import_audit
     try:
-        repair_report = repair_base_references(loaded_level_json)
+        repair_report = repair_base_references(loaded_level_json, scope_base_camp_id=base_id)
         report = validate_imported_base(loaded_level_json, base_id)
         if notes:
             report.setdefault('warnings', []).extend(notes)

@@ -146,8 +146,6 @@ def delete_base_camp(base_entry, guild_id, level_json=None, delete_workers=False
     containers_char = wsd.get('CharacterContainerSaveData', {}).get('value', [])
     containers_item = wsd.get('ItemContainerSaveData', {}).get('value', [])
     map_objs = wsd.get('MapObjectSaveData', {}).get('value', {}).get('values', [])
-    work_root = wsd.get('WorkSaveData', {})
-    work_entries = work_root.get('value', {}).get('values', []) if isinstance(work_root.get('value'), dict) else []
     char_map = wsd.get('CharacterSaveParameterMap', {}).get('value', [])
     base_id_str = str(base_entry['key'])
     base_id_low = base_id_str.replace('-', '').lower()
@@ -157,11 +155,18 @@ def delete_base_camp(base_entry, guild_id, level_json=None, delete_workers=False
     except:
         pass
     cont_ids_to_del = set()
+    deleted_instance_ids = set()
     if worker_cont_id:
         cont_ids_to_del.add(worker_cont_id)
     for obj in map_objs:
         mr = obj.get('Model', {}).get('value', {}).get('RawData', {}).get('value', {})
         if str(mr.get('base_camp_id_belong_to', '')).replace('-', '').lower() == base_id_low:
+            instance_id = str(mr.get('instance_id', '')).replace('-', '').lower()
+            if instance_id and instance_id != '00000000000000000000000000000000':
+                deleted_instance_ids.add(instance_id)
+            concrete_id = str(mr.get('concrete_model_instance_id', '')).replace('-', '').lower()
+            if concrete_id and concrete_id != '00000000000000000000000000000000':
+                deleted_instance_ids.add(concrete_id)
             try:
                 mm = obj['ConcreteModel']['value']['ModuleMap']['value']
                 for mod in mm:
@@ -173,13 +178,8 @@ def delete_base_camp(base_entry, guild_id, level_json=None, delete_workers=False
     map_objs[:] = [obj for obj in map_objs if str(obj.get('Model', {}).get('value', {}).get('RawData', {}).get('value', {}).get('base_camp_id_belong_to', '')).replace('-', '').lower() != base_id_low]
     containers_item[:] = [c for c in containers_item if str(c.get('key', {}).get('ID', {}).get('value', '')).replace('-', '').lower() not in cont_ids_to_del]
     containers_char[:] = [c for c in containers_char if str(c.get('key', {}).get('ID', {}).get('value', '')).replace('-', '').lower() not in cont_ids_to_del]
-    def should_keep_work_entry(we):
-        try:
-            wr = we['RawData']['value']
-            return str(wr.get('base_camp_id_belong_to', '')).replace('-', '').lower() != base_id_low
-        except:
-            return True
-    work_entries[:] = [we for we in work_entries if should_keep_work_entry(we)]
+    from palworld_aio.managers.func_manager import _cleanup_orphaned_works
+    _cleanup_orphaned_works(wsd, deleted_instance_ids=deleted_instance_ids if deleted_instance_ids else None, deleted_base_camp_ids={base_id_low})
     zero = UUID.from_str('00000000-0000-0000-0000-000000000000')
     if worker_cont_id:
         workers_to_remove = []

@@ -588,64 +588,12 @@ def delete_unreferenced_data(parent=None):
     map_objects_wrapper['values'] = new_map_objects
     removed_broken, removed_drops = (len(broken_ids), len(dropped_ids))
     removed_orphaned_works = 0
-    work_root = wsd.get('WorkSaveData', {})
-    if work_root and 'value' in work_root:
-        work_entries = work_root.get('value', {}).get('values', [])
-        if isinstance(work_entries, list):
-            valid_base_camp_ids = set()
-            for b in wsd.get('BaseCampSaveData', {}).get('value', []):
-                try:
-                    bid = normalize_uid(b.get('key', ''))
-                    if bid:
-                        valid_base_camp_ids.add(bid)
-                except:
-                    pass
-            valid_instance_ids = set()
-            for obj in new_map_objects:
-                try:
-                    raw_data = obj.get('Model', {}).get('value', {}).get('RawData', {}).get('value', {})
-                    inst_id = normalize_uid(raw_data.get('instance_id', ''))
-                    if inst_id:
-                        valid_instance_ids.add(inst_id)
-                    conc_id = normalize_uid(raw_data.get('concrete_model_instance_id', ''))
-                    if conc_id:
-                        valid_instance_ids.add(conc_id)
-                except:
-                    pass
-            initial_work_count = len(work_entries)
-            new_work_entries = []
-            for we in work_entries:
-                try:
-                    wr = we.get('RawData', {}).get('value', {})
-                    if not isinstance(wr, dict):
-                        new_work_entries.append(we)
-                        continue
-                    base_camp_id = normalize_uid(wr.get('base_camp_id_belong_to', ''))
-                    if base_camp_id and base_camp_id != '00000000000000000000000000000000':
-                        if base_camp_id not in valid_base_camp_ids:
-                            continue
-                    model_id = normalize_uid(wr.get('owner_map_object_model_id', ''))
-                    if model_id and model_id != '00000000000000000000000000000000':
-                        if model_id not in valid_instance_ids:
-                            continue
-                    concrete_id = normalize_uid(wr.get('owner_map_object_concrete_model_id', ''))
-                    if concrete_id and concrete_id != '00000000000000000000000000000000':
-                        if concrete_id not in valid_instance_ids:
-                            continue
-                    transform = wr.get('transform', {})
-                    if isinstance(transform, dict):
-                        transform_id = normalize_uid(transform.get('map_object_instance_id', ''))
-                        if transform_id and transform_id != '00000000000000000000000000000000':
-                            if transform_id not in valid_instance_ids:
-                                continue
-                    new_work_entries.append(we)
-                except:
-                    new_work_entries.append(we)
-            work_entries[:] = new_work_entries
-            removed_orphaned_works = initial_work_count - len(work_entries)
+    deleted_ids = {normalize_uid(i) for i in broken_ids + dropped_ids if normalize_uid(i)}
+    if deleted_ids:
+        removed_orphaned_works = _cleanup_orphaned_works(wsd, deleted_instance_ids=deleted_ids)
     removed_orphaned_dynamic = delete_orphaned_dynamic_items()
     return {'characters': len(all_removed_uids), 'pals': removed_pals + len(orphaned_pals), 'guilds': removed_guilds, 'broken_objects': removed_broken, 'dropped_items': removed_drops, 'orphaned_dynamic_items': removed_orphaned_dynamic, 'orphaned_works': removed_orphaned_works}
-def _cleanup_orphaned_works(wsd, deleted_instance_ids=None, deleted_base_camp_ids=None):
+def _cleanup_orphaned_works(wsd, deleted_instance_ids=None, deleted_base_camp_ids=None, scope_base_camp_id=None):
     work_root = wsd.get('WorkSaveData', {})
     if not work_root or 'value' not in work_root:
         return 0
@@ -653,12 +601,15 @@ def _cleanup_orphaned_works(wsd, deleted_instance_ids=None, deleted_base_camp_id
     if not isinstance(work_entries, list):
         return 0
     initial_count = len(work_entries)
+    scope_norm = str(scope_base_camp_id).replace('-', '').lower() if scope_base_camp_id else ''
     def should_keep_work(we):
         try:
             wr = we.get('RawData', {}).get('value', {})
             if not isinstance(wr, dict):
                 return True
             base_camp_id = str(wr.get('base_camp_id_belong_to', '')).replace('-', '').lower()
+            if scope_norm and base_camp_id and base_camp_id != scope_norm:
+                return True
             if deleted_base_camp_ids and base_camp_id in deleted_base_camp_ids:
                 return False
             model_id = str(wr.get('owner_map_object_model_id', '')).replace('-', '').lower()
