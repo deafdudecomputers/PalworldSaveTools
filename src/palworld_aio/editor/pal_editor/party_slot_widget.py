@@ -1,5 +1,6 @@
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QMenu, QProgressBar, QSizePolicy, QVBoxLayout, QWidget
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtWidgets import QApplication, QFrame, QHBoxLayout, QLabel, QMenu, QProgressBar, QSizePolicy, QVBoxLayout, QWidget
+from PySide6.QtCore import QMimeData, Qt, Signal
+from PySide6.QtGui import QDrag
 from i18n import t
 from palworld_aio.ui.chrome.styles import slot_full, slot_selected, slot_multi_selected
 from palworld_aio.utils import calculate_max_hp, extract_value, resolve_name, safe_nested_get, _hp_breakdown, stat_breakdown_tooltip
@@ -18,7 +19,7 @@ from .icons import (
     _strip_prefix_label,
 )
 from .pal_ops import build_pal_context_menu
-from .widgets import StrokedLabel
+from .widgets import StrokedLabel, PAL_SLOT_MIME
 from .legacy_frame import PalFrame
 from .pal_info_widget import PalInfoWidget
 
@@ -30,6 +31,8 @@ class PartySlotWidget(QFrame):
     clicked = Signal()
 
     rightClicked = Signal(int, str)
+
+    slotDropped = Signal(int, int)
 
     entered = Signal()
 
@@ -48,6 +51,10 @@ class PartySlotWidget(QFrame):
         self.multi_selected = False
 
         self._click_modifiers = Qt.NoModifier
+
+        self._drag_origin = None
+
+        self.setAcceptDrops(True)
 
         self.setObjectName('partySlot')
 
@@ -119,9 +126,99 @@ class PartySlotWidget(QFrame):
 
             self._click_modifiers = event.modifiers()
 
+            self._drag_origin = event.position().toPoint() if self.pal_data else None
+
             self.clicked.emit()
 
         super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event):
+
+        if self._drag_origin is not None and (event.buttons() & Qt.LeftButton) and self.pal_data:
+
+            if (event.position().toPoint() - self._drag_origin).manhattanLength() >= QApplication.startDragDistance():
+
+                self._start_slot_drag()
+
+                return
+
+        super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event):
+
+        self._drag_origin = None
+
+        super().mouseReleaseEvent(event)
+
+    def _start_slot_drag(self):
+
+        self._drag_origin = None
+
+        drag = QDrag(self)
+
+        mime = QMimeData()
+
+        mime.setData(PAL_SLOT_MIME, str(self.slot_index).encode('utf-8'))
+
+        drag.setMimeData(mime)
+
+        pm = self.grab()
+
+        drag.setPixmap(pm)
+
+        drag.setHotSpot(pm.rect().center())
+
+        drag.exec(Qt.MoveAction)
+
+    def _drag_is_sibling(self, event):
+
+        src = event.source()
+
+        return src is not None and src is not self and src.parent() is self.parent()
+
+    def dragEnterEvent(self, event):
+
+        if event.mimeData().hasFormat(PAL_SLOT_MIME) and self._drag_is_sibling(event):
+
+            event.acceptProposedAction()
+
+        else:
+
+            event.ignore()
+
+    def dragMoveEvent(self, event):
+
+        if event.mimeData().hasFormat(PAL_SLOT_MIME) and self._drag_is_sibling(event):
+
+            event.acceptProposedAction()
+
+        else:
+
+            event.ignore()
+
+    def dropEvent(self, event):
+
+        if not (event.mimeData().hasFormat(PAL_SLOT_MIME) and self._drag_is_sibling(event)):
+
+            event.ignore()
+
+            return
+
+        try:
+
+            src_index = int(bytes(event.mimeData().data(PAL_SLOT_MIME)).decode('utf-8'))
+
+        except (TypeError, ValueError):
+
+            event.ignore()
+
+            return
+
+        event.acceptProposedAction()
+
+        if src_index != self.slot_index:
+
+            self.slotDropped.emit(src_index, self.slot_index)
 
     def mouseDoubleClickEvent(self, event):
 

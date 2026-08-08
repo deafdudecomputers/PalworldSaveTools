@@ -234,6 +234,7 @@ class GpsEditorDialog(FramelessDialog):
                 slot.rightClicked.connect(self._on_slot_right_clicked)
                 slot.entered.connect(partial(self._on_slot_entered, idx))
                 slot.left.connect(self._on_slot_left)
+                slot.slotDropped.connect(self._on_slot_dropped)
                 self.grid_layout.addWidget(slot, row, col)
                 self.slots.append(slot)
 
@@ -925,66 +926,32 @@ class GpsEditorDialog(FramelessDialog):
             self._refresh_info()
             self._mark_modified()
 
-    def _clone_bulk(self, pals):
-        pals = [p for p in pals if _get_raw_from_item(p)]
-        if not pals:
-            return
-        free = max(0, getattr(self, 'total_slots', 0) - len(self.pals))
-        if free < 1:
-            show_warning(self, t('edit_pals.ctx.clone_bulk'), t('edit_pals.clone_bulk_full'))
-            return
-        from palworld_aio.editor.pal_editor.create_dialogs import CloneBulkDialog
-        counts = CloneBulkDialog.ask(pals, free, self)
-        if not counts:
-            return
-        from palworld_aio.managers.func_manager import _restore_one_pal
-        made = 0
-        out_of_space = False
-        for pal, count in zip(pals, counts):
-            if count < 1:
-                continue
-            raw = _get_raw_from_item(pal)
-            template = copy.deepcopy(raw)
-            _restore_one_pal(template)
-            src_cid = extract_value(raw, 'CharacterID', '')
-            src_nick = extract_value(raw, 'NickName', '') or ''
-            clone_nick = creation_nickname(src_nick or (resolve_name(src_cid, PalFrame._NAMEMAP) or src_cid))
-            if clone_nick:
-                template['NickName'] = {'id': None, 'type': 'StrProperty', 'value': clone_nick}
-            for _ in range(count):
-                idx = self._next_free_gps_slot(0)
-                if idx is None:
-                    out_of_space = True
-                    break
-                if not self._set_gps_slot(idx, template):
-                    out_of_space = True
-                    break
-                arr = constants.gps_gvas.properties.get('SaveParameterArray', {}).get('value', {}).get('values', [])
-                sp = arr[idx].get('SaveParameter', {}).get('value', {})
-                si = safe_nested_get(sp, ['SlotId', 'value', 'SlotIndex'])
-                if isinstance(si, dict):
-                    si['value'] = idx
-                self.pals[idx] = {'data': sp}
-                made += 1
-            if out_of_space:
-                break
-        self._clear_multi_selection()
-        self._clear_selection()
-        self._update_page()
-        self._mark_modified()
-        if out_of_space:
-            show_warning(self, t('edit_pals.ctx.clone_bulk'), t('edit_pals.clone_bulk_no_space', count=made))
-        else:
-            show_information(self, t('edit_pals.ctx.clone_bulk'), t('edit_pals.clone_bulk_done', count=made))
+    def _on_slot_dropped(self, src_rel, dst_rel):
+        start = (self.current_page - 1) * PAGE_SIZE
+        if self._swap_gps_slots(start + src_rel, start + dst_rel):
+            self._clear_multi_selection()
+            self._clear_selection()
+            self._update_page()
+            self._mark_modified()
 
-    def _next_free_gps_slot(self, start):
-        total = getattr(self, 'total_slots', 0)
-        if total <= 0:
-            return None
-        for abs_idx in list(range(start, total)) + list(range(0, min(start, total))):
-            if abs_idx not in self.pals:
-                return abs_idx
-        return None
+    def _swap_gps_slots(self, a, b):
+        if a == b or not constants.gps_gvas:
+            return False
+        arr = constants.gps_gvas.properties.get('SaveParameterArray', {}).get('value', {}).get('values', [])
+        if not (0 <= a < len(arr) and 0 <= b < len(arr)):
+            return False
+        arr[a], arr[b] = arr[b], arr[a]
+        for idx in (a, b):
+            sp = arr[idx].get('SaveParameter', {}).get('value', {})
+            cid = extract_value(sp, 'CharacterID', 'None') if isinstance(sp, dict) else 'None'
+            if not cid or cid == 'None':
+                self.pals.pop(idx, None)
+                continue
+            si = safe_nested_get(sp, ['SlotId', 'value', 'SlotIndex'])
+            if isinstance(si, dict):
+                si['value'] = idx
+            self.pals[idx] = {'data': sp}
+        return True
 
     def _set_gps_slot(self, abs_idx, raw_data):
         if not constants.gps_gvas:

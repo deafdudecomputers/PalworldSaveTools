@@ -97,6 +97,6 @@ PST_standalone*.zip
 /rust/
 /web/
 
-# MemPalace per-project files (issue #185)
-mempalace.yaml
-entities.json
+# Pal exports created while testing
+*.pstpal
+*.pstbase
