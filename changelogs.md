@@ -1,3 +1,8 @@
+#2.3.4
+- **Importing/cloning a base no longer risks touching works from your other bases** — after an import, only the newly imported camp's orphan work records get cleaned up. Work records belonging to pre-existing bases are left alone, so a base import can no longer interfere with anything you already built.
+- **Deleting bases or cleaning up unused data now removes all their leftover work records** — the works that pointed at deleted structures or camps are now cleaned up reliably with the same consistent logic used elsewhere, so no stale work entries linger in the save after a deletion.
+- Bumped version to 2.3.4
+
 #2.3.3
 - **Pal name options when creating pals** — a default-name setting now controls what nickname newly created pals get: mark them as "New", mark them as "© Copy", or use no nickname (the species' default name). A nickname you type in the create dialog always wins. Applies everywhere pals are created or cloned — Pal Editor, base pals, Global Pal Storage, DPS storage, and bulk clone. Bulk cloning no longer appends "_clone" to copied pal names. Bulk Sync has a new toggle to optionally copy the source pal's nickname onto the synced pals.
 - **Resize player inventory slots** — a new "Modify Slots" button in the Player Inventory tab lets you expand or shrink the main inventory anywhere from 42 up to 999 slots. Shrinking below the number of items you're carrying is blocked, and a manually resized inventory now keeps its size instead of snapping back to the default 42 slots on reload.
