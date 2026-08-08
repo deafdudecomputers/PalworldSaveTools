@@ -15,6 +15,9 @@
 - **Save errors no longer hide behind "Saved successfully"** — if writing the save fails, a full error screen with details and a copy button appears instead of a false success message.
 - **Importing bases into a real save no longer fails** — the support check that treated normally-placed structures as unsupported has been relaxed, so existing bases import without being blocked.
 - **Newer work records now decode correctly** — the work entries the game creates for multi-recipe workbenches and fish ponds used to show up as unreadable raw data. They now load like any other work and roundtrip byte-for-byte, so editing, validation, and reference checks see every work in the save.
+- **Select All button for pals** — Global Pal Storage and the Pal Editor box both got a "Select All" button that picks every pal at once, across every page, so bulk actions like Max, Feed Food, Heal, Rename and Delete can be applied to the whole storage in one click. Clicking it again clears the selection, and a multi-selection now stays highlighted correctly when you flip between pages.
+- **Importing several pal files at once actually imports them all** — picking multiple .pstpal or .json files used to leave you with just one pal, because every file was written into the same slot. Each pal now lands in its own free slot, in the palbox, party, DPS storage and Global Pal Storage alike, and the success message reports how many really came in. If the free slots run out mid-import, you're told how many made it.
+- **Give every pal all skills in one click** — a new "All Skills" button sits next to Restore All and Max All in both the Pal Editor and Global Pal Storage, teaching every move to all pals at once; with Cheat mode on it also grants every passive skill. The same action is available as a "Skills" button on the multi-select toolbar when you only want it applied to the pals you picked.
 - Bumped version to 2.3.3
 
 #2.3.2

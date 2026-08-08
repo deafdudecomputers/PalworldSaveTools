@@ -18,6 +18,8 @@ from . import data as _data
 from .data import _PAL_STYLESHEET, _ensure_friendship_thresholds
 from .legacy_frame import PalFrame
 from .pal_ops import (
+    _all_passive_skill_keys,
+    _apply_all_skills_raw,
     _export_pal_raw,
     _generate_pal_save_param,
     _get_raw_from_item,
@@ -143,6 +145,7 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
         mt_layout.addWidget(self.multi_count_label)
         for btn_cfg in [('multi_max_btn', 'pal_editor.bulk_max_btn', self._on_bulk_max_selected, '#A78BFA', '#A78BFA'),
                          ('multi_buff_btn', 'pal_editor.bulk_max_buff_btn', self._on_bulk_max_buff_selected, '#F97316', '#F97316'),
+                         ('multi_skills_btn', 'pal_editor.bulk_skills_btn', self._on_bulk_all_skills_selected, '#F59E0B', '#F59E0B'),
                          ('multi_heal_btn', 'pal_editor.bulk_heal_btn', self._on_bulk_heal_selected, '#4ADE80', '#4ADE80'),
                          ('multi_rename_btn', 'pal_editor.bulk_rename_btn', self._on_bulk_rename_selected, '#FBBF24', '#FBBF24'),
                          ('multi_delete_btn', 'pal_editor.bulk_delete_btn', self._on_bulk_delete_selected, '#FB7185', '#FB7185')]:
@@ -191,6 +194,20 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
         self.max_buff_all_btn.setToolTip(t('edit_pals.tooltip.max_buff'))
         self.max_buff_all_btn.clicked.connect(self._max_buff_all_pals)
         header_row.addWidget(self.max_buff_all_btn)
+        self.all_skills_all_btn = QPushButton(t('edit_pals.all_skills_all'))
+        self.all_skills_all_btn.setFixedHeight(24)
+        self.all_skills_all_btn.setStyleSheet('QPushButton { background: rgba(245,158,11,0.12); color: #F59E0B; border: 1px solid rgba(245,158,11,0.25); border-radius: 5px; padding: 4px 10px; font-weight: 600; font-size: 10px; } QPushButton:hover { background: rgba(245,158,11,0.25); border-color: rgba(245,158,11,0.5); color: #FFFFFF; }')
+        self.all_skills_all_btn.setCursor(Qt.PointingHandCursor)
+        self.all_skills_all_btn.setToolTip(t('edit_pals.all_skills_all_hint'))
+        self.all_skills_all_btn.clicked.connect(self._all_skills_all_pals)
+        header_row.addWidget(self.all_skills_all_btn)
+        self.select_all_btn = QPushButton(t('pal_editor.select_all_btn'))
+        self.select_all_btn.setFixedHeight(24)
+        self.select_all_btn.setStyleSheet('QPushButton { background: rgba(56,189,248,0.12); color: #38BDF8; border: 1px solid rgba(56,189,248,0.25); border-radius: 5px; padding: 4px 10px; font-weight: 600; font-size: 10px; } QPushButton:hover { background: rgba(56,189,248,0.25); border-color: rgba(56,189,248,0.5); color: #FFFFFF; }')
+        self.select_all_btn.setCursor(Qt.PointingHandCursor)
+        self.select_all_btn.setToolTip(t('pal_editor.select_all_hint'))
+        self.select_all_btn.clicked.connect(self._on_select_all)
+        header_row.addWidget(self.select_all_btn)
         header_row.addSpacing(4)
         self.bulk_clone_btn = QPushButton(t('edit_pals.bulk_clone') if t else 'Bulk Clone')
         self.bulk_clone_btn.setFixedHeight(24)
@@ -907,11 +924,47 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
             with open(file_path, 'w', encoding='utf-8') as f:
                 json.dump(export_data, f, cls=BackupEncoder, indent=2)
         show_information(self, t('edit_pals.export_pal'), t('edit_pals.export_pal.success', path=os.path.basename(file_path)))
+    def _next_free_pal_slot(self, start, is_party):
+        if is_party:
+            total = len(self.party_slots) or 5
+            occupied = self.party_pals
+        else:
+            total = max(self.total_slots, 30)
+            occupied = self.palbox_pal_dict
+        if start < 0 or start >= total:
+            start = 0
+        for abs_idx in list(range(start, total)) + list(range(0, start)):
+            if abs_idx not in occupied:
+                return abs_idx
+        return None
+
+    def _next_free_dps_slot(self, start):
+        total = self.dps_total_slots
+        if total <= 0:
+            return None
+        if start < 0 or start >= total:
+            start = 0
+        for abs_idx in list(range(start, total)) + list(range(0, start)):
+            if abs_idx not in self.dps_pals:
+                return abs_idx
+        return None
+
     def _import_pal_to_slot(self, slot_index, is_party):
+        next_slot = slot_index if is_party else (self.current_box_index - 1) * 30 + slot_index
+        occupied = self.party_pals if is_party else self.palbox_pal_dict
+        if next_slot in occupied:
+            show_warning(self, t('edit_pals.import_pal'), t('edit_pals.slot_occupied', slot=slot_index))
+            return
         file_paths, _ = QFileDialog.getOpenFileNames(self, t('edit_pals.import_pal'), '', 'Pal Files (*.pstpal *.json)')
         if not file_paths:
             return
+        imported_count = 0
+        out_of_space = False
         for file_path in file_paths:
+            abs_index = self._next_free_pal_slot(next_slot, is_party)
+            if abs_index is None:
+                out_of_space = True
+                break
             try:
                 if file_path.endswith('.pstpal'):
                     imported_raw = _import_pal_raw(file_path)
@@ -926,17 +979,7 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
                 show_warning(self, t('edit_pals.import_pal'), f"Invalid pal file: {os.path.basename(file_path)}")
                 continue
             nick = extract_value(imported_raw, 'NickName', '') or ''
-            abs_index = slot_index if is_party else (self.current_box_index - 1) * 30 + slot_index
-            if is_party:
-                if slot_index in self.party_pals:
-                    show_warning(self, t('edit_pals.import_pal'), t('edit_pals.slot_occupied', slot=slot_index))
-                    continue
-                container_id = self.party_container
-            else:
-                if abs_index in self.palbox_pal_dict:
-                    show_warning(self, t('edit_pals.import_pal'), t('edit_pals.slot_occupied', slot=slot_index))
-                    continue
-                container_id = self.palbox_container
+            container_id = self.party_container if is_party else self.palbox_container
             if not container_id:
                 show_warning(self, t('edit_pals.import_pal'), 'No container ID')
                 return
@@ -978,6 +1021,8 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
                 self.party_pals[abs_index] = new_pal
             else:
                 self.palbox_pal_dict[abs_index] = new_pal
+            imported_count += 1
+            next_slot = abs_index + 1
         self._update_party_slots()
         self._update_palbox_page()
         self._clear_party_highlight()
@@ -985,8 +1030,12 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
         self.selected_pal_slot = None
         self.pal_info.set_clicked_pal(None)
         self._update_dashboard_stats()
-        self._increment_pal_count()
-        show_information(self, t('edit_pals.import_pal'), t('edit_pals.import_pal.success', count=len(file_paths)))
+        for _ in range(imported_count):
+            self._increment_pal_count()
+        if out_of_space:
+            show_warning(self, t('edit_pals.import_pal'), t('edit_pals.import_pal_no_space', count=imported_count))
+        else:
+            show_information(self, t('edit_pals.import_pal'), t('edit_pals.import_pal.success', count=imported_count))
     def _import_pal_to_dps_slot(self, slot_index):
         abs_idx = (self.current_box_index - 1) * 30 + slot_index
         if abs_idx in self.dps_pals:
@@ -995,7 +1044,14 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
         file_paths, _ = QFileDialog.getOpenFileNames(self, t('edit_pals.import_pal'), '', 'Pal Files (*.pstpal *.json)')
         if not file_paths:
             return
+        next_slot = abs_idx
+        imported_count = 0
+        out_of_space = False
         for file_path in file_paths:
+            target = self._next_free_dps_slot(next_slot)
+            if target is None:
+                out_of_space = True
+                break
             try:
                 if file_path.endswith('.pstpal'):
                     imported_raw = _import_pal_raw(file_path)
@@ -1010,25 +1066,27 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
                 show_warning(self, t('edit_pals.import_pal'), f"Invalid pal file: {os.path.basename(file_path)}")
                 continue
             arr = self.dps_gvas.properties.get('SaveParameterArray', {}).get('value', {}).get('values', [])
-            if abs_idx >= len(arr) or not isinstance(arr[abs_idx], dict):
+            if target >= len(arr) or not isinstance(arr[target], dict):
                 continue
-            sp = arr[abs_idx].get('SaveParameter', {}).get('value', {})
+            sp = arr[target].get('SaveParameter', {}).get('value', {})
             sp.clear()
             sp.update(copy.deepcopy(imported_raw))
-            inst = arr[abs_idx].get('InstanceId', {}).get('value', {})
+            inst = arr[target].get('InstanceId', {}).get('value', {})
             inst['PlayerUId'] = {'struct_type': 'Guid', 'struct_id': '00000000-0000-0000-0000-000000000000', 'id': None, 'value': str(self.player_uid) if self.player_uid else '00000000-0000-0000-0000-000000000000', 'type': 'StructProperty'}
             inst['InstanceId'] = {'struct_type': 'Guid', 'struct_id': '00000000-0000-0000-0000-000000000000', 'id': None, 'value': str(uuid.uuid4()), 'type': 'StructProperty'}
             inst['DebugName'] = {'id': None, 'type': 'StrProperty', 'value': ''}
             from palworld_aio.managers.func_manager import _restore_one_pal
             _restore_one_pal(sp)
-            wrapper = {'data': sp}
-            self.dps_pals[abs_idx] = wrapper
-            self.palbox_slots[slot_index].pal_data = wrapper
-            self.palbox_slots[slot_index].update_display()
+            self.dps_pals[target] = {'data': sp}
+            imported_count += 1
+            next_slot = target + 1
             self._mark_dps_modified()
         self._update_palbox_page()
         self._update_box_label()
-        show_information(self, t('edit_pals.import_pal'), t('edit_pals.import_pal.success', count=len(file_paths)))
+        if out_of_space:
+            show_warning(self, t('edit_pals.import_pal'), t('edit_pals.import_pal_no_space', count=imported_count))
+        else:
+            show_information(self, t('edit_pals.import_pal'), t('edit_pals.import_pal.success', count=imported_count))
     def _restore_all_pals(self):
         reply = show_question(self, t('edit_pals.ctx.bulk_heal'), t('edit_pals.restore_all_confirm'))
         if not reply:
@@ -1354,14 +1412,84 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
             self.multi_toolbar.setVisible(True)
             self.restore_all_btn.setVisible(False)
             self.max_all_btn.setVisible(False)
+            self.all_skills_all_btn.setVisible(False)
             self.bulk_clone_btn.setVisible(False)
             self.bulk_delete_btn.setVisible(False)
         else:
             self.multi_toolbar.setVisible(False)
             self.restore_all_btn.setVisible(True)
             self.max_all_btn.setVisible(True)
+            self.all_skills_all_btn.setVisible(True)
             self.bulk_clone_btn.setVisible(True)
             self.bulk_delete_btn.setVisible(True)
+    def _on_select_all(self):
+        slot_type = 'dps' if self._palbox_mode == 'dps' else 'palbox'
+        source = self.dps_pals if slot_type == 'dps' else self.palbox_pal_dict
+        all_keys = {(slot_type, abs_idx) for abs_idx in source}
+        if not all_keys:
+            return
+        if all_keys.issubset(self._multi_selected):
+            self._clear_multi_selection()
+            return
+        self._multi_selected = set(all_keys)
+        self._multi_select_anchor = None
+        for slot in self.party_slots:
+            slot.set_selected_multi(False)
+        for slot in self.palbox_slots:
+            slot.set_selected_multi(False)
+        self._reapply_multi_highlights()
+
+    def _apply_all_skills_to(self, pals):
+        cheat = PalFrame._cheat_mode
+        key = 'edit_pals.all_skills_all_confirm_cheat' if cheat else 'edit_pals.all_skills_all_confirm'
+        if not show_question(self, t('edit_pals.all_skills_all'), t(key, n=len(pals))):
+            return None
+        passive_keys = _all_passive_skill_keys() if cheat else None
+        count = 0
+        for pi in pals:
+            tr = _get_raw_from_item(pi)
+            if not tr:
+                continue
+            try:
+                _apply_all_skills_raw(tr, passive_keys)
+            except Exception as e:
+                print(f'All-skills error: {e}')
+                continue
+            count += 1
+        return count
+
+    def _finish_all_skills(self, count):
+        self._update_party_slots()
+        self._update_palbox_page()
+        self.pal_info._refresh()
+        if self.dps_pals:
+            self._save_dps(force=True)
+        show_information(self, t('edit_pals.all_skills_all'), t('edit_pals.all_skills_all_done', count=count))
+
+    def _on_bulk_all_skills_selected(self):
+        pals = self._gather_selected_pals()
+        if not pals:
+            return
+        count = self._apply_all_skills_to(pals)
+        if count is None:
+            return
+        self._clear_multi_selection()
+        self._finish_all_skills(count)
+
+    def _all_skills_all_pals(self):
+        pals = list(self.party_pals.values())
+        for i in sorted(self.palbox_pal_dict.keys()):
+            pals.append(self.palbox_pal_dict[i])
+        if self.dps_pals:
+            for pi in self.dps_pals.values():
+                pals.append(pi)
+        if not pals:
+            return
+        count = self._apply_all_skills_to(pals)
+        if count is None:
+            return
+        self._finish_all_skills(count)
+
     def _on_bulk_delete_selected(self):
         pals = self._gather_selected_pals()
         if not pals:
@@ -1765,6 +1893,12 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
         if hasattr(self, 'max_buff_all_btn'):
             self.max_buff_all_btn.setText(t('edit_pals.max_buff_all'))
             self.max_buff_all_btn.setToolTip(t('edit_pals.tooltip.max_buff'))
+        if hasattr(self, 'all_skills_all_btn'):
+            self.all_skills_all_btn.setText(t('edit_pals.all_skills_all'))
+            self.all_skills_all_btn.setToolTip(t('edit_pals.all_skills_all_hint'))
+        if hasattr(self, 'select_all_btn'):
+            self.select_all_btn.setText(t('pal_editor.select_all_btn'))
+            self.select_all_btn.setToolTip(t('pal_editor.select_all_hint'))
         if hasattr(self, 'bulk_clone_btn'):
             self.bulk_clone_btn.setText(t('edit_pals.bulk_clone') if t else 'Bulk Clone')
         if hasattr(self, 'bulk_delete_btn'):
@@ -1780,6 +1914,8 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
                     btn.setText(t('pal_editor.bulk_max_btn'))
                 elif obj == 'multi_buff_btn':
                     btn.setText(t('pal_editor.bulk_max_buff_btn'))
+                elif obj == 'multi_skills_btn':
+                    btn.setText(t('pal_editor.bulk_skills_btn'))
                 elif obj == 'multi_heal_btn':
                     btn.setText(t('pal_editor.bulk_heal_btn'))
                 elif obj == 'multi_rename_btn':

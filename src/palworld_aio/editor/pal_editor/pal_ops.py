@@ -137,6 +137,17 @@ def _learn_all_skills_raw(raw):
             filled.append(entry)
         raw['EquipWaza'] = {'array_type': 'EnumProperty', 'id': None, 'value': {'values': filled[:as_cap]}, 'type': 'ArrayProperty'}
 
+def _all_passive_skill_keys():
+    from .legacy_frame import PalFrame
+    _data._ensure_passive_data()
+    PalFrame._load_maps()
+    return sorted(PalFrame._PASSMAP.keys())
+
+def _apply_all_skills_raw(raw, passive_keys=None):
+    _learn_all_skills_raw(raw)
+    if passive_keys:
+        raw['PassiveSkillList'] = {'array_type': 'NameProperty', 'id': None, 'value': {'values': list(passive_keys)}, 'type': 'ArrayProperty'}
+
 def _toggle_boss_raw(raw, enable):
     cid = extract_value(raw, 'CharacterID', '')
     if enable:

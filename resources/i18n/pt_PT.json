@@ -2190,5 +2190,14 @@
     "common.confirm": "Confirmar",
     "deletion.illegal_players_fixed": "Corrigido(s) {count} jogador(es) com estatísticas ilegais.",
     "character_transfer.load_both_saves": "Por favor, carregue as gravações de origem e destino antes de utilizar Transferir Tudo.",
-    "character_transfer.load_target_first": "Por favor, carregue uma gravação de destino antes de gravar as alterações."
+    "character_transfer.load_target_first": "Por favor, carregue uma gravação de destino antes de gravar as alterações.",
+    "pal_editor.select_all_btn": "Selecionar tudo",
+    "pal_editor.select_all_hint": "Seleciona todos os pals listados aqui. Clique novamente para desmarcar.",
+    "pal_editor.bulk_skills_btn": "Habilidades",
+    "edit_pals.all_skills_all": "Todas as habilidades",
+    "edit_pals.all_skills_all_hint": "Ensina todos os golpes a todos os pals (no modo Cheat também concede todas as passivas)",
+    "edit_pals.all_skills_all_confirm": "Ensinar todos os golpes a {n} pals?",
+    "edit_pals.all_skills_all_confirm_cheat": "Ensinar todos os golpes e conceder todas as habilidades passivas a {n} pals? (modo Cheat)",
+    "edit_pals.all_skills_all_done": "Todas as habilidades foram dadas a {count} pals.",
+    "edit_pals.import_pal_no_space": "{count} pals importados; depois esgotaram-se os espaços livres."
 }
