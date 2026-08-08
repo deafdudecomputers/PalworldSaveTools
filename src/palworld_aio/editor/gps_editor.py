@@ -324,6 +324,10 @@ class GpsEditorDialog(FramelessDialog):
             slot.set_selected_multi(False)
 
     def _on_slot_clicked(self, idx):
+        slot = self.slots[idx]
+        if getattr(slot, '_context_click', False):
+            slot._context_click = False
+            return
         start = (self.current_page - 1) * PAGE_SIZE
         abs_idx = start + idx
         pal = self.pals.get(abs_idx)
@@ -929,18 +933,16 @@ class GpsEditorDialog(FramelessDialog):
         if free < 1:
             show_warning(self, t('edit_pals.ctx.clone_bulk'), t('edit_pals.clone_bulk_full'))
             return
-        max_each = max(1, free // len(pals))
-        from palworld_aio.editor.dialogs import LevelInputDialog
-        count = LevelInputDialog.get_level(
-            t('edit_pals.ctx.clone_bulk'),
-            t('edit_pals.clone_bulk_prompt', pals=len(pals), max=max_each),
-            1, self, minimum=1, maximum=max_each)
-        if not count:
+        from palworld_aio.editor.pal_editor.create_dialogs import CloneBulkDialog
+        counts = CloneBulkDialog.ask(pals, free, self)
+        if not counts:
             return
         from palworld_aio.managers.func_manager import _restore_one_pal
         made = 0
         out_of_space = False
-        for pal in pals:
+        for pal, count in zip(pals, counts):
+            if count < 1:
+                continue
             raw = _get_raw_from_item(pal)
             template = copy.deepcopy(raw)
             _restore_one_pal(template)

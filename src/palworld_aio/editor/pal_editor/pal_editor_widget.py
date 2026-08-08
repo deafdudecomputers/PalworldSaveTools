@@ -538,7 +538,8 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
         self.pal_info.clear_hover()
     def _on_slot_right_clicked(self, slot_index, action):
         selected_before = self._gather_selected_pals()
-        self._clear_multi_selection()
+        if action != 'clone_bulk':
+            self._clear_multi_selection()
         sender = self.sender()
         is_party = sender in self.party_slots
         is_dps = (not is_party) and self._palbox_mode == 'dps'
@@ -1006,20 +1007,16 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
         if free < 1:
             show_warning(self, t('edit_pals.ctx.clone_bulk'), t('edit_pals.clone_bulk_full'))
             return
-        max_each = max(1, free // len(pals))
-        from palworld_aio.editor.dialogs import LevelInputDialog
-        count = LevelInputDialog.get_level(
-            t('edit_pals.ctx.clone_bulk'),
-            t('edit_pals.clone_bulk_prompt', pals=len(pals), max=max_each),
-            1, self, minimum=1, maximum=max_each)
-        if not count:
+        from .create_dialogs import CloneBulkDialog
+        counts = CloneBulkDialog.ask(pals, free, self)
+        if not counts:
             return
         group_id = None if is_dps else self._owner_group_id()
         made = 0
         out_of_space = False
-        for pal in pals:
+        for pal, count in zip(pals, counts):
             source_raw = _get_raw_from_item(pal)
-            if not source_raw:
+            if not source_raw or count < 1:
                 continue
             source_raw = copy.deepcopy(source_raw)
             for _ in range(count):
