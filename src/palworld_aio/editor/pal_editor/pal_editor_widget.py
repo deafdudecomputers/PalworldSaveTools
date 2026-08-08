@@ -21,6 +21,9 @@ from .pal_ops import (
     _all_passive_skill_keys,
     _apply_all_skills_raw,
     _export_pal_raw,
+    PAL_SORT_MODES,
+    pal_sort_key,
+    set_pal_slot_index,
     _generate_pal_save_param,
     _get_raw_from_item,
     _import_pal_raw,
@@ -201,6 +204,13 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
         self.all_skills_all_btn.setToolTip(t('edit_pals.all_skills_all_hint'))
         self.all_skills_all_btn.clicked.connect(self._all_skills_all_pals)
         header_row.addWidget(self.all_skills_all_btn)
+        self.sort_btn = QPushButton(t('edit_pals.sort_btn'))
+        self.sort_btn.setFixedHeight(24)
+        self.sort_btn.setStyleSheet('QPushButton { background: rgba(148,163,184,0.12); color: #94A3B8; border: 1px solid rgba(148,163,184,0.25); border-radius: 5px; padding: 4px 10px; font-weight: 600; font-size: 10px; } QPushButton:hover { background: rgba(148,163,184,0.25); border-color: rgba(148,163,184,0.5); color: #FFFFFF; }')
+        self.sort_btn.setCursor(Qt.PointingHandCursor)
+        self.sort_btn.setToolTip(t('edit_pals.sort_hint'))
+        self.sort_btn.clicked.connect(self._on_sort_clicked)
+        header_row.addWidget(self.sort_btn)
         self.select_all_btn = QPushButton(t('pal_editor.select_all_btn'))
         self.select_all_btn.setFixedHeight(24)
         self.select_all_btn.setStyleSheet('QPushButton { background: rgba(56,189,248,0.12); color: #38BDF8; border: 1px solid rgba(56,189,248,0.25); border-radius: 5px; padding: 4px 10px; font-weight: 600; font-size: 10px; } QPushButton:hover { background: rgba(56,189,248,0.25); border-color: rgba(56,189,248,0.5); color: #FFFFFF; }')
@@ -1420,6 +1430,7 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
             self.restore_all_btn.setVisible(False)
             self.max_all_btn.setVisible(False)
             self.all_skills_all_btn.setVisible(False)
+            self.sort_btn.setVisible(False)
             self.bulk_clone_btn.setVisible(False)
             self.bulk_delete_btn.setVisible(False)
         else:
@@ -1427,8 +1438,107 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
             self.restore_all_btn.setVisible(True)
             self.max_all_btn.setVisible(True)
             self.all_skills_all_btn.setVisible(True)
+            self.sort_btn.setVisible(True)
             self.bulk_clone_btn.setVisible(True)
             self.bulk_delete_btn.setVisible(True)
+    def _on_sort_clicked(self):
+        source = self.dps_pals if self._palbox_mode == 'dps' else self.palbox_pal_dict
+        if not source:
+            return
+        from palworld_aio.widgets.scrollable_context_menu import ScrollableContextMenu
+        popup = ScrollableContextMenu(self)
+        for key, label_key in PAL_SORT_MODES:
+            popup.add_item(key, t(label_key))
+        mode = popup.exec_(self.sort_btn.mapToGlobal(self.sort_btn.rect().bottomLeft()))
+        if not mode:
+            return
+        if self._palbox_mode == 'dps':
+            count = self._sort_dps(mode)
+        else:
+            count = self._sort_palbox(mode)
+        self._clear_multi_selection()
+        self._clicked_pal = None
+        self.selected_pal_slot = None
+        self.pal_info.set_clicked_pal(None)
+        self.current_box_index = 1
+        self._update_palbox_page()
+        self._update_box_label()
+        if count:
+            show_information(self, t('edit_pals.sort_btn'), t('edit_pals.sort_done', count=count))
+
+    def _sort_palbox(self, mode):
+        items = [self.palbox_pal_dict[i] for i in sorted(self.palbox_pal_dict)]
+        items = [it for it in items if isinstance(_get_raw_from_item(it), dict)]
+        if not items:
+            return 0
+        items.sort(key=lambda it: pal_sort_key(_get_raw_from_item(it), mode))
+        new_index_by_instance = {}
+        for new_idx, item in enumerate(items):
+            raw = _get_raw_from_item(item)
+            set_pal_slot_index(raw, new_idx)
+            inst = safe_nested_get(item, ['key', 'InstanceId', 'value'])
+            if inst:
+                new_index_by_instance[str(inst).replace('-', '').lower()] = new_idx
+        target = str(self.palbox_container).replace('-', '').lower() if self.palbox_container else ''
+        if target and constants.loaded_level_json:
+            wsd = constants.loaded_level_json['properties']['worldSaveData']['value']
+            for cont in safe_nested_get(wsd, ['CharacterContainerSaveData', 'value'], []) or []:
+                cid = safe_nested_get(cont, ['key', 'ID', 'value'])
+                if not cid or str(cid).replace('-', '').lower() != target:
+                    continue
+                slots = safe_nested_get(cont, ['value', 'Slots', 'value', 'values'], []) or []
+                for slot_entry in slots:
+                    inst = safe_nested_get(slot_entry, ['RawData', 'value', 'instance_id'])
+                    key = str(inst).replace('-', '').lower() if inst else ''
+                    new_idx = new_index_by_instance.get(key)
+                    if new_idx is None:
+                        continue
+                    si = slot_entry.get('SlotIndex')
+                    if isinstance(si, dict):
+                        si['value'] = new_idx
+                break
+        self.palbox_pal_dict = {i: item for i, item in enumerate(items)}
+        return len(items)
+
+    def _sort_dps(self, mode):
+        if not self.dps_gvas:
+            return 0
+        arr = self.dps_gvas.properties.get('SaveParameterArray', {}).get('value', {}).get('values', [])
+        if not arr:
+            return 0
+        entries = []
+        for abs_idx in sorted(self.dps_pals):
+            raw = _get_raw_from_item(self.dps_pals[abs_idx])
+            if not isinstance(raw, dict):
+                continue
+            inst = None
+            if abs_idx < len(arr) and isinstance(arr[abs_idx], dict):
+                inst = copy.deepcopy(arr[abs_idx].get('InstanceId'))
+            entries.append((copy.deepcopy(raw), inst))
+        if not entries:
+            return 0
+        entries.sort(key=lambda e: pal_sort_key(e[0], mode))
+        for idx in range(len(arr)):
+            self._clear_dps_slot(idx)
+        self.dps_pals = {}
+        placed = 0
+        for idx, (raw, inst) in enumerate(entries):
+            if idx >= len(arr) or not isinstance(arr[idx], dict):
+                break
+            sp = arr[idx].get('SaveParameter', {}).get('value', {})
+            if not isinstance(sp, dict):
+                continue
+            sp.clear()
+            sp.update(raw)
+            set_pal_slot_index(sp, idx)
+            if inst is not None:
+                arr[idx]['InstanceId'] = inst
+            self.dps_pals[idx] = {'data': sp}
+            placed += 1
+        self._mark_dps_modified()
+        self._save_dps(force=True)
+        return placed
+
     def _on_select_all(self):
         slot_type = 'dps' if self._palbox_mode == 'dps' else 'palbox'
         source = self.dps_pals if slot_type == 'dps' else self.palbox_pal_dict
@@ -1896,6 +2006,9 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
         if hasattr(self, 'select_all_btn'):
             self.select_all_btn.setText(t('pal_editor.select_all_btn'))
             self.select_all_btn.setToolTip(t('pal_editor.select_all_hint'))
+        if hasattr(self, 'sort_btn'):
+            self.sort_btn.setText(t('edit_pals.sort_btn'))
+            self.sort_btn.setToolTip(t('edit_pals.sort_hint'))
         if hasattr(self, 'bulk_clone_btn'):
             self.bulk_clone_btn.setText(t('edit_pals.bulk_clone') if t else 'Bulk Clone')
         if hasattr(self, 'bulk_delete_btn'):

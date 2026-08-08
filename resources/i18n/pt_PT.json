@@ -2199,5 +2199,12 @@
     "edit_pals.all_skills_all_confirm": "Ensinar todos os golpes a {n} pals?",
     "edit_pals.all_skills_all_confirm_cheat": "Ensinar todos os golpes e conceder todas as habilidades passivas a {n} pals? (modo Cheat)",
     "edit_pals.all_skills_all_done": "Todas as habilidades foram dadas a {count} pals.",
-    "edit_pals.import_pal_no_space": "{count} pals importados; depois esgotaram-se os espaços livres."
+    "edit_pals.import_pal_no_space": "{count} pals importados; depois esgotaram-se os espaços livres.",
+    "edit_pals.sort_btn": "Ordenar",
+    "edit_pals.sort_hint": "Reordena os pals e agrupa-os a partir do primeiro espaço",
+    "edit_pals.sort.paldeck": "Por n.º do Paldeck",
+    "edit_pals.sort.level": "Por nível",
+    "edit_pals.sort.name": "Por nome",
+    "edit_pals.sort.rarity": "Por raridade e IVs",
+    "edit_pals.sort_done": "{count} pals ordenados."
 }
