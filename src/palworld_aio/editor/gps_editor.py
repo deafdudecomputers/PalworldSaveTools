@@ -443,6 +443,64 @@ class GpsEditorDialog(FramelessDialog):
         self._apply_multi_highlights()
         self._update_multi_toolbar()
 
+    def _on_sort_clicked(self):
+        if not self.pals:
+            return
+        from palworld_aio.widgets.scrollable_context_menu import ScrollableContextMenu
+        popup = ScrollableContextMenu(self)
+        for key, label_key in PAL_SORT_MODES:
+            popup.add_item(key, t(label_key))
+        mode = popup.exec_(self.sort_btn.mapToGlobal(self.sort_btn.rect().bottomLeft()))
+        if not mode:
+            return
+        count = self._sort_gps(mode)
+        self._clear_multi_selection()
+        self._clear_selection()
+        self._update_page()
+        self._mark_modified()
+        if count:
+            show_information(self, t('edit_pals.sort_btn'), t('edit_pals.sort_done', count=count))
+
+    def _sort_gps(self, mode):
+        if not constants.gps_gvas:
+            return 0
+        arr = constants.gps_gvas.properties.get('SaveParameterArray', {}).get('value', {}).get('values', [])
+        if not arr:
+            return 0
+        entries = []
+        for abs_idx in sorted(self.pals):
+            raw = self.pals[abs_idx].get('data')
+            if not isinstance(raw, dict):
+                continue
+            cid = extract_value(raw, 'CharacterID', 'None')
+            if cid == 'None' or not cid:
+                continue
+            inst = None
+            if abs_idx < len(arr) and isinstance(arr[abs_idx], dict):
+                inst = copy.deepcopy(arr[abs_idx].get('InstanceId'))
+            entries.append((copy.deepcopy(raw), inst))
+        if not entries:
+            return 0
+        entries.sort(key=lambda e: pal_sort_key(e[0], mode))
+        for idx in range(len(arr)):
+            self._clear_gps_instance(idx)
+        self.pals = {}
+        placed = 0
+        for idx, (raw, inst) in enumerate(entries):
+            if idx >= len(arr) or not isinstance(arr[idx], dict):
+                break
+            sp = arr[idx].get('SaveParameter', {}).get('value', {})
+            if not isinstance(sp, dict):
+                continue
+            sp.clear()
+            sp.update(copy.deepcopy(raw))
+            set_pal_slot_index(sp, idx)
+            if inst is not None:
+                arr[idx]['InstanceId'] = inst
+            self.pals[idx] = {'data': sp}
+            placed += 1
+        return placed
+
     def _toggle_multi(self, slot_type, abs_idx, force_add=False):
         key = (slot_type, abs_idx)
         if key in self._multi_selected:
