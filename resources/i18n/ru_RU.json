@@ -2081,5 +2081,9 @@
     "pal_name_settings.title": "Настройки имени приятеля",
     "pal_name_settings.mode_label": "Назовите новых друзей с помощью:",
     "pal_name_settings.mode_hint": "Применяется при создании друзей (Pal Editor, базовых друзей, Global Pal Storage) и клонов. Набранный псевдоним всегда имеет приоритет над ним.",
-    "pal_name_settings.sync_nickname": "Применить псевдоним во время массовой синхронизации"
+    "pal_name_settings.sync_nickname": "Применить псевдоним во время массовой синхронизации",
+    "deletion.menu.delete_imported_pals": "Удалить импортированных друзей",
+    "deletion.delete_imported_pals.title": "Удалить импортированных друзей",
+    "deletion.delete_imported_pals.confirm": "Удалить ВСЕХ импортированных приятелей (ДНК) из группы каждого игрока, палбокса, хранилища ДПС и всех рабочих базы? Это невозможно отменить. Продолжать?",
+    "deletion.imported_pals_removed": "Удалены импортированные друзья {count}."
 }

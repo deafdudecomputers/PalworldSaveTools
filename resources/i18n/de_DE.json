@@ -2107,5 +2107,9 @@
     "pal_name_settings.title": "Einstellungen für Kumpelnamen",
     "pal_name_settings.mode_label": "Benennen Sie neue Freunde mit:",
     "pal_name_settings.mode_hint": "Gilt beim Erstellen von Pals (Pal Editor, Basis-Pals, Global Pal Storage) und für Klone. Ein eingegebener Spitzname hat immer Vorrang.",
-    "pal_name_settings.sync_nickname": "Spitznamen während der Massensynchronisierung anwenden"
+    "pal_name_settings.sync_nickname": "Spitznamen während der Massensynchronisierung anwenden",
+    "deletion.menu.delete_imported_pals": "Importierte Freunde löschen",
+    "deletion.delete_imported_pals.title": "Importierte Freunde löschen",
+    "deletion.delete_imported_pals.confirm": "ALLE importierten Freunde (DNA) aus der Gruppe, der Palbox, dem DPS-Speicher und allen Basisarbeitern jedes Spielers löschen? Dies kann nicht rückgängig gemacht werden. Weitermachen?",
+    "deletion.imported_pals_removed": "{count} importierte Freunde entfernt"
 }

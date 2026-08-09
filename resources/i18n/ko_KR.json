@@ -2082,5 +2082,9 @@
     "pal_name_settings.title": "친구 이름 설정",
     "pal_name_settings.mode_label": "다음을 사용하여 새로운 친구를 지명하세요:",
     "pal_name_settings.mode_hint": "친구(Pal 편집기, 기본 친구, 글로벌 Pal 저장소)를 생성할 때 및 클론에 적용됩니다. 입력한 별명은 항상 이를 대체합니다.",
-    "pal_name_settings.sync_nickname": "대량 동기화 중 닉네임 적용"
+    "pal_name_settings.sync_nickname": "대량 동기화 중 닉네임 적용",
+    "deletion.menu.delete_imported_pals": "가져온 친구 삭제",
+    "deletion.delete_imported_pals.title": "가져온 친구 삭제",
+    "deletion.delete_imported_pals.confirm": "모든 플레이어의 파티, 팔박스, DPS 저장소 및 모든 기본 작업자에서 가져온 모든 친구(DNA)를 삭제하시겠습니까? 이 작업은 취소할 수 없습니다. 계속하다?",
+    "deletion.imported_pals_removed": "{count} 가져온 친구를 삭제했습니다."
 }

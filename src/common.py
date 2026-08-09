@@ -84,12 +84,6 @@ def is_restorable_save_dir(path: str) -> bool:
     return os.path.isdir(os.path.join(path, 'Players'))
 
 
-def get_restorable_save_path() -> str:
-    from i18n import get_config_value
-    stored = get_config_value('last_save_path', '')
-    return stored if is_restorable_save_dir(stored) else ''
-
-
 def set_last_save_path(path: str) -> None:
     if path and 'pst_xgp_' in path:
         return

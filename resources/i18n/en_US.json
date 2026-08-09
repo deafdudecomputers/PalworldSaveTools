@@ -2370,5 +2370,9 @@
     "pal_name_settings.title": "Pal Name Settings",
     "pal_name_settings.mode_label": "Name new pals with:",
     "pal_name_settings.mode_hint": "Applies when creating pals (Pal Editor, base pals, Global Pal Storage) and to clones. A typed nickname always overrides it.",
-    "pal_name_settings.sync_nickname": "Apply nickname during Bulk Sync"
+    "pal_name_settings.sync_nickname": "Apply nickname during Bulk Sync",
+    "deletion.menu.delete_imported_pals": "Delete Imported Pals",
+    "deletion.delete_imported_pals.title": "Delete Imported Pals",
+    "deletion.delete_imported_pals.confirm": "Delete ALL imported pals (DNA) from every player's party, palbox, DPS storage, and all base workers? This cannot be undone. Continue?",
+    "deletion.imported_pals_removed": "Removed {count} imported pals"
 }

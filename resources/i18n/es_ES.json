@@ -2077,5 +2077,9 @@
     "pal_name_settings.title": "Configuración de nombre de amigo",
     "pal_name_settings.mode_label": "Nombra nuevos amigos con:",
     "pal_name_settings.mode_hint": "Se aplica al crear amigos (Pal Editor, amigos base, Global Pal Storage) y clones. Un apodo escrito siempre lo anula.",
-    "pal_name_settings.sync_nickname": "Aplicar apodo durante la sincronización masiva"
+    "pal_name_settings.sync_nickname": "Aplicar apodo durante la sincronización masiva",
+    "deletion.menu.delete_imported_pals": "Eliminar amigos importados",
+    "deletion.delete_imported_pals.title": "Eliminar amigos importados",
+    "deletion.delete_imported_pals.confirm": "¿Eliminar TODOS los amigos importados (ADN) del grupo, palbox, almacenamiento de DPS y todos los trabajadores de la base de cada jugador? Esto no se puede deshacer. ¿Continuar?",
+    "deletion.imported_pals_removed": "Se eliminaron {count} amigos importados."
 }

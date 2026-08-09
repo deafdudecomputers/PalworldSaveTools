@@ -11,17 +11,12 @@ except ImportError:
     subprocess.check_call(['uv', 'pip', 'install', 'deep-translator'])
     from deep_translator import GoogleTranslator
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-LANGUAGES = {'zh_CN': {'name': 'Simplified Chinese', 'code': 'zh-CN'}, 'de_DE': {'name': 'German', 'code': 'de'}, 'es_ES': {'name': 'Spanish', 'code': 'es'}, 'fr_FR': {'name': 'French', 'code': 'fr'}, 'ru_RU': {'name': 'Russian', 'code': 'ru'}, 'ja_JP': {'name': 'Japanese', 'code': 'ja'}, 'ko_KR': {'name': 'Korean', 'code': 'ko'}, 'pt_BR': {'name': 'Portuguese (Brazil)', 'code': 'pt'}}
+LANGUAGES = {'zh_CN': {'name': 'Simplified Chinese', 'code': 'zh-CN'}, 'de_DE': {'name': 'German', 'code': 'de'}, 'es_ES': {'name': 'Spanish', 'code': 'es'}, 'fr_FR': {'name': 'French', 'code': 'fr'}, 'ru_RU': {'name': 'Russian', 'code': 'ru'}, 'ja_JP': {'name': 'Japanese', 'code': 'ja'}, 'ko_KR': {'name': 'Korean', 'code': 'ko'}, 'pt_BR': {'name': 'Portuguese (Brazil)', 'code': 'pt'}, 'pt_PT': {'name': 'Portuguese (Portugal)', 'code': 'pt'}}
 NEW_TRANSLATIONS = {
-    'edit_pals.name_mode': 'Default name:',
-    'edit_pals.name_mode_new': '🆕 New',
-    'edit_pals.name_mode_copy': '© Copy',
-    'edit_pals.name_mode_none': 'No Nickname',
-    'edit_pals.bulk_sync_nickname': 'Apply Nickname',
-    'pal_name_settings.title': 'Pal Name Settings',
-    'pal_name_settings.mode_label': 'Name new pals with:',
-    'pal_name_settings.mode_hint': 'Applies when creating pals (Pal Editor, base pals, Global Pal Storage) and to clones. A typed nickname always overrides it.',
-    'pal_name_settings.sync_nickname': 'Apply nickname during Bulk Sync',
+    'deletion.menu.delete_imported_pals': 'Delete Imported Pals',
+    'deletion.delete_imported_pals.title': 'Delete Imported Pals',
+    'deletion.delete_imported_pals.confirm': 'Delete ALL imported pals (DNA) from every player\'s party, palbox, DPS storage, and all base workers? This cannot be undone. Continue?',
+    'deletion.imported_pals_removed': 'Removed {count} imported pals',
 }
 OLD_KEYS = []
 def _clean_uv_locks():

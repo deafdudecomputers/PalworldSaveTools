@@ -13,7 +13,7 @@ from palworld_aio import constants
 from palworld_aio.ui.chrome.styles import TOOLTIP_STYLE
 from palworld_aio.utils import extract_value, safe_nested_get, calculate_max_hp, resolve_name, sav_to_gvasfile, gvasfile_to_sav
 from palworld_aio.inventory.container_ownership import ContainerOwnership
-from .widgets import FramelessDialog
+from .widgets import FramelessDialog, FlowLayout
 from . import data as _data
 from .data import _PAL_STYLESHEET, _ensure_friendship_thresholds
 from .legacy_frame import PalFrame
@@ -137,11 +137,17 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
         self.mode_dps_btn.clicked.connect(lambda: self._set_palbox_mode('dps'))
         mode_bar.addWidget(self.mode_box_btn)
         mode_bar.addWidget(self.mode_dps_btn)
+        mode_bar.addStretch()
+        self.box_label = QLabel(t('pal_editor.box', n=1) if t else 'Box 1')
+        self.box_label.setObjectName('boxHeader')
+        self.box_label.setFixedWidth(110)
+        self.box_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        mode_bar.addWidget(self.box_label)
         self.multi_toolbar = QFrame()
         self.multi_toolbar.setObjectName('multiToolbar')
         self.multi_toolbar.setStyleSheet('QFrame#multiToolbar { background: transparent; border: none; }')
         self.multi_toolbar.setVisible(False)
-        mt_layout = QHBoxLayout(self.multi_toolbar)
+        mt_layout = FlowLayout(self.multi_toolbar)
         mt_layout.setContentsMargins(0, 0, 0, 0)
         mt_layout.setSpacing(4)
         self.multi_count_label = QLabel()
@@ -167,18 +173,11 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
         deselect_btn.setStyleSheet('QPushButton { background: rgba(255,255,255,0.05); color: #9CA3AF; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 2px 8px; font-weight: 600; font-size: 10px; } QPushButton:hover { background: rgba(255,255,255,0.1); color: #FFFFFF; }')
         deselect_btn.clicked.connect(self._clear_multi_selection)
         mt_layout.addWidget(deselect_btn)
-        mode_bar.addWidget(self.multi_toolbar)
-        mode_bar.addStretch()
         palbox_layout.addLayout(mode_bar)
         self._update_mode_buttons()
-        header_row = QHBoxLayout()
+        header_row = FlowLayout()
         header_row.setSpacing(6)
-        self.box_label = QLabel(t('pal_editor.box', n=1) if t else 'Box 1')
-        self.box_label.setObjectName('boxHeader')
-        self.box_label.setFixedWidth(110)
-        self.box_label.setAlignment(Qt.AlignCenter)
-        header_row.addWidget(self.box_label)
-        header_row.addStretch()
+        header_row.addWidget(self.multi_toolbar)
         self.restore_all_btn = QPushButton(t('edit_pals.restore_all'))
         self.restore_all_btn.setFixedHeight(24)
         self.restore_all_btn.setStyleSheet('QPushButton { background: rgba(16,185,129,0.12); color: #4ADE80; border: 1px solid rgba(16,185,129,0.25); border-radius: 5px; padding: 4px 10px; font-weight: 600; font-size: 10px; } QPushButton:hover { background: rgba(16,185,129,0.25); border-color: rgba(16,185,129,0.5); color: #FFFFFF; }')
@@ -219,7 +218,6 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
         self.select_all_btn.setToolTip(t('pal_editor.select_all_hint'))
         self.select_all_btn.clicked.connect(self._on_select_all)
         header_row.addWidget(self.select_all_btn)
-        header_row.addSpacing(4)
         self.bulk_clone_btn = QPushButton(t('edit_pals.bulk_clone') if t else 'Bulk Clone')
         self.bulk_clone_btn.setFixedHeight(24)
         self.bulk_clone_btn.setStyleSheet('QPushButton { background: rgba(56,189,248,0.12); color: #38BDF8; border: 1px solid rgba(56,189,248,0.25); border-radius: 5px; padding: 4px 10px; font-weight: 600; font-size: 10px; } QPushButton:hover { background: rgba(56,189,248,0.25); border-color: rgba(56,189,248,0.5); color: #FFFFFF; }')
@@ -232,7 +230,6 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
         self.bulk_delete_btn.setCursor(Qt.PointingHandCursor)
         self.bulk_delete_btn.clicked.connect(self._open_bulk_delete)
         header_row.addWidget(self.bulk_delete_btn)
-        header_row.addSpacing(8)
         self.prev_box_btn = QPushButton('◀')
         self.prev_box_btn.setObjectName('navBtn')
         self.prev_box_btn.setFixedSize(32, 28)
@@ -244,6 +241,7 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
         self.next_box_btn.clicked.connect(self._next_box)
         header_row.addWidget(self.next_box_btn)
         palbox_layout.addLayout(header_row)
+        self._palbox_layout = palbox_layout
         self.grid_scroll = QScrollArea()
         self.grid_scroll.setWidgetResizable(True)
         self.grid_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -912,6 +910,96 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
         self._update_dashboard_stats()
         self._increment_pal_count()
         show_information(self, 'Clone Pal', 'Pal cloned successfully.')
+    def _on_party_slot_dropped(self, src_idx, dst_idx):
+        if self._move_container_pal(self.party_pals, self.party_container, src_idx, dst_idx):
+            self._after_slot_move()
+
+    def _on_palbox_slot_dropped(self, src_rel, dst_rel):
+        start = (self.current_box_index - 1) * 30
+        src, dst = start + src_rel, start + dst_rel
+        if self._palbox_mode == 'dps':
+            moved = self._swap_dps_slots(src, dst)
+        else:
+            moved = self._move_container_pal(self.palbox_pal_dict, self.palbox_container, src, dst)
+        if moved:
+            if self._palbox_mode == 'dps':
+                self._mark_dps_modified()
+            self._after_slot_move()
+
+    def _after_slot_move(self):
+        self._clear_multi_selection()
+        self._clicked_pal = None
+        self.selected_pal_slot = None
+        self.pal_info.set_clicked_pal(None)
+        self._update_party_slots()
+        self._update_palbox_page()
+        self._update_box_label()
+        constants.dirty = True
+
+    def _container_slot_entries(self, container_id):
+        if not container_id or not constants.loaded_level_json:
+            return []
+        target = str(container_id).replace('-', '').lower()
+        wsd = constants.loaded_level_json['properties']['worldSaveData']['value']
+        for cont in safe_nested_get(wsd, ['CharacterContainerSaveData', 'value'], []) or []:
+            cid = safe_nested_get(cont, ['key', 'ID', 'value'])
+            if cid and str(cid).replace('-', '').lower() == target:
+                return safe_nested_get(cont, ['value', 'Slots', 'value', 'values'], []) or []
+        return []
+
+    def _move_container_pal(self, pal_dict, container_id, src, dst):
+        if src == dst or src not in pal_dict:
+            return False
+        src_pal = pal_dict[src]
+        dst_pal = pal_dict.get(dst)
+        moves = {self._instance_key(src_pal): dst}
+        if dst_pal is not None:
+            moves[self._instance_key(dst_pal)] = src
+        for entry in self._container_slot_entries(container_id):
+            inst = safe_nested_get(entry, ['RawData', 'value', 'instance_id'])
+            key = str(inst).replace('-', '').lower() if inst else ''
+            if key in moves:
+                si = entry.get('SlotIndex')
+                if isinstance(si, dict):
+                    si['value'] = moves[key]
+        for pal, new_idx in ((src_pal, dst), (dst_pal, src)):
+            if pal is None:
+                continue
+            raw = _get_raw_from_item(pal)
+            si = safe_nested_get(raw, ['SlotId', 'value', 'SlotIndex'])
+            if isinstance(si, dict):
+                si['value'] = new_idx
+        pal_dict[dst] = src_pal
+        if dst_pal is not None:
+            pal_dict[src] = dst_pal
+        else:
+            pal_dict.pop(src, None)
+        return True
+
+    @staticmethod
+    def _instance_key(pal):
+        inst = safe_nested_get(pal, ['key', 'InstanceId', 'value'])
+        return str(inst).replace('-', '').lower() if inst else ''
+
+    def _swap_dps_slots(self, a, b):
+        if a == b or not self.dps_gvas:
+            return False
+        arr = self.dps_gvas.properties.get('SaveParameterArray', {}).get('value', {}).get('values', [])
+        if not (0 <= a < len(arr) and 0 <= b < len(arr)):
+            return False
+        arr[a], arr[b] = arr[b], arr[a]
+        for idx in (a, b):
+            sp = arr[idx].get('SaveParameter', {}).get('value', {})
+            cid = extract_value(sp, 'CharacterID', 'None') if isinstance(sp, dict) else 'None'
+            if not cid or cid == 'None':
+                self.dps_pals.pop(idx, None)
+                continue
+            si = safe_nested_get(sp, ['SlotId', 'value', 'SlotIndex'])
+            if isinstance(si, dict):
+                si['value'] = idx
+            self.dps_pals[idx] = {'data': sp}
+        return True
+
     def _owner_group_id(self):
         owner_uid = self.player_uid
         if not owner_uid or not constants.loaded_level_json:
@@ -1611,6 +1699,9 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
             self.sort_btn.setVisible(True)
             self.bulk_clone_btn.setVisible(True)
             self.bulk_delete_btn.setVisible(True)
+        if hasattr(self, '_palbox_layout'):
+            self._palbox_layout.invalidate()
+            self._palbox_layout.activate()
     def _on_sort_clicked(self):
         source = self.dps_pals if self._palbox_mode == 'dps' else self.palbox_pal_dict
         if not source:

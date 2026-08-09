@@ -4,7 +4,7 @@ import re
 
 from PySide6.QtWidgets import QApplication, QDialog, QFrame, QGraphicsOpacityEffect, QGridLayout, QHBoxLayout, QInputDialog, QLabel, QListWidget, QListWidgetItem, QProgressBar, QPushButton, QScrollArea, QScrollBar, QSizePolicy, QVBoxLayout, QWidget
 from PySide6.QtCore import Qt, QEvent, QObject, QPoint, QSize, QTimer, Signal
-from PySide6.QtGui import QFontMetrics, QIcon, QShortcut, QKeySequence
+from PySide6.QtGui import QFontMetrics, QIcon, QShortcut, QKeySequence, QFont
 from i18n import t
 import nerdfont as nf
 
@@ -283,6 +283,7 @@ class PalInfoWidget(PalInfoDisplayMixin, PalInfoHandlerMixin, QFrame):
         self.info_predator_btn = NerdBtn(nf.icons['nf-fa-paw'])
         self.info_predator_btn.setCheckable(True)
         self.info_predator_btn.setFixedSize(18, 18)
+        self.info_predator_btn.setFont(QFont(constants.FONT_FAMILY_NERD, 12))
         self.info_predator_btn.setStyleSheet('QPushButton { background: transparent; border: 1px solid rgba(255,255,255,0.1); border-radius: 3px; } QPushButton:checked { background: rgba(239,68,68,0.2); border: 1px solid #EF4444; color: #EF4444; } QPushButton:hover { background: rgba(255,255,255,0.08); } QPushButton:disabled { background: transparent; border: 1px solid rgba(255,255,255,0.03); color: rgba(255,255,255,0.15); } QToolTip { background: rgba(18,20,24,0.98); color: #E2E8F0; border: 1px solid rgba(125,211,252,0.25); border-radius: 6px; padding: 6px 10px; font-size: 11px; }')
         self.info_predator_btn.setCursor(Qt.PointingHandCursor)
         self.info_predator_btn.setToolTip(t('edit_pals.tooltip.predator'))
@@ -325,6 +326,7 @@ class PalInfoWidget(PalInfoDisplayMixin, PalInfoHandlerMixin, QFrame):
         self.info_cheat_btn = NerdBtn(nf.icons['nf-fa-bug'])
         self.info_cheat_btn.setCheckable(True)
         self.info_cheat_btn.setFixedSize(18, 18)
+        self.info_cheat_btn.setFont(QFont(constants.FONT_FAMILY_NERD, 12))
         self.info_cheat_btn.setStyleSheet('QPushButton { background: transparent; border: 1px solid rgba(255,255,255,0.1); border-radius: 3px; } QPushButton:checked { background: rgba(239,68,68,0.2); border: 1px solid #EF4444; color: #EF4444; } QPushButton:hover { background: rgba(255,255,255,0.08); } QToolTip { background: rgba(18,20,24,0.98); color: #E2E8F0; border: 1px solid rgba(125,211,252,0.25); border-radius: 6px; padding: 6px 10px; font-size: 11px; }')
         self.info_cheat_btn.setCursor(Qt.PointingHandCursor)
         self.info_cheat_btn.setToolTip(t('edit_pals.tooltip.cheat'))
@@ -332,6 +334,7 @@ class PalInfoWidget(PalInfoDisplayMixin, PalInfoHandlerMixin, QFrame):
         next_row.addWidget(self.info_cheat_btn)
         self.info_max_btn = NerdBtn(nf.icons['nf-md-database_arrow_up'])
         self.info_max_btn.setFixedSize(18, 18)
+        self.info_max_btn.setFont(QFont(constants.FONT_FAMILY_NERD, 12))
         self.info_max_btn.setStyleSheet('QPushButton { font-size: 12px; padding: 0px; margin: 0px; background: transparent; color: #4ADE80; border: 1px solid rgba(255,255,255,0.1); border-radius: 3px; } QPushButton:hover { background: rgba(74,222,128,0.15); color: #FFFFFF; } QToolTip { background: rgba(18,20,24,0.98); color: #E2E8F0; border: 1px solid rgba(125,211,252,0.25); border-radius: 6px; padding: 6px 10px; font-size: 11px; }')
         self.info_max_btn.setCursor(Qt.PointingHandCursor)
         self.info_max_btn.setToolTip(t('edit_pals.tooltip.max_stats'))
@@ -339,6 +342,7 @@ class PalInfoWidget(PalInfoDisplayMixin, PalInfoHandlerMixin, QFrame):
         next_row.addWidget(self.info_max_btn)
         self.info_max_buff_btn = NerdBtn(nf.icons['nf-fa-bread_slice'])
         self.info_max_buff_btn.setFixedSize(18, 18)
+        self.info_max_buff_btn.setFont(QFont(constants.FONT_FAMILY_NERD, 12))
         self.info_max_buff_btn.setStyleSheet('QPushButton { font-size: 12px; padding: 0px; margin: 0px; background: transparent; color: #F97316; border: 1px solid rgba(255,255,255,0.1); border-radius: 3px; } QPushButton:hover { background: rgba(249,115,22,0.15); color: #FFFFFF; } QToolTip { background: rgba(18,20,24,0.98); color: #E2E8F0; border: 1px solid rgba(125,211,252,0.25); border-radius: 6px; padding: 6px 10px; font-size: 11px; }')
         self.info_max_buff_btn.setCursor(Qt.PointingHandCursor)
         self.info_max_buff_btn.setToolTip(t('edit_pals.tooltip.max_buff'))

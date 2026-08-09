@@ -2208,5 +2208,9 @@
     "edit_pals.sort.level": "Por nível",
     "edit_pals.sort.name": "Por nome",
     "edit_pals.sort.rarity": "Por raridade e IVs",
-    "edit_pals.sort_done": "{count} pals ordenados."
+    "edit_pals.sort_done": "{count} pals ordenados.",
+    "deletion.menu.delete_imported_pals": "Excluir amigos importados",
+    "deletion.delete_imported_pals.title": "Delete Imported Pals",
+    "deletion.delete_imported_pals.confirm": "Delete ALL imported pals (DNA) from every player's party, palbox, DPS storage, and all base workers? This cannot be undone. Continue?",
+    "deletion.imported_pals_removed": "Amigos importados {count} removidos"
 }

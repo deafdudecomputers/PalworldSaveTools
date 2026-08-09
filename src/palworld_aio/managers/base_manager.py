@@ -432,7 +432,37 @@ def export_base_json(loaded_level_json, source_base_id):
                     export_data['characters'].append(_deep(char_entry))
     except:
         pass
-    base_map_objects = [obj for obj in map_objs if isinstance(_get_model_raw(obj), dict) and _s(_get_model_raw(obj).get('base_camp_id_belong_to', '')) == src_id_str]
+    # The authoritative camp->palbox binding is BaseCamp.RawData.owner_map_object_instance_id,
+    # not the PalBox's base_camp_id_belong_to. When enlarged base radii overlap, the game
+    # can rewrite a PalBox's base_camp_id_belong_to to the other camp. Attribute PalBoxV2
+    # objects by that owner pointer so each exported base keeps its own pallet; otherwise a
+    # base can export a blueprint its own importer rejects (no PalBoxV2).
+    _zero_s = _s(_zero())
+    palbox_owner = {}
+    for camp in base_camp_data:
+        try:
+            owner = _s(camp['value']['RawData']['value'].get('owner_map_object_instance_id', ''))
+            if owner and owner != _zero_s:
+                palbox_owner.setdefault(owner, _s(camp.get('key', '')))
+        except Exception:
+            pass
+    base_map_objects = []
+    for obj in map_objs:
+        mr = _get_model_raw(obj)
+        if not isinstance(mr, dict):
+            continue
+        oid = str(obj.get('MapObjectId', {}).get('value', ''))
+        iid = _s(mr.get('instance_id', ''))
+        camp = _s(mr.get('base_camp_id_belong_to', ''))
+        if oid == 'PalBoxV2':
+            owner_camp = palbox_owner.get(iid)
+            if owner_camp is not None:
+                if owner_camp == src_id_str:
+                    base_map_objects.append(obj)
+            elif camp == src_id_str:
+                base_map_objects.append(obj)
+        elif camp == src_id_str:
+            base_map_objects.append(obj)
     for obj in base_map_objects:
         oid = str(obj.get('MapObjectId', {}).get('value', ''))
         if oid in ['PalBooth', 'ItemBooth']:

@@ -2083,5 +2083,9 @@
     "pal_name_settings.title": "仲間名の設定",
     "pal_name_settings.mode_label": "新しい友達に次の名前を付けます。",
     "pal_name_settings.mode_hint": "パル (パル エディター、ベース パル、グローバル パル ストレージ) の作成時およびクローンに適用されます。入力されたニックネームは常にそれをオーバーライドします。",
-    "pal_name_settings.sync_nickname": "一括同期中にニックネームを適用する"
+    "pal_name_settings.sync_nickname": "一括同期中にニックネームを適用する",
+    "deletion.menu.delete_imported_pals": "インポートした仲間を削除する",
+    "deletion.delete_imported_pals.title": "インポートした仲間を削除する",
+    "deletion.delete_imported_pals.confirm": "すべてのプレイヤーのパーティー、パルボックス、DPS ストレージ、およびすべてのベース ワーカーからインポートされたすべてのパル (DNA) を削除しますか?これを元に戻すことはできません。続く？",
+    "deletion.imported_pals_removed": "{count} インポートされた仲間を削除しました"
 }

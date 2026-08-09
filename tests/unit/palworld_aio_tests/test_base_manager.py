@@ -51,6 +51,58 @@ def _map_object(oid, iid, cid, any_place):
     }
 
 
+def _map_object_with_camp(oid, iid, cid, any_place, camp):
+    obj = _map_object(oid, iid, cid, any_place)
+    obj['Model']['value']['RawData']['value']['base_camp_id_belong_to'] = camp
+    return obj
+
+
+def _overlapping_palbox_world():
+    """Two adjacent bases whose enlarged radii overlap. The game has reassigned
+    Base B's PalBox base_camp_id_belong_to to Base A, but Base B's camp still
+    points at its own PalBox via owner_map_object_instance_id."""
+    world = _loaded_world()
+    pal_a = _map_object_with_camp('PalBoxV2', SRC_A, SRC_A + 'c', [], SRC_A)
+    pal_b = _map_object_with_camp('PalBoxV2', SRC_B, SRC_B + 'c', [], SRC_A)
+    wall_b = _map_object_with_camp('Wooden_wall', SRC_C, SRC_C + 'c', [], SRC_B)
+    camps = [
+        {'key': SRC_A, 'value': {'RawData': {'value': {
+            'transform': dict(TRANSFORM),
+            'owner_map_object_instance_id': SRC_A,
+            'group_id_belong_to': GID,
+        }}}},
+        {'key': SRC_B, 'value': {'RawData': {'value': {
+            'transform': dict(TRANSFORM),
+            'owner_map_object_instance_id': SRC_B,
+            'group_id_belong_to': GID,
+        }}}},
+    ]
+    wsd = world['properties']['worldSaveData']['value']
+    wsd['BaseCampSaveData'] = {'value': camps}
+    wsd['MapObjectSaveData'] = {'value': {'values': [pal_a, pal_b, wall_b]}}
+    return world
+
+
+def _export_palbox_ids(exported):
+    return [o['Model']['value']['RawData']['value']['instance_id'] for o in exported['map_objects']
+            if o['MapObjectId']['value'] == 'PalBoxV2']
+
+
+def test_export_keeps_own_palbox_when_overlapping_radii_reassign_camp():
+    world = _overlapping_palbox_world()
+    exp_a = _bm.export_base_json(world, SRC_A)
+    exp_b = _bm.export_base_json(world, SRC_B)
+    assert exp_a is not None and exp_b is not None
+    assert _export_palbox_ids(exp_a) == [SRC_A], 'base A must keep exactly its own palbox'
+    assert _export_palbox_ids(exp_b) == [SRC_B], 'base B must keep exactly its own palbox'
+
+
+def test_exported_base_b_with_overlapped_palbox_roundtrips():
+    world = _overlapping_palbox_world()
+    exp_b = _bm.export_base_json(world, SRC_B)
+    assert _bm.validate_base_import(world, exp_b, GID) == [], 'export must be importable'
+
+
 def _exported():
     return {
         'base_camp': {'key': 'ffffffff-ffff-ffff-ffff-ffffffffffff',

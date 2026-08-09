@@ -957,6 +957,93 @@ def remove_invalid_pals_from_save(parent=None):
         cont['value']['Slots']['value']['values'] = newslots
     removed += _remove_invalid_pals_from_dps(valid_all, constants.current_save_path)
     return removed
+def delete_imported_pals(parent=None):
+    if not constants.current_save_path or not constants.loaded_level_json:
+        return 0
+    try:
+        wsd = constants.loaded_level_json['properties']['worldSaveData']['value']
+    except:
+        return 0
+    cmap = wsd.get('CharacterSaveParameterMap', {}).get('value', [])
+    imported_ids = set()
+    removed = 0
+    filtered = []
+    for entry in cmap:
+        try:
+            sp = entry['value']['RawData']['value']['object']['SaveParameter']['value']
+            struct_type = entry['value']['RawData']['value']['object']['SaveParameter']['struct_type']
+        except:
+            filtered.append(entry)
+            continue
+        is_imported = extract_value(sp, 'bImportedCharacter', False)
+        if struct_type == 'PalIndividualCharacterSaveParameter' and is_imported:
+            inst = str(entry.get('key', {}).get('InstanceId', {}).get('value', ''))
+            if inst:
+                imported_ids.add(inst.replace('-', '').lower())
+                removed += 1
+                continue
+        filtered.append(entry)
+    if not imported_ids:
+        return 0
+    wsd['CharacterSaveParameterMap']['value'] = filtered
+    containers = wsd.get('CharacterContainerSaveData', {}).get('value', [])
+    for cont in containers:
+        try:
+            slots = cont['value']['Slots']['value']['values']
+        except:
+            continue
+        newslots = []
+        for s in slots:
+            inst = s.get('RawData', {}).get('value', {}).get('instance_id')
+            if inst and str(inst).replace('-', '').lower() in imported_ids:
+                continue
+            newslots.append(s)
+        cont['value']['Slots']['value']['values'] = newslots
+    removed += _remove_imported_pals_from_dps()
+    return removed
+def _remove_imported_pals_from_dps():
+    if not constants.current_save_path:
+        return 0
+    players_dir = os.path.join(constants.current_save_path, 'Players')
+    if not os.path.exists(players_dir):
+        return 0
+    dps_files = [os.path.join(players_dir, f) for f in os.listdir(players_dir) if f.endswith('_dps.sav')]
+    if not dps_files:
+        return 0
+    def _clean(fpath):
+        try:
+            gvas = sav_to_gvasfile(fpath)
+            arr = gvas.properties.get('SaveParameterArray', {}).get('value', {}).get('values', [])
+            if not arr:
+                return 0
+            changed = False
+            removed = 0
+            new_arr = []
+            for entry in arr:
+                if not isinstance(entry, dict):
+                    new_arr.append(entry)
+                    continue
+                sp_entry = entry.get('SaveParameter')
+                if not isinstance(sp_entry, dict):
+                    new_arr.append(entry)
+                    continue
+                sp = sp_entry.get('value', {})
+                if not isinstance(sp, dict):
+                    new_arr.append(entry)
+                    continue
+                if extract_value(sp, 'bImportedCharacter', False):
+                    changed = True
+                    removed += 1
+                else:
+                    new_arr.append(entry)
+            if changed:
+                gvas.properties['SaveParameterArray']['value']['values'] = new_arr
+                gvasfile_to_sav(gvas, fpath)
+            return removed
+        except:
+            return 0
+    with ThreadPoolExecutor(max_workers=min(os.cpu_count() or 4, 8)) as ex:
+        return sum(ex.map(_clean, dps_files))
 def _remove_invalid_pals_from_dps(valid_all, current_save_path):
     players_dir = os.path.join(current_save_path, 'Players')
     if not os.path.exists(players_dir):

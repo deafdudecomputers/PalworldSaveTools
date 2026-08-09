@@ -2370,5 +2370,9 @@
     "pal_name_settings.title": "Configurações de nome de amigo",
     "pal_name_settings.mode_label": "Nomeie novos amigos com:",
     "pal_name_settings.mode_hint": "Aplica-se ao criar amigos (Pal Editor, base pals, Global Pal Storage) e a clones. Um apelido digitado sempre o substitui.",
-    "pal_name_settings.sync_nickname": "Aplicar apelido durante a sincronização em massa"
+    "pal_name_settings.sync_nickname": "Aplicar apelido durante a sincronização em massa",
+    "deletion.menu.delete_imported_pals": "Delete Imported Pals",
+    "deletion.delete_imported_pals.title": "Excluir amigos importados",
+    "deletion.delete_imported_pals.confirm": "Excluir TODOS os amigos importados (DNA) do grupo de cada jogador, palbox, armazenamento DPS e todos os trabalhadores da base? Isto não pode ser desfeito. Continuar?",
+    "deletion.imported_pals_removed": "Amigos importados {count} removidos"
 }

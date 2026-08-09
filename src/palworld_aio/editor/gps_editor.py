@@ -315,6 +315,33 @@ class GpsEditorDialog(FramelessDialog):
     def _on_slot_left(self):
         self.pal_info.clear_hover()
 
+    def _on_slot_dropped(self, src_rel, dst_rel):
+        start = (self.current_page - 1) * PAGE_SIZE
+        if self._swap_gps_slots(start + src_rel, start + dst_rel):
+            self._clear_multi_selection()
+            self._clear_selection()
+            self._update_page()
+            self._mark_modified()
+
+    def _swap_gps_slots(self, a, b):
+        if a == b or not constants.gps_gvas:
+            return False
+        arr = constants.gps_gvas.properties.get('SaveParameterArray', {}).get('value', {}).get('values', [])
+        if not (0 <= a < len(arr) and 0 <= b < len(arr)):
+            return False
+        arr[a], arr[b] = arr[b], arr[a]
+        for idx in (a, b):
+            sp = arr[idx].get('SaveParameter', {}).get('value', {})
+            cid = extract_value(sp, 'CharacterID', 'None') if isinstance(sp, dict) else 'None'
+            if not cid or cid == 'None':
+                self.pals.pop(idx, None)
+                continue
+            si = safe_nested_get(sp, ['SlotId', 'value', 'SlotIndex'])
+            if isinstance(si, dict):
+                si['value'] = idx
+            self.pals[idx] = {'data': sp}
+        return True
+
     def _clear_selection(self):
         self._selected_pal = None
         self._selected_slot = None

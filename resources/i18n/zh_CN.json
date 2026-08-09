@@ -2085,5 +2085,9 @@
     "pal_name_settings.title": "好友名称设置",
     "pal_name_settings.mode_label": "为新朋友命名：",
     "pal_name_settings.mode_hint": "适用于创建好友（好友编辑器、基础好友、全局好友存储）和克隆。输入的昵称总是会覆盖它。",
-    "pal_name_settings.sync_nickname": "在批量同步期间应用昵称"
+    "pal_name_settings.sync_nickname": "在批量同步期间应用昵称",
+    "deletion.menu.delete_imported_pals": "删除导入的好友",
+    "deletion.delete_imported_pals.title": "删除导入的好友",
+    "deletion.delete_imported_pals.confirm": "从每个玩家的队伍、palbox、DPS 存储和所有基地工作人员中删除所有导入的好友 (DNA)？此操作无法撤消。继续？",
+    "deletion.imported_pals_removed": "删除了 {count} 导入的好友"
 }
