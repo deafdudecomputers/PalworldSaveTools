@@ -40,7 +40,7 @@ class GpsEditorDialog(FramelessDialog):
         super().__init__('gps_editor.title', parent)
         self.setWindowTitle(t('gps_editor.title') if t else 'Global Pal Storage Editor')
         self.setModal(False)
-        self.setMinimumSize(1080, 640)
+        self.setMinimumSize(1320, 680)
         if hasattr(constants, 'ICON_PATH') and constants.ICON_PATH and os.path.exists(constants.ICON_PATH):
             self.setWindowIcon(QIcon(constants.ICON_PATH))
 
@@ -163,7 +163,6 @@ class GpsEditorDialog(FramelessDialog):
         mt_layout.setSpacing(4)
         self.multi_count_label = QLabel()
         self.multi_count_label.setStyleSheet('font-size: 11px; font-weight: 700; color: #38BDF8; background: transparent; border: none; padding: 0 4px;')
-        mt_layout.addWidget(self.multi_count_label)
         def _mt_btn(obj_name, label_key, handler, color):
             btn = QPushButton(t(label_key))
             btn.setObjectName(obj_name)
@@ -200,6 +199,8 @@ class GpsEditorDialog(FramelessDialog):
         header.addWidget(self.save_btn)
 
         header.addStretch()
+        self.multi_count_label.setVisible(False)
+        header.addWidget(self.multi_count_label)
         self.prev_btn = QPushButton('◀')
         self.prev_btn.setObjectName('navBtn')
         self.prev_btn.setFixedSize(32, 28)
@@ -529,6 +530,7 @@ class GpsEditorDialog(FramelessDialog):
         has_empty = any(k[0] == 'gps_empty' for k in self._multi_selected)
         if has_empty or count >= 2:
             self.multi_count_label.setText(t('pal_editor.multi_selected', n=count))
+            self.multi_count_label.setVisible(True)
             self.multi_toolbar.setVisible(True)
             self.restore_all_btn.setVisible(False)
             self.max_all_btn.setVisible(False)
@@ -537,6 +539,7 @@ class GpsEditorDialog(FramelessDialog):
             self.sort_btn.setVisible(False)
             self.save_btn.setVisible(False)
         else:
+            self.multi_count_label.setVisible(False)
             self.multi_toolbar.setVisible(False)
             self.restore_all_btn.setVisible(True)
             self.max_all_btn.setVisible(True)
