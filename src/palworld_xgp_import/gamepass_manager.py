@@ -17,51 +17,94 @@ SAVE_SUFFIXES = ("Level", "Level-01", "LocalData", "WorldOption")
 _NO_WINDOW = getattr(subprocess, 'CREATE_NO_WINDOW', 0) if sys.platform == 'win32' else 0
 
 
-def _connected_interface_names() -> list[str]:
-    """Locale-free names of connected network interfaces (netsh ipv4 show interfaces)."""
-    r = subprocess.run(
-        ['netsh', 'interface', 'ipv4', 'show', 'interfaces'],
+def _is_elevated() -> bool:
+    """True when the current process can create privileged firewall rules."""
+    if sys.platform != 'win32':
+        return True
+    try:
+        import ctypes
+        return bool(ctypes.windll.shell32.IsUserAnAdmin())
+    except Exception:
+        return False
+
+
+_SYNC_BLOCK_RULE = 'PST Game Pass sync block'
+_SYNC_PROCESS = 'gamingservicesnet.exe'
+
+
+def _run_powershell(script: str) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        ['powershell', '-NoProfile', '-NonInteractive', '-Command', script],
         capture_output=True, text=True, check=False, creationflags=_NO_WINDOW,
+        timeout=60,
     )
-    names = []
-    for line in r.stdout.splitlines():
-        line = line.strip()
-        m = re.match(r'^(\d+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(.+)$', line)
-        if not m:
+
+
+def _gamingservices_sync_exe() -> Optional[str]:
+    """Locate gamingservicesnet.exe (the Xbox/Game Pass cloud-save sync worker).
+
+    Resolved at runtime so it survives GamingServices package updates.
+    Get-AppxPackage works unprivileged; a running-process query is a fallback."""
+    probes = [
+        '$p = Get-AppxPackage -Name Microsoft.GamingServices; if ($p) { Join-Path $p.InstallLocation "gamingservicesnet.exe" }',
+        '(Get-Process gamingservicesnet -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty Path)',
+    ]
+    for script in probes:
+        try:
+            r = _run_powershell(script)
+        except (OSError, subprocess.SubprocessError):
             continue
-        idx, _, _, _state, name = m.groups()
-        if int(idx) == 1 or 'loopback' in name.lower():
-            continue
-        names.append(name.strip())
-    return names
+        p = (r.stdout or '').strip()
+        if p and p.lower().endswith(_SYNC_PROCESS) and os.path.isfile(p):
+            return p
+    return None
 
 
-def toggle_network(enable: bool, adapters: list[str] | None = None) -> list[str]:
-    """Disable or enable network adapters via netsh.
+def block_gamingservices_network() -> Optional[str]:
+    """Cut ONLY the Game Pass cloud-save sync engine via an outbound firewall block.
 
-    When enable=False: disables every connected adapter so the game and cloud
-    sync see an instant disconnect and the game falls back to the local save.
-    When enable=True: re-enables the adapters named in the list (from the
-    prior disable).
+    The game keeps full network access (sign-in, multiplayer, telemetry); only
+    gamingservicesnet.exe — the service that uploads/downloads cloud saves — is
+    blocked, so a freshly-written local save cannot be overwritten by the sync.
 
-    'adapters' keeps the legacy name for API compatibility. Requires admin
-    rights (PST already requires admin for XGP writes).
-    """
-    if enable:
-        for name in (adapters or []):
-            subprocess.run(
-                ['netsh', 'interface', 'set', 'interface', name, 'enabled'],
-                capture_output=True, check=False, creationflags=_NO_WINDOW,
-            )
-        return []
-    names = _connected_interface_names()
-    for name in names:
-        subprocess.run(
-            ['netsh', 'interface', 'set', 'interface', name, 'disabled'],
-            capture_output=True, check=False, creationflags=_NO_WINDOW,
+    Stopping the sync service alone is not enough (the game restarts it on
+    launch); this firewall rule persists even when the engine is relaunched, so it
+    keeps holding through the "launch Palworld" wait dialog. Returns the blocked
+    exe path, or None if the process/rule could not be established (callers MUST
+    fail closed before mutating the save). Creating a firewall rule is
+    elevation-gated, so this requires administrator rights."""
+    if not _is_elevated():
+        raise RuntimeError(
+            'Administrator privileges are required to create the Game Pass sync '
+            'block rule. The Game Pass save was NOT modified. Run PST as '
+            'administrator and try again.'
         )
-    print(f'[toggle_network] disabled adapters: {names}')
-    return names
+    exe = _gamingservices_sync_exe()
+    if not exe:
+        print(f'[block_gamingservices_network] could not locate {_SYNC_PROCESS}')
+        return None
+    _run_powershell(f'Remove-NetFirewallRule -DisplayName "{_SYNC_BLOCK_RULE}" -ErrorAction SilentlyContinue')
+    try:
+        r = _run_powershell(
+            f'New-NetFirewallRule -DisplayName "{_SYNC_BLOCK_RULE}" -Direction Outbound -Action Block -Program "{exe}"'
+        )
+    except (OSError, subprocess.SubprocessError) as e:
+        print(f'[block_gamingservices_network] failed: {e}')
+        return None
+    if r.returncode != 0:
+        print(f'[block_gamingservices_network] create failed rc={r.returncode}: {(r.stderr or "").strip()}')
+        return None
+    print(f'[block_gamingservices_network] blocked {exe}')
+    return exe
+
+
+def unblock_gamingservices_network() -> None:
+    """Remove the Game Pass sync block rule (restore cloud-save syncing)."""
+    try:
+        _run_powershell(f'Remove-NetFirewallRule -DisplayName "{_SYNC_BLOCK_RULE}" -ErrorAction SilentlyContinue')
+    except (OSError, subprocess.SubprocessError) as e:
+        print(f'[unblock_gamingservices_network] failed: {e}')
+    print('[unblock_gamingservices_network] sync block removed')
 
 
 CONTAINER_REGEX = re.compile(r"[0-9A-F]{16}_[0-9A-F]{32}$")
@@ -688,27 +731,85 @@ def save_xgp_changes(
     return new_save_id
 
 
+def relaunch_elevated() -> bool:
+    """Relaunch this application with administrator rights (UAC prompt).
+
+    Returns True if the OS accepted the elevation request (the current process
+    should then exit and let the fresh elevated instance take over)."""
+    if sys.platform != 'win32':
+        return False
+    frozen = getattr(sys, 'frozen', False)
+    exe = sys.executable
+    params = ''
+    if not frozen:
+        script = os.path.abspath(sys.argv[0] if sys.argv else 'start.py')
+        params = f'"{script}"'
+    extra = sys.argv[1:]
+    if extra:
+        params = (params + ' ' if params else '') + ' '.join(f'"{a}"' for a in extra)
+    import ctypes
+    try:
+        # SEI_FLAG: 10 → SW_SHOWDEFAULT
+        ret = ctypes.windll.shell32.ShellExecuteW(
+            None, 'runas', exe, params or None, os.getcwd(), 10)
+        return ret > 32
+    except Exception as e:
+        print(f'[relaunch_elevated] failed: {e}')
+        return False
+
+
 def save_and_block_network(
     container_path: str,
     current_save_path: str,
     save_id: str,
     new_world_name: str | None = None,
 ) -> list[str]:
-    """Write save in-place (same save_id) + disable all physical network adapters.
+    """Write save in-place (same save_id) while Game Pass cloud-save sync is cut.
+
+    Creates an outbound firewall block on ONLY gamingservicesnet.exe (the Xbox/
+    Game Pass sync worker). The game and the rest of the system keep full
+    connectivity; only cloud-save sync is dead, so a freshly-written local save
+    can't be overwritten. Because the rule survives the game restarting the sync
+    service, it keeps holding while the "launch Palworld" wait dialog is showing.
+
+    The block is created BEFORE the save is touched (fail closed): if it can't be
+    established, a RuntimeError is raised and the XGP/WGS data is left untouched.
+    If the write itself fails, the rule is removed before re-raising.
 
     Call this from a background thread. After it returns on the main thread,
-    call restore_network(adapters, parent) to show the wait dialog and re-enable.
+    call restore_network(tokens, parent) — tokens is the returned marker list —
+    to show the wait dialog and remove the rule.
 
-    Returns list of adapter names that were disabled (pass to restore_network)."""
-    _id = save_xgp_changes(container_path, current_save_path, new_save_id=save_id, new_world_name=new_world_name)
-    print(f'[save_and_block_network] saved as {_id}, disabling network...')
-    return toggle_network(False)
+    Returns a non-empty list token (pass to restore_network)."""
+    if not _is_elevated():
+        raise RuntimeError(
+            'Administrator privileges are required for Xbox/Game Pass writes and '
+            'to create the Game Pass sync block. The Game Pass save was NOT '
+            'modified. Run PST as administrator and try again.'
+        )
+    blocked = block_gamingservices_network()
+    if not blocked:
+        raise RuntimeError(
+            'Could not create the Game Pass cloud-save sync block, so the save '
+            'was NOT modified to avoid cloud sync overwriting it. '
+            'Run PST as administrator and try again.'
+        )
+    try:
+        _id = save_xgp_changes(container_path, current_save_path, new_save_id=save_id,
+                               new_world_name=new_world_name)
+    except Exception:
+        unblock_gamingservices_network()
+        raise
+    print(f'[save_and_block_network] saved as {_id}; cloud-save sync blocked ({blocked})')
+    return [blocked]
 
 
-def restore_network(adapters: list[str], parent=None) -> None:
-    """Show wait dialog, then re-enable network adapters.
+def restore_network(adapters: list[str] | None, parent=None) -> None:
+    """Show wait dialog, then remove the Game Pass cloud-save sync block.
 
-    Call this on the main thread after save_and_block_network completes."""
+    Call this on the main thread after save_and_block_network completes.
+    'adapters' is the token returned by save_and_block_network (a non-empty
+    marker list)."""
     if not adapters:
         return
     if parent is not None:
@@ -722,4 +823,4 @@ def restore_network(adapters: list[str], parent=None) -> None:
     else:
         from i18n import t
         input(t('xgp.network_blocked.text') + '\n')
-    toggle_network(True, adapters)
+    unblock_gamingservices_network()

@@ -833,7 +833,28 @@ class FixHostSaveWindow(QWidget):
         else:
             super().keyPressEvent(event)
     def _load_xgp_save(self):
-        from palworld_xgp_import.gamepass_manager import pick_xgp_world, extract_save_to_temp
+        from palworld_xgp_import.gamepass_manager import (
+            pick_xgp_world, extract_save_to_temp, _is_elevated, relaunch_elevated,
+        )
+        from loading_manager import show_question
+        if not _is_elevated():
+            if show_question(
+                self,
+                t('xgp.admin.title', default='Administrator Required'),
+                t('xgp.admin.msg', default='Saving changes back to an Xbox/Game Pass save requires '
+                    'administrator rights so the network can be cut and cloud sync cannot '
+                    'overwrite your edits.\n\nRelaunch PST as administrator now?'),
+            ):
+                if relaunch_elevated():
+                    QApplication.quit()
+                    return
+                show_critical(self, t('error.title'),
+                    t('xgp.admin.relaunch_failed', default='Could not relaunch as administrator.'))
+                return
+            show_critical(self, t('error.title'),
+                t('xgp.admin.declined', default='Xbox/Game Pass saving requires administrator rights. '
+                    'Game Pass save loading was cancelled.'))
+            return
         pick = pick_xgp_world(self, 'Load GamePass Save')
         if not pick:
             return

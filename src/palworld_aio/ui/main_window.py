@@ -647,6 +647,8 @@ class MainWindow(QMainWindow):
             msg_box.exec()
     def _on_save_finished(self, duration):
         self.status_bar.showMessage(f"{(t('status.saved') if t else 'Save completed')}({duration:.2f}s)", 5000)
+        if constants.xgp_loaded:
+            return
         msg_box = self._create_message_box(QMessageBox.Information)
         msg_box.setWindowTitle(t('success.title'))
         msg_box.setText(t('Changes saved successfully.'))

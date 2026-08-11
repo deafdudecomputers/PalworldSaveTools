@@ -162,10 +162,30 @@ def restore_map():
         def on_xgp_clear_fog(self):
             from palworld_xgp_import.gamepass_manager import (
                 find_container_paths, read_container_index,
-                toggle_network, restore_network,
-                _read_container_data,
+                block_gamingservices_network, restore_network,
+                _read_container_data, _is_elevated, relaunch_elevated,
             )
             from palworld_xgp_import.container_types import ContainerFileList, FILETIME
+            from loading_manager import show_question
+            if not _is_elevated():
+                if show_question(
+                    self,
+                    t('xgp.admin.title', default='Administrator Required'),
+                    t('xgp.admin.msg', default='Clearing fog on an Xbox/Game Pass save requires '
+                        'administrator rights so Game Pass cloud-save sync can be blocked '
+                        'and cloud sync cannot overwrite the modified save.\n\n'
+                        'Relaunch PST as administrator now?'),
+                ):
+                    if relaunch_elevated():
+                        QApplication.quit()
+                        return
+                    show_critical(self, t('error.title'),
+                        t('xgp.admin.relaunch_failed', default='Could not relaunch as administrator.'))
+                    return
+                show_critical(self, t('error.title'),
+                    t('xgp.admin.declined', default='Xbox/Game Pass fog clearing requires '
+                        'administrator rights. Operation cancelled.'))
+                return
             containers = find_container_paths()
             if not containers:
                 show_critical(self, t('Error'), 'No XGP saves found.')
@@ -179,7 +199,13 @@ def restore_map():
             updated = 0
             def _task():
                 nonlocal updated
-                _adapters = toggle_network(False)
+                _adapter = block_gamingservices_network()
+                if not _adapter:
+                    raise RuntimeError(
+                        'Could not create the Game Pass cloud-save sync block, so '
+                        'the fog was NOT cleared to avoid cloud sync overwriting '
+                        'the save. Run PST as administrator and try again.'
+                    )
                 import tempfile as _tf
                 for c in local_containers:
                     try:
@@ -217,7 +243,7 @@ def restore_map():
                         import traceback
                         traceback.print_exc()
                 index.write_file(cpath)
-                return _adapters
+                return [_adapter]
             run_with_loading(
                 lambda a: self._xgp_clear_done(a, updated),
                 _task, parent=self)
