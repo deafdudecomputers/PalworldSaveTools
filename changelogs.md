@@ -10,6 +10,7 @@
 - **Save errors no longer hide behind "Saved successfully"** — if writing the save fails, a full error screen with details and a copy button appears instead of a false success message.
 - **Importing bases into a real save no longer fails** — the support check that treated normally-placed structures as unsupported has been relaxed, so existing bases import without being blocked.
 - **Newer work records now decode correctly** — the work entries the game creates for multi-recipe workbenches and fish ponds used to show up as unreadable raw data. They now load like any other work and roundtrip byte-for-byte, so editing, validation, and reference checks see every work in the save.
+- **Korean is now a fully translated language** — over 300 labels, dialogs, and status messages that silently fell back to English are translated, and the existing Korean text was rewritten where it was wrong or unreadable: Pals were being called "arms" or "friends", Export and Import read as shipping terms, and bases, ranks, souls, and levels each went by two or three different names depending on the screen. The in-app guide tabs and the Korean README were rewritten to match the app, and a leftover Chinese sentence in the delete-player prompt is gone.
 - Bumped version to 2.3.3
 
 #2.3.2
