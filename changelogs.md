@@ -7,6 +7,7 @@
 - **Resize every player's inventory at once** — a new "Modify All Player Slots" option (Functions > Misc) expands or shrinks the main inventory of every player at once, anywhere from 42 up to 999 slots. Players who are carrying more items than the new size are left untouched.
 - **Resize every guild chest at once** — a new "Modify All Guild Chest Slots" option (Functions > Misc) expands or shrinks every guild chest in the save in one go, so you no longer have to edit each container one by one. Regular base chests are left untouched.
 - **Fix All Pals runs automatically in Fix Host Save and Character Transfer** — when either tool loads a save, every pal is fixed on the spot: HP, FullStomach and Sanity are restored, sickness is removed, and unowned pals are assigned to their owners. The fixed save is written back in Fix Host Save, and in Character Transfer the fix is applied to the loaded save automatically.
+- Updated game data to v1.0.3
 - Bumped version to 2.3.5
 
 #2.3.4
