@@ -604,7 +604,7 @@ def load_save_with_fix(path, backup_label='Backups/Fix Host Save'):
     level_json = sav_to_json(path)
     try:
         from palworld_aio.managers.func_manager import fix_all_pals_in_save
-        count = fix_all_pals_in_save(level_json, folder)
+        count = fix_all_pals_in_save(level_json, folder, include_dps=False)
         if count:
             json_to_sav(level_json, os.path.join(folder, 'Level.sav'))
         print(f'[FIX_ALL_PALS] Fixed {count} pals on load.')

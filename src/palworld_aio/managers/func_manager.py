@@ -2549,7 +2549,7 @@ def restore_all_pals(parent=None):
     count += _apply_to_dps_files(_restore_one_pal)
     return count
 
-def _fix_all_pals_core(wsd, save_path=None):
+def _fix_all_pals_core(wsd, save_path=None, include_dps=True):
     from palworld_aio.utils import resolve_name
     cmap = wsd.get('CharacterSaveParameterMap', {}).get('value', [])
     ownership = ContainerOwnership.build(cmap, wsd.get('CharacterContainerSaveData', {}).get('value', []))
@@ -2593,14 +2593,15 @@ def _fix_all_pals_core(wsd, save_path=None):
                 count += 1
         except Exception:
             continue
-    count += _apply_to_dps_files(_restore_one_pal, save_path)
+    if include_dps:
+        count += _apply_to_dps_files(_restore_one_pal, save_path)
     return count
 
-def fix_all_pals_in_save(level_json, save_path):
+def fix_all_pals_in_save(level_json, save_path, include_dps=True):
     if not level_json:
         return 0
     wsd = level_json['properties']['worldSaveData']['value']
-    return _fix_all_pals_core(wsd, save_path)
+    return _fix_all_pals_core(wsd, save_path, include_dps=include_dps)
 
 def fix_all_pals_combined(parent=None):
     if not constants.current_save_path or not constants.loaded_level_json:

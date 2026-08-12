@@ -44,7 +44,7 @@ def _fix_pals_on_load(gvas_file, save_path, label):
     try:
         from palworld_aio.managers.func_manager import fix_all_pals_in_save
         wrapper = {'properties': gvas_file.properties}
-        count = fix_all_pals_in_save(wrapper, save_path)
+        count = fix_all_pals_in_save(wrapper, save_path, include_dps=False)
         print(f'[FIX_ALL_PALS] {label}: fixed {count} pals.')
         return count
     except Exception as e:
