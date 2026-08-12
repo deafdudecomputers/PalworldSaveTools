@@ -2220,5 +2220,14 @@
     "modify_all_player_slots_result": "Redimensionado {modified} dos inventários de {total} jogadores para {slots} slots",
     "modify_all_guild_chest_slots_title": "Modifique todos os slots do baú da guilda",
     "modify_all_guild_chest_slots_prompt": "Insira a nova contagem de slots para todos os baús de guilda e base:",
-    "modify_all_guild_chest_slots_result": "Recipientes de baú de guilda {modified} modificados"
+    "modify_all_guild_chest_slots_result": "Recipientes de baú de guilda {modified} modificados",
+    "menu.file.load_gps.select_source_msg": "Global Pal Storage de qual plataforma você deseja carregar?",
+    "menu.file.load_gps.btn_gamepass": "Game Pass",
+    "menu.file.load_gps.btn_steam": "Vapor",
+    "menu.file.load_gps.gamepass_not_found_title": "GPS GamePass não encontrado",
+    "menu.file.load_gps.gamepass_not_found_msg": "Nenhum armazenamento Global Pal foi encontrado para o Game Pass neste PC.\n\nJogue Palworld (versão Game Pass) e interaja primeiro com um Global Pal Storage, depois tente novamente.",
+    "menu.file.load_gps.gamepass_sync_held_title": "GPS GamePass indisponível",
+    "menu.file.load_gps.gamepass_sync_held_msg": "O contêiner de armazenamento Global Pal do Game Pass está vazio neste PC - a sincronização na nuvem pode estar retendo-o.\n\nInicie o Palworld (versão Game Pass) uma vez para que a sincronização restaure o contêiner e tente novamente.",
+    "edit_pals.ctx.clone_bulk": "Amigos clones em massa",
+    "edit_pals.ctx.bulk_max_buff": "Alimentar Alimentos"
 }

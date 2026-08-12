@@ -2119,5 +2119,13 @@
     "modify_all_player_slots_result": "Die Größe von {modified} von {total} Spielerinventaren wurde auf {slots} Plätze geändert",
     "modify_all_guild_chest_slots_title": "Ändere alle Gildentruhen-Slots",
     "modify_all_guild_chest_slots_prompt": "Geben Sie die neue Anzahl an Slots für alle Gilden- und Basistruhen ein:",
-    "modify_all_guild_chest_slots_result": "Modifizierte Gildentruhencontainer {modified}"
+    "modify_all_guild_chest_slots_result": "Modifizierte Gildentruhencontainer {modified}",
+    "menu.file.load_gps.select_source_msg": "Von welcher Plattform möchten Sie den Global Pal Storage laden?",
+    "menu.file.load_gps.btn_gamepass": "GamePass",
+    "menu.file.load_gps.btn_steam": "Dampf",
+    "menu.file.load_gps.gamepass_not_found_title": "GamePass-GPS nicht gefunden",
+    "menu.file.load_gps.gamepass_not_found_msg": "No Global Pal Storage was found for Game Pass on this PC.\n\nPlay Palworld (Game Pass version) and interact with a Global Pal Storage first, then try again.",
+    "menu.file.load_gps.gamepass_sync_held_title": "GamePass-GPS nicht verfügbar",
+    "menu.file.load_gps.gamepass_sync_held_msg": "Der Game Pass Global Pal-Speichercontainer ist auf diesem PC derzeit leer – die Cloud-Synchronisierung hält ihn möglicherweise zurück.\n\nStarten Sie Palworld (Game Pass-Version) einmal, damit die Synchronisierung den Container wiederherstellt, und versuchen Sie es dann erneut.",
+    "edit_pals.ctx.clone_bulk": "Massenklon-Freunde"
 }

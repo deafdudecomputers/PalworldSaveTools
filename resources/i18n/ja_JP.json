@@ -2095,5 +2095,13 @@
     "modify_all_player_slots_result": "{total} プレーヤーのインベントリの {modified} を {slots} スロットにサイズ変更しました",
     "modify_all_guild_chest_slots_title": "すべてのギルドチェストスロットを変更する",
     "modify_all_guild_chest_slots_prompt": "すべてのギルドとベースチェストの新しいスロット数を入力します。",
-    "modify_all_guild_chest_slots_result": "{modified} ギルドチェストコンテナを修正"
+    "modify_all_guild_chest_slots_result": "{modified} ギルドチェストコンテナを修正",
+    "menu.file.load_gps.select_source_msg": "どのプラットフォームの Global Pal Storage をロードしますか?",
+    "menu.file.load_gps.btn_gamepass": "ゲームパス",
+    "menu.file.load_gps.btn_steam": "スチーム",
+    "menu.file.load_gps.gamepass_not_found_title": "GamePass GPS が見つかりません",
+    "menu.file.load_gps.gamepass_not_found_msg": "この PC では Game Pass 用の Global Pal Storage が見つかりませんでした。\n\nまず Palworld (Game Pass バージョン) をプレイし、Global Pal Storage と対話してから、もう一度お試しください。",
+    "menu.file.load_gps.gamepass_sync_held_title": "GamePass GPS は利用できません",
+    "menu.file.load_gps.gamepass_sync_held_msg": "この PC 上の Game Pass Global Pal Storage コンテナは現在空です。クラウド同期がそれを保持している可能性があります。\n\nPalworld (Game Pass バージョン) を一度起動して、同期によってコンテナーが復元されてから、もう一度お試しください。",
+    "edit_pals.ctx.clone_bulk": "バルククローン仲間"
 }

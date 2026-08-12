@@ -14,6 +14,8 @@ from palworld_xgp_import.container_types import (
 
 SAVE_SUFFIXES = ("Level", "Level-01", "LocalData", "WorldOption")
 
+GPS_CONTAINER_NAME = "GlobalPalStorage"
+
 _NO_WINDOW = getattr(subprocess, 'CREATE_NO_WINDOW', 0) if sys.platform == 'win32' else 0
 
 
@@ -168,6 +170,116 @@ def find_container_paths() -> list[str]:
     ]
 
 
+class GamepassGpsUnavailable(RuntimeError):
+    """The GlobalPalStorage container exists in the index but has no local
+    data (cloud sync has consumed it)."""
+
+
+def load_gamepass_gps() -> Optional[tuple[str, str]]:
+    """Auto-locate and extract the single Game Pass GlobalPalStorage container.
+
+    Unlike world saves (per-world '<saveid>-Level' containers), Game Pass keeps
+    exactly ONE Global Pal Storage for the whole store, named plainly
+    'GlobalPalStorage' (no save-id prefix). No world picker is needed.
+
+    Returns (extracted 'GlobalPalStorage.sav' path, container dir) or None.
+    Raises GamepassGpsUnavailable when the container exists but is empty
+    (cloud sync has consumed the local copy)."""
+    empty_seen = False
+    for cpath in find_container_paths():
+        try:
+            index = read_container_index(cpath)
+        except Exception as e:
+            print(f'[load_gamepass_gps] index read failed {cpath}: {e}')
+            continue
+        gps = [c for c in index.containers if c.container_name == GPS_CONTAINER_NAME]
+        if not gps:
+            continue
+        try:
+            data = _read_container_data(cpath, gps[0])
+        except FileNotFoundError as e:
+            print(f'[load_gamepass_gps] {e}')
+            empty_seen = True
+            continue
+        except Exception as e:
+            print(f'[load_gamepass_gps] extract failed: {e}')
+            continue
+        tmpdir = tempfile.mkdtemp(prefix='pst_gps_')
+        p = os.path.join(tmpdir, 'GlobalPalStorage.sav')
+        with open(p, 'wb') as f:
+            f.write(data)
+        return (p, cpath)
+    if empty_seen:
+        raise GamepassGpsUnavailable(
+            'The Game Pass Global Pal Storage container is currently empty on '
+            'this PC - cloud sync may be holding it.\n\nLaunch Palworld '
+            '(Game Pass version) once so sync restores the container, then try again.'
+        )
+    return None
+
+
+def save_gps_to_gamepass(container_path: str, data: bytes) -> None:
+    """Update the single 'GlobalPalStorage' container IN PLACE.
+
+    The Game Pass sync engine only honors containers it owns: it ignores new
+    local-only containers (flag=5, no cloud_id) whose name collides with a
+    container the cloud already has. So this mirrors exactly how the game
+    itself writes its saves - the existing container's UUID, cloud_id and flag
+    are preserved, the seq is bumped, and the container.N file + data file are
+    replaced inside the SAME container dir. The engine then sees its own
+    container with newer data and syncs it up (higher seq wins conflicts)."""
+    index = read_container_index(container_path)
+    entries = [c for c in index.containers if c.container_name == GPS_CONTAINER_NAME]
+    cur = max(entries, key=lambda c: (c.seq, c.mtime.to_timestamp())) if entries else None
+
+    if cur is not None:
+        c_uuid = cur.container_uuid
+        cloud_id = cur.cloud_id
+        flag = cur.flag
+    else:
+        c_uuid = uuid.uuid4()
+        cloud_id = ""
+        flag = 5
+    seq = (cur.seq if cur is not None else 0) + 1
+    now_mtime = FILETIME.from_timestamp(datetime.datetime.now().timestamp())
+
+    cdir = os.path.join(container_path, c_uuid.bytes_le.hex().upper())
+    os.makedirs(cdir, exist_ok=True)
+    if os.path.isdir(cdir):
+        for fn in os.listdir(cdir):
+            try:
+                os.remove(os.path.join(cdir, fn))
+            except OSError:
+                pass
+
+    f_uuid = uuid.uuid4()
+    with open(os.path.join(cdir, f"container.{seq}"), "wb") as f:
+        f.write((4).to_bytes(4, "little"))
+        f.write((1).to_bytes(4, "little"))
+        name_bytes = "Data".encode("utf-16-le")
+        f.write(name_bytes + b"\x00" * (128 - len(name_bytes)))
+        f.write(b"\x00" * 16)
+        f.write(f_uuid.bytes)
+    data_path = os.path.join(cdir, f_uuid.bytes_le.hex().upper())
+    with open(data_path, "wb") as f:
+        f.write(data)
+
+    new_entry = Container(
+        container_name=GPS_CONTAINER_NAME,
+        cloud_id=cloud_id,
+        seq=seq,
+        flag=flag,
+        container_uuid=c_uuid,
+        mtime=now_mtime,
+        size=len(data),
+    )
+    index.containers = [c for c in index.containers if c.container_name != GPS_CONTAINER_NAME]
+    index.containers.append(new_entry)
+    index.mtime = now_mtime
+    cleanup_container_path(index, container_path)
+    index.write_file(container_path)
+
+
 def read_container_index(container_path: str) -> ContainerIndex:
     import subprocess as _sp
     for _s in ('XblGameSave', 'XblAuthManager'):
@@ -241,15 +353,23 @@ def _find_container_multi(index: ContainerIndex, save_id: str, *suffixes: str) -
 
 def _read_container_data(container_path: str, container: Container) -> bytes:
     cdir = os.path.join(container_path, container.container_uuid.bytes_le.hex().upper())
+    if not os.path.isdir(cdir):
+        raise FileNotFoundError(f"container dir not found: {cdir}")
     clist_files = [f for f in os.listdir(cdir) if f.startswith("container.")]
     if not clist_files:
         raise FileNotFoundError(f"container.* not found in {cdir}")
-    clist_path = os.path.join(cdir, sorted(clist_files)[0])
-    with open(clist_path, "rb") as f:
-        flist = ContainerFileList.from_stream(f)
-    if flist.files:
-        return flist.files[0].data
-    return b""
+    preferred = f"container.{container.seq}"
+    ordered = [preferred] + sorted(f for f in clist_files if f != preferred)
+    for fn in ordered:
+        clist_path = os.path.join(cdir, fn)
+        with open(clist_path, "rb") as f:
+            flist = ContainerFileList.from_stream(f)
+        if flist.files:
+            return flist.files[0].data
+    raise FileNotFoundError(
+        f"container has no data in {cdir} (sync may have consumed it - the data "
+        f"may only exist in the cloud until the game re-downloads it)"
+    )
 
 
 def _read_container_data_by_name(container_path: str, index: ContainerIndex, save_id: str, suffix: str) -> Optional[bytes]:
@@ -264,6 +384,13 @@ def _read_container_data_by_name_multi(container_path: str, index: ContainerInde
         data = _read_container_data_by_name(container_path, index, save_id, s)
         if data is not None:
             return data
+    return None
+
+
+def _read_container_data_by_exact_name(container_path: str, index: ContainerIndex, name: str) -> Optional[bytes]:
+    for c in index.containers:
+        if c.container_name == name:
+            return _read_container_data(container_path, c)
     return None
 
 
@@ -297,6 +424,13 @@ def extract_save_to_temp(container_path: str, index: ContainerIndex, save_id: st
         with open(p, "wb") as f:
             f.write(world_opt)
         extracted["WorldOption.sav"] = p
+
+    gps_data = _read_container_data_by_exact_name(container_path, index, GPS_CONTAINER_NAME)
+    if gps_data:
+        p = os.path.join(temp_dir, "GlobalPalStorage.sav")
+        with open(p, "wb") as f:
+            f.write(gps_data)
+        extracted["GlobalPalStorage.sav"] = p
 
     players_dir = os.path.join(temp_dir, "Players")
     os.makedirs(players_dir, exist_ok=True)
@@ -392,11 +526,16 @@ def write_gvas_to_container(
     local_data: Optional[bytes] = None,
     world_option_data: Optional[bytes] = None,
     players_data: Optional[dict[str, bytes]] = None,
+    gps_data: Optional[bytes] = None,
     bump_sync_clock: bool = False,
 ) -> None:
     """Write modified save data back into an existing XGP container,
     replacing only containers whose name starts with <save_id>-.
     Does not touch containers belonging to other save IDs.
+
+    The Game Pass Global Pal Storage lives in a container named exactly
+    'GlobalPalStorage' (no save-id prefix); it is replaced only when
+    gps_data is provided.
 
     When bump_sync_clock=True, container mtimes are set to year 2100
     so Xbox cloud sync sees local as newer and uploads instead of overwriting."""
@@ -408,11 +547,13 @@ def write_gvas_to_container(
     prefix = f"{save_id}-"
     old_count = len(index.containers)
     index.containers = [c for c in index.containers if not c.container_name.startswith(prefix)]
+    if gps_data is not None:
+        index.containers = [c for c in index.containers if c.container_name != GPS_CONTAINER_NAME]
     removed = old_count - len(index.containers)
     _t1 = _t.perf_counter()
     print(f'  [write_gvas] filtered {removed} old containers: {_t1-_t0:.2f}s')
 
-    def _create_entry(suffix: str, data: bytes) -> Container:
+    def _create_entry(suffix: str, data: bytes, container_name: str | None = None) -> Container:
         _a = _t.perf_counter()
         c_uuid = uuid.uuid4()
         f_uuid = uuid.uuid4()
@@ -433,7 +574,7 @@ def write_gvas_to_container(
         _d = _t.perf_counter()
         print(f'  [write_gvas] _create_entry({suffix}): mkdir={_b-_a:.2f}s container.1={_c-_b:.2f}s data={_d-_c:.2f}s data_len={len(data)}')
         return Container(
-            container_name=f"{save_id}-{suffix}",
+            container_name=container_name or f"{save_id}-{suffix}",
             cloud_id="", seq=1, flag=5,
             container_uuid=c_uuid,
             mtime=write_mtime,
@@ -461,6 +602,10 @@ def write_gvas_to_container(
         for uid, pdata in players_data.items():
             index.containers.append(_create_entry(f"Players-{uid}", pdata))
         print(f'  [write_gvas] {len(players_data)} player entries: {_t.perf_counter()-_t3d:.2f}s')
+    if gps_data is not None:
+        _t3e = _t.perf_counter()
+        index.containers.append(_create_entry(GPS_CONTAINER_NAME, gps_data, container_name=GPS_CONTAINER_NAME))
+        print(f'  [write_gvas] GlobalPalStorage entry: {_t.perf_counter()-_t3e:.2f}s')
     _t4 = _t.perf_counter()
     cleanup_container_path(index, container_path)
     index.mtime = write_mtime
@@ -493,6 +638,11 @@ def convert_to_steam(index: ContainerIndex, container_path: str, save_id: str, o
         with open(os.path.join(output_dir, "WorldOption.sav"), "wb") as f:
             f.write(world_opt)
 
+    gps_data = _read_container_data_by_exact_name(container_path, index, GPS_CONTAINER_NAME)
+    if gps_data:
+        with open(os.path.join(output_dir, "GlobalPalStorage.sav"), "wb") as f:
+            f.write(gps_data)
+
     players_dir = os.path.join(output_dir, "Players")
     os.makedirs(players_dir, exist_ok=True)
     for c in index.containers:
@@ -519,6 +669,7 @@ def convert_to_gamepass_from_steam(steam_dir: str, container_path: str, world_na
     meta_path = os.path.join(steam_dir, "LevelMeta.sav")
     local_path = os.path.join(steam_dir, "LocalData.sav")
     world_opt_path = os.path.join(steam_dir, "WorldOption.sav")
+    gps_path = os.path.join(steam_dir, "GlobalPalStorage.sav")
     players_dir = os.path.join(steam_dir, "Players")
 
     def _create_entry(suffix, data):
@@ -539,6 +690,10 @@ def convert_to_gamepass_from_steam(steam_dir: str, container_path: str, world_na
     if os.path.exists(world_opt_path):
         with open(world_opt_path, "rb") as f:
             index.containers.append(_create_entry("WorldOption", f.read()))
+
+    if os.path.exists(gps_path):
+        with open(gps_path, "rb") as f:
+            index.containers.append(_create_container_entry_raw(container_path, GPS_CONTAINER_NAME, f.read()))
 
     if os.path.isdir(players_dir):
         for pf in sorted(os.listdir(players_dir)):
@@ -565,13 +720,13 @@ def _create_empty_index(container_path: str) -> ContainerIndex:
     return index
 
 
-def _create_container_entry_raw(container_path: str, name: str, data: bytes) -> Container:
+def _create_container_entry_raw(container_path: str, name: str, data: bytes, seq: int = 1) -> Container:
     c_uuid = uuid.uuid4()
     f_uuid = uuid.uuid4()
     cdir = os.path.join(container_path, c_uuid.bytes_le.hex().upper())
     os.makedirs(cdir, exist_ok=True)
 
-    with open(os.path.join(cdir, "container.1"), "wb") as f:
+    with open(os.path.join(cdir, f"container.{seq}"), "wb") as f:
         f.write((4).to_bytes(4, "little"))
         f.write((1).to_bytes(4, "little"))
         name_bytes = "Data".encode("utf-16-le")
@@ -586,7 +741,7 @@ def _create_container_entry_raw(container_path: str, name: str, data: bytes) -> 
     return Container(
         container_name=name,
         cloud_id="",
-        seq=1,
+        seq=seq,
         flag=5,
         container_uuid=c_uuid,
         mtime=FILETIME.from_timestamp(datetime.datetime.now().timestamp()),
@@ -705,6 +860,7 @@ def save_xgp_changes(
 
     local_data = _r('LocalData.sav')
     world_opt = _r('WorldOption.sav')
+    gps_data = _r('GlobalPalStorage.sav')
     players_data: dict[str, bytes] = {}
     pdir = os.path.join(current_save_path, 'Players')
     if os.path.isdir(pdir):
@@ -723,6 +879,7 @@ def save_xgp_changes(
         local_data=local_data,
         world_option_data=world_opt,
         players_data=players_data,
+        gps_data=gps_data,
         bump_sync_clock=bump_sync_clock,
     )
 
@@ -804,12 +961,44 @@ def save_and_block_network(
     return [blocked]
 
 
+def save_gps_and_block_network(container_path: str, data: bytes) -> list[str]:
+    """Write the global GlobalPalStorage container while Game Pass cloud-save
+    sync is cut. Mirrors save_and_block_network, but for the standalone GPS
+    container (no world save files involved).
+
+    The sync block is created BEFORE the container is touched (fail closed):
+    if it can't be established, a RuntimeError is raised and the WGS data is
+    left untouched. If the write itself fails, the rule is removed before
+    re-raising.
+
+    Returns a non-empty list token (pass to restore_network)."""
+    if not _is_elevated():
+        raise RuntimeError(
+            'Administrator privileges are required for Xbox/Game Pass writes and '
+            'to create the Game Pass sync block. The Game Pass Global Pal '
+            'Storage was NOT modified. Run PST as administrator and try again.'
+        )
+    blocked = block_gamingservices_network()
+    if not blocked:
+        raise RuntimeError(
+            'Could not create the Game Pass cloud-save sync block, so the Global '
+            'Pal Storage was NOT modified to avoid cloud sync overwriting it. '
+            'Run PST as administrator and try again.'
+        )
+    try:
+        save_gps_to_gamepass(container_path, data)
+    except Exception:
+        unblock_gamingservices_network()
+        raise
+    print(f'[save_gps_and_block_network] GPS saved; cloud-save sync blocked ({blocked})')
+    return [blocked]
+
+
 def restore_network(adapters: list[str] | None, parent=None) -> None:
     """Show wait dialog, then remove the Game Pass cloud-save sync block.
 
     Call this on the main thread after save_and_block_network completes.
-    'adapters' is the token returned by save_and_block_network (a non-empty
-    marker list)."""
+    'adapters' is the token returned by save_and_block_network."""
     if not adapters:
         return
     if parent is not None:

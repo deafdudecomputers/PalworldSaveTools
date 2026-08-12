@@ -148,6 +148,9 @@ def run_aio():
             constants.xgp_save_id = None
             constants.xgp_container_index = None
             constants.xgp_loaded = False
+            constants.gps_path = None
+            constants.gps_gvas = None
+            constants.gps_xgp_container_path = None
             MappingCacheObject._MappingCacheInstances.clear()
         p = path_arg
         if not p:

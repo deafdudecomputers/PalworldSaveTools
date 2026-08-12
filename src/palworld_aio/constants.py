@@ -78,6 +78,7 @@ header_loading_widget = None
 xgp_loaded: bool = False
 gps_path: str | None = None
 gps_gvas = None
+gps_xgp_container_path: str | None = None
 def get_container_lookup():
     global container_lookup
     if container_lookup and loaded_level_json:

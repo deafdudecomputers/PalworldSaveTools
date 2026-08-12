@@ -2097,5 +2097,13 @@
     "modify_all_player_slots_result": "将 {total} 玩家库存的 {modified} 调整为 {slots} 插槽",
     "modify_all_guild_chest_slots_title": "修改所有公会宝箱槽位",
     "modify_all_guild_chest_slots_prompt": "输入所有公会和基础宝箱的新槽位数量：",
-    "modify_all_guild_chest_slots_result": "修改后的 {modified} 公会宝箱容器"
+    "modify_all_guild_chest_slots_result": "修改后的 {modified} 公会宝箱容器",
+    "menu.file.load_gps.select_source_msg": "您要加载哪个平台的 Global Pal Storage？",
+    "menu.file.load_gps.btn_gamepass": "游戏通行证",
+    "menu.file.load_gps.btn_steam": "蒸汽",
+    "menu.file.load_gps.gamepass_not_found_title": "未找到 GamePass GPS",
+    "menu.file.load_gps.gamepass_not_found_msg": "在此 PC 上未找到 Game Pass 的 Global Pal Storage。\n\n玩 Palworld（Game Pass 版本）并先与 Global Pal Storage 交互，然后重试。",
+    "menu.file.load_gps.gamepass_sync_held_title": "GamePass GPS 不可用",
+    "menu.file.load_gps.gamepass_sync_held_msg": "此 PC 上的 Game Pass Global Pal Storage 容器当前为空 - 云同步可能正在保存它。\n\n启动 Palworld（Game Pass 版本）一次，以便同步恢复容器，然后重试。",
+    "edit_pals.ctx.clone_bulk": "批量克隆朋友"
 }

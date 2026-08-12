@@ -1167,7 +1167,7 @@ class GpsEditorDialog(FramelessDialog):
                 sp.clear()
                 sp.update(copy.deepcopy(raw))
         from palworld_aio.managers.save_manager import save_manager
-        save_manager.save_gps(constants.gps_path)
+        save_manager.save_gps(constants.gps_path, parent=self)
 
     def eventFilter(self, obj, event):
         if event.type() == QEvent.Type.Wheel:
@@ -1320,5 +1320,4 @@ class GpsEditorDialog(FramelessDialog):
         self._mark_modified()
 
     def closeEvent(self, event):
-        self._save(force=True)
         super().closeEvent(event)

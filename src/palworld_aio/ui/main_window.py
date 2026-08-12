@@ -1382,6 +1382,43 @@ class MainWindow(QMainWindow):
             self.refresh_all()
             self._show_info(t('Done'), t('gamedays.success', old=result['old'], new=result['new']))
     def _load_gps(self):
+        box = self._create_message_box(QMessageBox.Question)
+        box.setWindowTitle(t('menu.file.load_gps') if t else 'Load Global Pal Storage')
+        box.setText(t('menu.file.load_gps.select_source_msg') if t else "Which platform's Global Pal Storage do you want to load?")
+        gp_btn = box.addButton(t('menu.file.load_gps.btn_gamepass') if t else 'GamePass', QMessageBox.AcceptRole)
+        st_btn = box.addButton(t('menu.file.load_gps.btn_steam') if t else 'Steam', QMessageBox.AcceptRole)
+        box.addButton(t('Cancel'), QMessageBox.RejectRole)
+        box.exec()
+        clicked = box.clickedButton()
+        if clicked is gp_btn:
+            self._load_gps_gamepass()
+        elif clicked is st_btn:
+            self._load_gps_steam()
+    def _load_gps_gamepass(self):
+        from palworld_aio import constants
+        from palworld_xgp_import.gamepass_manager import load_gamepass_gps, GamepassGpsUnavailable
+        try:
+            res = load_gamepass_gps()
+        except GamepassGpsUnavailable:
+            self._show_warning(
+                t('menu.file.load_gps.gamepass_sync_held_title') if t else 'GamePass GPS Unavailable',
+                t('menu.file.load_gps.gamepass_sync_held_msg') if t else 'The Game Pass Global Pal Storage container is currently empty on this PC - cloud sync may be holding it.\n\nLaunch Palworld (Game Pass version) once so sync restores the container, then try again.')
+            return
+        if not res:
+            self._show_warning(
+                t('menu.file.load_gps.gamepass_not_found_title') if t else 'GamePass GPS Not Found',
+                t('menu.file.load_gps.gamepass_not_found_msg') if t else 'No Global Pal Storage was found for Game Pass on this PC.\n\nPlay Palworld (Game Pass version) and interact with a Global Pal Storage first, then try again.')
+            return
+        path, cpath = res
+        ok = save_manager.load_gps(path, parent=self)
+        if not ok:
+            return
+        constants.gps_xgp_container_path = cpath
+        from palworld_aio.editor.gps_editor import GpsEditorDialog
+        dlg = GpsEditorDialog(self)
+        dlg.exec()
+    def _load_gps_steam(self):
+        from palworld_aio import constants
         from common import get_preferred_save_path
         path, _ = QFileDialog.getOpenFileName(self, t('menu.file.load_gps') if t else 'Load Global Pal Storage', get_preferred_save_path(), 'GlobalPalStorage.sav (GlobalPalStorage.sav)')
         if not path:
@@ -1389,6 +1426,7 @@ class MainWindow(QMainWindow):
         if not os.path.basename(path).startswith('GlobalPalStorage'):
             self._show_warning(t('error.title') if t else 'Error', 'Please select a GlobalPalStorage.sav file')
             return
+        constants.gps_xgp_container_path = None
         ok = save_manager.load_gps(path, parent=self)
         if ok:
             from palworld_aio.editor.gps_editor import GpsEditorDialog

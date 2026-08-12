@@ -2382,5 +2382,13 @@
     "modify_all_player_slots_result": "Resized {modified} of {total} player inventories to {slots} slots",
     "modify_all_guild_chest_slots_title": "Modify All Guild Chest Slots",
     "modify_all_guild_chest_slots_prompt": "Enter new slot count for all guild and base chests:",
-    "modify_all_guild_chest_slots_result": "Modified {modified} guild chest containers"
+    "modify_all_guild_chest_slots_result": "Modified {modified} guild chest containers",
+    "menu.file.load_gps.select_source_msg": "Which platform's Global Pal Storage do you want to load?",
+    "menu.file.load_gps.btn_gamepass": "GamePass",
+    "menu.file.load_gps.btn_steam": "Steam",
+    "menu.file.load_gps.gamepass_not_found_title": "GamePass GPS Not Found",
+    "menu.file.load_gps.gamepass_not_found_msg": "No Global Pal Storage was found for Game Pass on this PC.\n\nPlay Palworld (Game Pass version) and interact with a Global Pal Storage first, then try again.",
+    "menu.file.load_gps.gamepass_sync_held_title": "GamePass GPS Unavailable",
+    "menu.file.load_gps.gamepass_sync_held_msg": "The Game Pass Global Pal Storage container is currently empty on this PC - cloud sync may be holding it.\n\nLaunch Palworld (Game Pass version) once so sync restores the container, then try again.",
+    "edit_pals.ctx.clone_bulk": "Bulk Clone Pals"
 }

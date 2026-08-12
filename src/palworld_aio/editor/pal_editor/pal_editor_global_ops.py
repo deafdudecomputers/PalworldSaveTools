@@ -126,6 +126,42 @@ def delete_pal_from_all(pal_id):
         with ThreadPoolExecutor(max_workers=min(os.cpu_count() or 4, 8)) as ex:
             for removed in ex.map(_process_dps, dps_files):
                 pals_removed += removed
+    # Global Pal Storage (Steam: GlobalPalStorage.sav next to Level.sav;
+    # GamePass: 'GlobalPalStorage' container, auto-loaded on XGP save open)
+    gps_removed = 0
+    try:
+        gps = constants.gps_gvas
+        if gps:
+            arr = gps.properties.get('SaveParameterArray', {}).get('value', {}).get('values', [])
+            for e in arr:
+                if not isinstance(e, dict):
+                    continue
+                sp = e.get('SaveParameter', {}).get('value', {})
+                if not isinstance(sp, dict):
+                    continue
+                cid = sp.get('CharacterID', {}).get('value', '')
+                if not cid or cid.lower() != pal_id.lower():
+                    continue
+                for k in list(sp.keys()):
+                    if k != 'SlotId':
+                        del sp[k]
+                sp['CharacterID'] = {'id': None, 'type': 'NameProperty', 'value': 'None'}
+                sp['Level'] = {'id': None, 'type': 'ByteProperty', 'value': {'type': 'None', 'value': 1}}
+                inst = e.get('InstanceId')
+                if isinstance(inst, dict):
+                    empty = '00000000-0000-0000-0000-000000000000'
+                    iv = inst.get('value', {})
+                    if isinstance(iv, dict):
+                        iv['PlayerUId'] = {'struct_type': 'Guid', 'struct_id': empty, 'id': None, 'value': empty, 'type': 'StructProperty'}
+                        iv['InstanceId'] = {'struct_type': 'Guid', 'struct_id': empty, 'id': None, 'value': empty, 'type': 'StructProperty'}
+                        iv['DebugName'] = {'id': None, 'type': 'StrProperty', 'value': ''}
+                gps_removed += 1
+            if gps_removed:
+                from palworld_aio.managers.save_manager import save_manager
+                save_manager.save_gps()
+                pals_removed += gps_removed
+    except Exception as e:
+        print(f'Error removing pal from GPS: {e}')
     constants.invalidate_container_lookup()
     affected_count = len(affected_players) + len(affected_bases)
     return {'pals_removed': pals_removed, 'affected_count': affected_count}
@@ -258,4 +294,56 @@ def remove_skill_from_all_pals(active_skill_id=None, passive_skill_id=None, scop
                 for sk, pa in ex.map(_process_dps, dps_files):
                     skills_removed += sk
                     pals_affected += pa
+    # Global Pal Storage (Steam: GlobalPalStorage.sav next to Level.sav;
+    # GamePass: 'GlobalPalStorage' container, auto-loaded on XGP save open)
+    if 'all' in scope_list or 'gps' in scope_list:
+        gps_skills = 0
+        gps_pals = 0
+        try:
+            gps = constants.gps_gvas
+            if gps:
+                arr = gps.properties.get('SaveParameterArray', {}).get('value', {}).get('values', [])
+                for e in arr:
+                    if not isinstance(e, dict):
+                        continue
+                    sp = e.get('SaveParameter', {}).get('value', {})
+                    if not isinstance(sp, dict):
+                        continue
+                    pal_skills_removed = 0
+                    if active_skill_full:
+                        equip_waza = sp.get('EquipWaza', {})
+                        if equip_waza:
+                            skill_values = equip_waza.get('value', {}).get('values', [])
+                            orig = len(skill_values)
+                            skill_values = [s for s in skill_values if s.lower() != active_skill_full.lower()]
+                            if len(skill_values) < orig:
+                                equip_waza['value']['values'] = skill_values
+                                pal_skills_removed += orig - len(skill_values)
+                        mastered_waza = sp.get('MasteredWaza', {})
+                        if mastered_waza:
+                            mastered_values = mastered_waza.get('value', {}).get('values', [])
+                            orig = len(mastered_values)
+                            mastered_values = [s for s in mastered_values if s.lower() != active_skill_full.lower()]
+                            if len(mastered_values) < orig:
+                                mastered_waza['value']['values'] = mastered_values
+                                pal_skills_removed += orig - len(mastered_values)
+                    if passive_skill_id:
+                        passive_list = sp.get('PassiveSkillList', {})
+                        if passive_list:
+                            skill_values = passive_list.get('value', {}).get('values', [])
+                            orig = len(skill_values)
+                            skill_values = [s for s in skill_values if s.lower() != passive_skill_id.lower()]
+                            if len(skill_values) < orig:
+                                passive_list['value']['values'] = skill_values
+                                pal_skills_removed += orig - len(skill_values)
+                    if pal_skills_removed > 0:
+                        gps_skills += pal_skills_removed
+                        gps_pals += 1
+                if gps_skills > 0:
+                    from palworld_aio.managers.save_manager import save_manager
+                    save_manager.save_gps()
+                    skills_removed += gps_skills
+                    pals_affected += gps_pals
+        except Exception as e:
+            print(f'Error removing skills from GPS pals: {e}')
     return {'skills_removed': skills_removed, 'pals_affected': pals_affected}

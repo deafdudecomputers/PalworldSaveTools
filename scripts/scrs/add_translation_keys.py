@@ -13,20 +13,9 @@ except ImportError:
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 LANGUAGES = {'zh_CN': {'name': 'Simplified Chinese', 'code': 'zh-CN'}, 'de_DE': {'name': 'German', 'code': 'de'}, 'es_ES': {'name': 'Spanish', 'code': 'es'}, 'fr_FR': {'name': 'French', 'code': 'fr'}, 'ru_RU': {'name': 'Russian', 'code': 'ru'}, 'ja_JP': {'name': 'Japanese', 'code': 'ja'}, 'ko_KR': {'name': 'Korean', 'code': 'ko'}, 'pt_BR': {'name': 'Portuguese (Brazil)', 'code': 'pt'}, 'pt_PT': {'name': 'Portuguese (Portugal)', 'code': 'pt'}}
 NEW_TRANSLATIONS = {
-    'deletion.menu.delete_imported_pals': 'Delete Imported Pals',
-    'deletion.delete_imported_pals.title': 'Delete Imported Pals',
-    'deletion.delete_imported_pals.confirm': 'Delete ALL imported pals (DNA) from every player\'s party, palbox, DPS storage, and all base workers? This cannot be undone. Continue?',
-    'deletion.imported_pals_removed': 'Removed {count} imported pals',
-    'deletion.menu.modify_all_player_slots': 'Modify All Player Slots',
-    'deletion.menu.modify_all_guild_chest_slots': 'Modify All Guild Chest Slots',
-    'modify_all_player_slots_title': 'Modify All Player Slots',
-    'modify_all_player_slots_prompt': 'Enter new inventory slot count (42-999) for all players:',
-    'modify_all_player_slots_result': 'Resized {modified} of {total} player inventories to {slots} slots',
-    'modify_all_guild_chest_slots_title': 'Modify All Guild Chest Slots',
-    'modify_all_guild_chest_slots_prompt': 'Enter new slot count for all guild and base chests:',
-    'modify_all_guild_chest_slots_result': 'Modified {modified} guild chest containers',
+    'edit_pals.ctx.clone_bulk': 'Bulk Clone Pals',
 }
-OLD_KEYS = []
+OLD_KEYS = ['edit_pals.ctx.clone_pals']
 def _clean_uv_locks():
     for p in [Path.cwd() / 'uv.lock', PROJECT_ROOT / 'uv.lock']:
         if p.exists():

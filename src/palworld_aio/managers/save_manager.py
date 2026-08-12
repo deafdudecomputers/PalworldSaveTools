@@ -105,6 +105,7 @@ class SaveManager(QObject):
         constants.xgp_loaded = False
         constants.gps_path = None
         constants.gps_gvas = None
+        constants.gps_xgp_container_path = None
         self.dps_tasks.clear()
         self.player_sav_cache.clear()
         if hasattr(MappingCacheObject, '_MappingCacheInstances'):
@@ -333,7 +334,15 @@ class SaveManager(QObject):
                 constants.xgp_loaded = True
                 constants.current_save_path = tmpdir
                 constants.backup_save_path = tmpdir
-                return self._load_from_path(level_path, parent)
+                ok = self._load_from_path(level_path, parent)
+                if ok:
+                    _gps_path = os.path.join(tmpdir, 'GlobalPalStorage.sav')
+                    if os.path.isfile(_gps_path):
+                        try:
+                            self.load_gps(_gps_path, parent=None)
+                        except Exception as _ge:
+                            print(f'load_xgp_save gps error: {_ge}')
+                return ok
             except Exception as e:
                 print(f'load_xgp_save error: {e}')
                 import traceback
@@ -412,6 +421,10 @@ class SaveManager(QObject):
             sav_bytes = compress_gvas_to_sav(gvas_bytes, save_type)
             with open(path, 'wb') as f:
                 f.write(sav_bytes)
+            if constants.gps_xgp_container_path:
+                from palworld_xgp_import.gamepass_manager import save_gps_and_block_network, restore_network
+                tokens = save_gps_and_block_network(constants.gps_xgp_container_path, sav_bytes)
+                restore_network(tokens, parent)
             return True
         except Exception as e:
             print(f'save_gps error: {e}')
