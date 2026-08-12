@@ -1,3 +1,6 @@
+#2.3.6
+- Bumped version to 2.3.6
+
 #2.3.5
 - **Global Pal Storage on Game Pass** — "Load Global Pal Storage" now asks whether you want the Game Pass or Steam storage. Game Pass finds its one shared storage automatically, and edits now save back to Game Pass reliably: PST updates the storage in the same way the game itself saves, so Xbox cloud sync treats it as the game's newest save instead of silently reverting your edits. The same cloud-sync block that protects Game Pass world saves also protects Global Pal Storage saves, and if cloud sync is temporarily holding the storage, PST tells you to launch Palworld once instead of crashing.
 - **Bulk pal actions now cover Global Pal Storage** — "delete a pal from everywhere" and "remove a skill from all pals" now also reach pals sitting in the Global Pal Storage, on both Steam and Game Pass.
