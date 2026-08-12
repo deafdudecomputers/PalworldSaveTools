@@ -316,7 +316,7 @@
             "icon": "/icons/pals/T_CowPal_icon_normal.webp"
         },
         "CubeTurtle": {
-            "name": "Tetroise ",
+            "name": "Tetroise",
             "combi_rank": 790,
             "rarity": 8,
             "ignore_combi": false,
@@ -484,7 +484,7 @@
             "icon": "/icons/pals/T_ElecSnail_icon_normal.webp"
         },
         "ElecSnail_Ground": {
-            "name": "Snock Lux",
+            "name": "Snock Terra",
             "combi_rank": 1500,
             "rarity": 3,
             "ignore_combi": false,

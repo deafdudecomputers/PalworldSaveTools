@@ -1825,7 +1825,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Hug You So Much",
-            "description": "While in party, the player's attacks inflict [EFFECT:IvyCling] {Passive1_EffectValue1}. (Does not stack)",
+            "description": "While in party, the player's attacks increase [EFFECT:IvyCling] buildup by {Passive1_EffectValue1}. (Does not stack)",
             "passives": [
                 "AdditionalEffect_IvyCling_PartnerSkill_CactusDoll_Dark_1"
             ]
@@ -2021,7 +2021,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Unyielding Storm Commander",
-            "description": "While in party, improves player's and Pals' [ICON:ElemIcon_Water][ELEM:Water] damage to enemy weak points by {Passive1_EffectValue1}%. (Does not stack)",
+            "description": "While in party, increases damage dealt by Player and Pals' [ICON:ElemIcon_Water][ELEM:Water] attacks when hitting the enemy's elemental weakness by {Passive1_EffectValue1}%. (Does not stack)",
             "passives": [
                 "ElementBoostWeakness_Water_PartnerSkill_1"
             ]
@@ -2079,7 +2079,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Lifmunk Recoil",
-            "description": "When activated, leaps onto the player's head and uses a submachine gun to follows up player attacks. {ReferenceMsgId_DamageUp}"
+            "description": "When activated, leaps onto the player's head and uses a submachine gun to follow up the player's attacks. {ReferenceMsgId_DamageUp}"
         },
         {
             "name": "Tombat",
@@ -2675,7 +2675,7 @@
             "description": "Sometimes drops Milk when assigned to Ranch."
         },
         {
-            "name": "Tetroise ",
+            "name": "Tetroise",
             "asset": "CubeTurtle",
             "icon": "/icons/pals/T_CubeTurtle_icon_normal.webp",
             "elements": {
@@ -2785,7 +2785,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Stone-Chaser Archelon",
-            "description": "Can be ridden. While in party, increases the durability of all weapons and armor by {Passive1_EffectValue1}%. (Does not stack)",
+            "description": "Can be ridden. While in party, reduces durability loss of all weapons and armor by {Passive1_EffectValue1}%. (Does not stack)",
             "passives": [
                 "CubeTurtle_Neutral_PartnerSkill_1",
                 "CubeTurtle_Neutral_PartnerSkill_1_Armor",
@@ -4147,13 +4147,13 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Charging Shell",
-            "description": "While in party, the player's attacks inflict [EFFECT:Electrical] {Passive1_EffectValue1}. (Does not stack)",
+            "description": "While in party, the player's attacks increase [EFFECT:Electrical] buildup by {Passive1_EffectValue1}. (Does not stack)",
             "passives": [
                 "AdditionalEffect_Electrical_PartnerSkill_ElecSnail_1"
             ]
         },
         {
-            "name": "Snock Lux",
+            "name": "Snock Terra",
             "asset": "ElecSnail_Ground",
             "icon": "/icons/pals/T_ElecSnail_Ground_icon_normal.webp",
             "elements": {
@@ -5078,7 +5078,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Mist Stalwart",
-            "description": "When activated, the player's attacks inflict [EFFECT:Poison] {ReferencePassive1_EffectValue1}. While in party, grants the player and party Pals immunity to [EFFECT:Poison], and nullifies the effects of toxic gas in the World Tree area. (Does not stack)",
+            "description": "When activated, the player's attacks increase [EFFECT:Poison] buildup by {ReferencePassive1_EffectValue1}. While in party, grants the player and party Pals immunity to [EFFECT:Poison], and nullifies the effects of toxic gas in the World Tree area. (Does not stack)",
             "reference_passives": [
                 "AdditionalEffect_Poison_PartnerSkill_FlowerPrince_1",
                 "AdditionalEffect_Poison_PartnerSkill_FlowerPrince_2",
@@ -5993,7 +5993,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Liberated Pterosaur",
-            "description": "Can be ridden as a flying mount. This Pal's Attack and Movement Speed increase by {Passive1_EffectValue1}% for each other [ICON:ElemIcon_Dragon][ELEM:Dragon]or [ICON:ElemIcon_Dark][ELEM:Dark] Pal in your party.",
+            "description": "Can be ridden as a flying mount. This Pal's Attack and Movement Speed increase by {Passive1_EffectValue1}% for each other [ICON:ElemIcon_Dragon][ELEM:Dragon] or [ICON:ElemIcon_Dark][ELEM:Dark] Pal in your party.",
             "passives": [
                 "ShotAttack_MoveSpeed_PartnerSkill_SpecificElement_1"
             ]
@@ -6057,7 +6057,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Resentful Pterosaur",
-            "description": "Can be ridden as a flying mount. This Pal's Attack and Movement Speed increase by {Passive1_EffectValue1}% or each other [ICON:ElemIcon_Dragon][ELEM:Dragon] or [ICON:ElemIcon_Fire][ELEM:Fire] Pal in your party. (Excluding Eidrolon Ignis)",
+            "description": "Can be ridden as a flying mount. This Pal's Attack and Movement Speed increase by {Passive1_EffectValue1}% for each other [ICON:ElemIcon_Dragon][ELEM:Dragon] or [ICON:ElemIcon_Fire][ELEM:Fire] Pal in your party. (Excluding Eidrolon Ignis)",
             "passives": [
                 "ShotAttack_MoveSpeed_PartnerSkill_SpecificElement_1"
             ]
@@ -6419,7 +6419,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Forest Laser",
-            "description": "Can be ridden. When activated, Dualith fires a powerful [ICON:ElemIcon_Grass][ELEM:Leaf] laser from its right hand. {ReferenceMsgId_CooldownReduction}"
+            "description": "Can be ridden. While mounted, Dualith fires a powerful [ICON:ElemIcon_Grass][ELEM:Leaf] laser from its right hand. {ReferenceMsgId_CooldownReduction}"
         },
         {
             "name": "Dualith Noct",
@@ -6480,7 +6480,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Corruption Laser",
-            "description": "Can be ridden. When activated, Dualith Noct fires a powerful [ICON:ElemIcon_Dark][ELEM:Dark] laser from its right hand. {ReferenceMsgId_CooldownReduction}"
+            "description": "Can be ridden. While mounted, Dualith Noct fires a powerful [ICON:ElemIcon_Dark][ELEM:Dark] laser from its right hand. {ReferenceMsgId_CooldownReduction}"
         },
         {
             "name": "Mammorest",
@@ -7384,7 +7384,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Cast-Iron Shell",
-            "description": "While in your party, generates a barrier around the player after 5 melee hits are landed within {Passive1_EffectValue1} seconds. (Does not stack)",
+            "description": "While in party, generates a barrier around the player after 5 melee hits are landed within {Passive1_EffectValue1} seconds. (Does not stack)",
             "passives": [
                 "Baphomet_Dark_PartnerSkill_1"
             ]
@@ -7442,7 +7442,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Fullmetal Shell",
-            "description": "While in your party, generates a barrier around the player after 5 melee hits are landed within {Passive1_EffectValue1} seconds. (Does not stack)",
+            "description": "While in party, generates a barrier around the player after 5 melee hits are landed within {Passive1_EffectValue1} seconds. (Does not stack)",
             "passives": [
                 "Baphomet_Dark_PartnerSkill_1"
             ]
@@ -7860,7 +7860,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Icy Steed",
-            "description": "Can be ridden as a flying mount. While mounted, changes the player's attack type to [ICON:ElemIcon_Ice][ELEM:Ice], inflict [EFFECT:Freeze] {Passive3_EffectValue1}, increases Attack by {Passive2_EffectValue1}%.",
+            "description": "Can be ridden as a flying mount. While mounted, changes the player's attack type to [ICON:ElemIcon_Ice][ELEM:Ice], increases Attack by {Passive2_EffectValue1}%, and apply [EFFECT:Freeze] buildup by {Passive3_EffectValue1}.",
             "passives": [
                 "GiveAIce_Ride",
                 "GiveElement_TrainerATK_UP_PartnerSkill_Ride_Legend_1",
@@ -7920,7 +7920,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Black Steed",
-            "description": "Can be ridden as a flying mount. While mounted, changes the player's attack type to [ICON:ElemIcon_Dark][ELEM:Dark], inflict [EFFECT:Darkness] {Passive3_EffectValue1}, increases Attack by {Passive2_EffectValue1}%.",
+            "description": "Can be ridden as a flying mount. While mounted, changes the player's attack type to [ICON:ElemIcon_Dark][ELEM:Dark], increases Attack by {Passive2_EffectValue1}%, and apply [EFFECT:Darkness] buildup by {Passive3_EffectValue1}.",
             "passives": [
                 "GiveADark_Ride",
                 "GiveElement_TrainerATK_UP_PartnerSkill_Ride_Legend_1",
@@ -8491,7 +8491,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Stage Combat",
-            "description": "While in party, the player's attacks inflict [EFFECT:Burn] {Passive1_EffectValue1}. (Does not stack)",
+            "description": "While in party, the player's attacks increase [EFFECT:Burn] buildup by {Passive1_EffectValue1}. (Does not stack)",
             "passives": [
                 "AdditionalEffect_Burn_PartnerSkill_KabukiMan_1"
             ]
@@ -8665,7 +8665,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Leap Stance",
-            "description": "When activated, Croajiro Noct channels its loyalty and puffs up its abdomen to store energy. Climbing on top will propel the player high into the air. While airborne before landing, the player's Attack is increased by {ReferencePassive1_EffectValue1}%.",
+            "description": "When activated, Croajiro channels its loyalty and puffs up its abdomen to store energy. Climbing on top will propel the player high into the air. While airborne, the player's Attack is increased by {ReferencePassive1_EffectValue1}%.",
             "reference_passives": [
                 "TrainerATK_UP_PartnerSkill_KendoFrog_1",
                 "TrainerATK_UP_PartnerSkill_KendoFrog_2",
@@ -8733,7 +8733,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Shadow Stance",
-            "description": "When activated, Croajiro Noct channels its loyalty and puffs up its abdomen to store energy. Climbing on top will propel the player high into the air. While in party, improves player's and Pals' [ICON:ElemIcon_Dark][ELEM:Dark] damage to enemy weak points by {Passive1_EffectValue1}%. (Does not stack)",
+            "description": "When activated, Croajiro Noct channels its loyalty and puffs up its abdomen to store energy. Climbing on top will propel the player high into the air. While in party, increases damage dealt by Player and Pals' [ICON:ElemIcon_Dark][ELEM:Dark] attacks when hitting the enemy's elemental weakness by {Passive1_EffectValue1}%. (Does not stack)",
             "passives": [
                 "ElementBoostWeakness_Dark_PartnerSkill_1"
             ]
@@ -8973,7 +8973,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Dragon Kaiser",
-            "description": "Can be ridden. While in party, improves player's and Pals' [ICON:ElemIcon_Dragon][ELEM:Dragon] damage to enemy weak points by {Passive1_EffectValue1}%. (Does not stack)",
+            "description": "Can be ridden. While in party, increases damage dealt by Player and Pals' [ICON:ElemIcon_Dragon][ELEM:Dragon] attacks when hitting the enemy's elemental weakness by {Passive1_EffectValue1}%. (Does not stack)",
             "passives": [
                 "ElementBoostWeakness_Dragon_PartnerSkill_1"
             ]
@@ -9208,7 +9208,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Swift Deity",
-            "description": "Can be ridden. While in party, improves player's and Pals' [ICON:ElemIcon_Electric][ELEM:Electricity] damage to weak points by {Passive1_EffectValue1}%. (Does not stack)",
+            "description": "Can be ridden. While in party, increases damage dealt by Player and Pals' [ICON:ElemIcon_Electric][ELEM:Electricity] attacks when hitting the enemy's elemental weakness by {Passive1_EffectValue1}%. (Does not stack)",
             "passives": [
                 "ElementBoostWeakness_Electricity_PartnerSkill_1"
             ]
@@ -10355,7 +10355,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Glorious Mist",
-            "description": "Can be ridden. While in party, the player's attacks inflict [EFFECT:Wetness] {Passive1_EffectValue1}. (Does not stack)",
+            "description": "Can be ridden. While in party, the player's attacks increase [EFFECT:Wetness] buildup by {Passive1_EffectValue1}. (Does not stack)",
             "passives": [
                 "AdditionalEffect_Wetness_PartnerSkill_SleeveRabbit_1"
             ]
@@ -10543,7 +10543,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Master of Unlocking",
-            "description": "While fighting together, Mimog can open treasure chests without using a key. {ReferenceMsgId_CooldownReduction}"
+            "description": "While fighting together, Mimog can open treasure chests without using a key. Does not apply to chests that require a specific Work Suitability. {ReferenceMsgId_CooldownReduction}"
         },
         {
             "name": "Tanzee",
@@ -11664,7 +11664,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Night Dancer",
-            "description": "Can be ridden. Boosts jumping ability while mounted. This Pal's movement speed increases by +{Passive1_EffectValue1}% at night.",
+            "description": "Can be ridden. Boosts Jump Power while mounted. This Pal's movement speed increases by +{Passive1_EffectValue1}% at night.",
             "passives": [
                 "MoveSpeed_Night_01",
                 "JumpPower_Increase_Ride_PartnerSkill"
@@ -12272,7 +12272,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Pengullet Lux Launcher",
-            "description": "When activated, the player equips Pengullet Lux to fire Rocket Launcher as ammunition. Pengullet Lux explodes on impact and is incapacitated. {ReferenceMsgId_DamageUp}"
+            "description": "When activated, the player equips a Rocket Launcher to fire Pengullet Lux as ammunition. Pengullet Lux explodes on impact and is incapacitated. {ReferenceMsgId_DamageUp}"
         },
         {
             "name": "Cattiva",
@@ -12557,7 +12557,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Ground 'n' Pound",
-            "description": "While in party, improves player's and Pals' [ICON:ElemIcon_Grass][ELEM:Leaf] damage to enemy weak points by {Passive1_EffectValue1}%. (Does not stack) Increases efficiency by {Passive2_EffectValue1}% when working at a Weapon Workbench, Weapon Assembly Line, or other related facilities.",
+            "description": "While in party, increases damage dealt by Player and Pals' [ICON:ElemIcon_Grass][ELEM:Leaf] attacks when hitting the enemy's elemental weakness by {Passive1_EffectValue1}%. (Does not stack) Increases efficiency by {Passive2_EffectValue1}% when working at a Weapon Workbench, Weapon Assembly Line, or other related facilities.",
             "passives": [
                 "ElementBoostWeakness_Leaf_PartnerSkill_1",
                 "CraftSpeed_PartnerSkill_1"
@@ -14006,7 +14006,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Sand Swimmer",
-            "description": "Can be ridden. While in party, the player's attacks inflict [EFFECT:Muddy] {Passive1_EffectValue1}. (Does not stack) {ReferenceMsgId_RideSpeedUp}",
+            "description": "Can be ridden. While in party, the player's attacks increase [EFFECT:Muddy] buildup by {Passive1_EffectValue1}. (Does not stack) {ReferenceMsgId_RideSpeedUp}",
             "passives": [
                 "AdditionalEffect_Muddy_PartnerSkill_Serpent_Ground_1",
                 "MoveSpeed_up_PartnerSkill_Ride_1"
@@ -14599,7 +14599,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Snake's Sagacity",
-            "description": "While in party, the player's attacks inflict [EFFECT:Darkness] {Passive1_EffectValue1}. (Does not stack)",
+            "description": "While in party, the player's attacks increase [EFFECT:Darkness] buildup by {Passive1_EffectValue1}. (Does not stack)",
             "passives": [
                 "AdditionalEffect_Darkness_PartnerSkill_SnakeGirl_1"
             ]
@@ -14900,7 +14900,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Ember Chamber",
-            "description": "While in party, Finsider Ignis helps carry supplies, reducing the weight of weapons in your inventory by {Passive1_EffectValue1}%. Also improves player's and Pals' [ICON:ElemIcon_Fire][ELEM:Fire] damage to enemy weak points by {Passive2_EffectValue1}%. (Does not stack)",
+            "description": "While in party, Finsider Ignis helps carry supplies, reducing the weight of weapons in your inventory by {Passive1_EffectValue1}%. Also increases damage dealt by Player and Pals' [ICON:ElemIcon_Fire][ELEM:Fire] attacks when hitting the enemy's elemental weakness by {Passive2_EffectValue1}%. (Does not stack)",
             "passives": [
                 "ItemWeightReduction_Gun_PartnerSkill_1",
                 "ElementBoostWeakness_Fire_PartnerSkill_1"
@@ -15379,7 +15379,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Spikey Carrier",
-            "description": "While in party, reduces Ore weight by {Passive1_EffectValue1}%. (Does not stack)",
+            "description": "While in party, reduces the weight of the item Ore by {Passive1_EffectValue1}%. (Does not stack)",
             "passives": [
                 "ItemWeightReduction_PartnerSkill_TentacleTurtle_1"
             ]
@@ -15443,7 +15443,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Shiny Hauler",
-            "description": "While in party, reduces weight of Sulfur and Coal by {Passive1_EffectValue1}%. Also improves player's and Pals' [ICON:ElemIcon_Ground][ELEM:Earth] damage to enemy weak points by {Passive1_EffectValue1}%. (Does not stack)",
+            "description": "While in party, reduces weight of Sulfur and Coal by {Passive1_EffectValue1}%. Also increases damage dealt by Player and Pals' [ICON:ElemIcon_Ground][ELEM:Earth] attacks when hitting the enemy's elemental weakness by {Passive2_EffectValue1}%. (Does not stack)",
             "passives": [
                 "ItemWeightReduction_PartnerSkill_TentacleTurtle_Ground_1",
                 "ElementBoostWeakness_Earth_PartnerSkill_1"
@@ -16426,7 +16426,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Ice Overload",
-            "description": "Can be ridden. While in party, improves player's and Pals' [ICON:ElemIcon_Ice][ELEM:Ice] damage to enemy weak points by {Passive1_EffectValue1}%. (Does not stack)",
+            "description": "Can be ridden. While in party, increases damage dealt by Player and Pals' [ICON:ElemIcon_Ice][ELEM:Ice] attacks when hitting the enemy's elemental weakness by {Passive1_EffectValue1}%. (Does not stack)",
             "passives": [
                 "ElementBoostWeakness_Ice_PartnerSkill_1"
             ]
@@ -20511,7 +20511,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Hug You So Much",
-            "description": "While in party, the player's attacks inflict [EFFECT:IvyCling] {Passive1_EffectValue1}. (Does not stack)",
+            "description": "While in party, the player's attacks increase [EFFECT:IvyCling] buildup by {Passive1_EffectValue1}. (Does not stack)",
             "passives": [
                 "AdditionalEffect_IvyCling_PartnerSkill_CactusDoll_Dark_1"
             ]
@@ -20768,7 +20768,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Unyielding Storm Commander",
-            "description": "While in party, improves player's and Pals' [ICON:ElemIcon_Water][ELEM:Water] damage to enemy weak points by {Passive1_EffectValue1}%. (Does not stack)",
+            "description": "While in party, increases damage dealt by Player and Pals' [ICON:ElemIcon_Water][ELEM:Water] attacks when hitting the enemy's elemental weakness by {Passive1_EffectValue1}%. (Does not stack)",
             "passives": [
                 "ElementBoostWeakness_Water_PartnerSkill_1"
             ]
@@ -20826,7 +20826,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Lifmunk Recoil",
-            "description": "When activated, leaps onto the player's head and uses a submachine gun to follows up player attacks. {ReferenceMsgId_DamageUp}"
+            "description": "When activated, leaps onto the player's head and uses a submachine gun to follow up the player's attacks. {ReferenceMsgId_DamageUp}"
         },
         {
             "name": "Tombat (Boss)",
@@ -21422,7 +21422,7 @@
             "description": "Sometimes drops Milk when assigned to Ranch."
         },
         {
-            "name": "Tetroise  (Boss)",
+            "name": "Tetroise (Boss)",
             "asset": "BOSS_CubeTurtle",
             "icon": "/icons/pals/T_CubeTurtle_icon_normal.webp",
             "elements": {
@@ -21532,7 +21532,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Stone-Chaser Archelon",
-            "description": "Can be ridden. While in party, increases the durability of all weapons and armor by {Passive1_EffectValue1}%. (Does not stack)",
+            "description": "Can be ridden. While in party, reduces durability loss of all weapons and armor by {Passive1_EffectValue1}%. (Does not stack)",
             "passives": [
                 "CubeTurtle_Neutral_PartnerSkill_1",
                 "CubeTurtle_Neutral_PartnerSkill_1_Armor",
@@ -23004,7 +23004,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Charging Shell",
-            "description": "While in party, the player's attacks inflict [EFFECT:Electrical] {Passive1_EffectValue1}. (Does not stack)",
+            "description": "While in party, the player's attacks increase [EFFECT:Electrical] buildup by {Passive1_EffectValue1}. (Does not stack)",
             "passives": [
                 "AdditionalEffect_Electrical_PartnerSkill_ElecSnail_1"
             ]
@@ -23065,7 +23065,7 @@
             "description": ""
         },
         {
-            "name": "Snock Lux (Boss)",
+            "name": "Snock Terra (Boss)",
             "asset": "BOSS_ElecSnail_Ground",
             "icon": "/icons/pals/T_ElecSnail_Ground_icon_normal.webp",
             "elements": {
@@ -23990,7 +23990,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Mist Stalwart",
-            "description": "When activated, the player's attacks inflict [EFFECT:Poison] {ReferencePassive1_EffectValue1}. While in party, grants the player and party Pals immunity to [EFFECT:Poison], and nullifies the effects of toxic gas in the World Tree area. (Does not stack)",
+            "description": "When activated, the player's attacks increase [EFFECT:Poison] buildup by {ReferencePassive1_EffectValue1}. While in party, grants the player and party Pals immunity to [EFFECT:Poison], and nullifies the effects of toxic gas in the World Tree area. (Does not stack)",
             "reference_passives": [
                 "AdditionalEffect_Poison_PartnerSkill_FlowerPrince_1",
                 "AdditionalEffect_Poison_PartnerSkill_FlowerPrince_2",
@@ -24905,7 +24905,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Liberated Pterosaur",
-            "description": "Can be ridden as a flying mount. This Pal's Attack and Movement Speed increase by {Passive1_EffectValue1}% for each other [ICON:ElemIcon_Dragon][ELEM:Dragon]or [ICON:ElemIcon_Dark][ELEM:Dark] Pal in your party.",
+            "description": "Can be ridden as a flying mount. This Pal's Attack and Movement Speed increase by {Passive1_EffectValue1}% for each other [ICON:ElemIcon_Dragon][ELEM:Dragon] or [ICON:ElemIcon_Dark][ELEM:Dark] Pal in your party.",
             "passives": [
                 "ShotAttack_MoveSpeed_PartnerSkill_SpecificElement_1"
             ]
@@ -24969,7 +24969,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Resentful Pterosaur",
-            "description": "Can be ridden as a flying mount. This Pal's Attack and Movement Speed increase by {Passive1_EffectValue1}% or each other [ICON:ElemIcon_Dragon][ELEM:Dragon] or [ICON:ElemIcon_Fire][ELEM:Fire] Pal in your party. (Excluding Eidrolon Ignis)",
+            "description": "Can be ridden as a flying mount. This Pal's Attack and Movement Speed increase by {Passive1_EffectValue1}% for each other [ICON:ElemIcon_Dragon][ELEM:Dragon] or [ICON:ElemIcon_Fire][ELEM:Fire] Pal in your party. (Excluding Eidrolon Ignis)",
             "passives": [
                 "ShotAttack_MoveSpeed_PartnerSkill_SpecificElement_1"
             ]
@@ -25386,7 +25386,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Forest Laser",
-            "description": "Can be ridden. When activated, Dualith fires a powerful [ICON:ElemIcon_Grass][ELEM:Leaf] laser from its right hand. {ReferenceMsgId_CooldownReduction}"
+            "description": "Can be ridden. While mounted, Dualith fires a powerful [ICON:ElemIcon_Grass][ELEM:Leaf] laser from its right hand. {ReferenceMsgId_CooldownReduction}"
         },
         {
             "name": "Dualith Noct (Boss)",
@@ -25447,7 +25447,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Corruption Laser",
-            "description": "Can be ridden. When activated, Dualith Noct fires a powerful [ICON:ElemIcon_Dark][ELEM:Dark] laser from its right hand. {ReferenceMsgId_CooldownReduction}"
+            "description": "Can be ridden. While mounted, Dualith Noct fires a powerful [ICON:ElemIcon_Dark][ELEM:Dark] laser from its right hand. {ReferenceMsgId_CooldownReduction}"
         },
         {
             "name": "Mammorest (Boss)",
@@ -26351,7 +26351,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Cast-Iron Shell",
-            "description": "While in your party, generates a barrier around the player after 5 melee hits are landed within {Passive1_EffectValue1} seconds. (Does not stack)",
+            "description": "While in party, generates a barrier around the player after 5 melee hits are landed within {Passive1_EffectValue1} seconds. (Does not stack)",
             "passives": [
                 "Baphomet_Dark_PartnerSkill_1"
             ]
@@ -26409,7 +26409,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Fullmetal Shell",
-            "description": "While in your party, generates a barrier around the player after 5 melee hits are landed within {Passive1_EffectValue1} seconds. (Does not stack)",
+            "description": "While in party, generates a barrier around the player after 5 melee hits are landed within {Passive1_EffectValue1} seconds. (Does not stack)",
             "passives": [
                 "Baphomet_Dark_PartnerSkill_1"
             ]
@@ -26882,7 +26882,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Icy Steed",
-            "description": "Can be ridden as a flying mount. While mounted, changes the player's attack type to [ICON:ElemIcon_Ice][ELEM:Ice], inflict [EFFECT:Freeze] {Passive3_EffectValue1}, increases Attack by {Passive2_EffectValue1}%.",
+            "description": "Can be ridden as a flying mount. While mounted, changes the player's attack type to [ICON:ElemIcon_Ice][ELEM:Ice], increases Attack by {Passive2_EffectValue1}%, and apply [EFFECT:Freeze] buildup by {Passive3_EffectValue1}.",
             "passives": [
                 "GiveAIce_Ride",
                 "GiveElement_TrainerATK_UP_PartnerSkill_Ride_Legend_1",
@@ -26942,7 +26942,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Black Steed",
-            "description": "Can be ridden as a flying mount. While mounted, changes the player's attack type to [ICON:ElemIcon_Dark][ELEM:Dark], inflict [EFFECT:Darkness] {Passive3_EffectValue1}, increases Attack by {Passive2_EffectValue1}%.",
+            "description": "Can be ridden as a flying mount. While mounted, changes the player's attack type to [ICON:ElemIcon_Dark][ELEM:Dark], increases Attack by {Passive2_EffectValue1}%, and apply [EFFECT:Darkness] buildup by {Passive3_EffectValue1}.",
             "passives": [
                 "GiveADark_Ride",
                 "GiveElement_TrainerATK_UP_PartnerSkill_Ride_Legend_1",
@@ -27574,7 +27574,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Stage Combat",
-            "description": "While in party, the player's attacks inflict [EFFECT:Burn] {Passive1_EffectValue1}. (Does not stack)",
+            "description": "While in party, the player's attacks increase [EFFECT:Burn] buildup by {Passive1_EffectValue1}. (Does not stack)",
             "passives": [
                 "AdditionalEffect_Burn_PartnerSkill_KabukiMan_1"
             ]
@@ -27748,7 +27748,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Leap Stance",
-            "description": "When activated, Croajiro Noct channels its loyalty and puffs up its abdomen to store energy. Climbing on top will propel the player high into the air. While airborne before landing, the player's Attack is increased by {ReferencePassive1_EffectValue1}%.",
+            "description": "When activated, Croajiro channels its loyalty and puffs up its abdomen to store energy. Climbing on top will propel the player high into the air. While airborne, the player's Attack is increased by {ReferencePassive1_EffectValue1}%.",
             "reference_passives": [
                 "TrainerATK_UP_PartnerSkill_KendoFrog_1",
                 "TrainerATK_UP_PartnerSkill_KendoFrog_2",
@@ -27816,7 +27816,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Shadow Stance",
-            "description": "When activated, Croajiro Noct channels its loyalty and puffs up its abdomen to store energy. Climbing on top will propel the player high into the air. While in party, improves player's and Pals' [ICON:ElemIcon_Dark][ELEM:Dark] damage to enemy weak points by {Passive1_EffectValue1}%. (Does not stack)",
+            "description": "When activated, Croajiro Noct channels its loyalty and puffs up its abdomen to store energy. Climbing on top will propel the player high into the air. While in party, increases damage dealt by Player and Pals' [ICON:ElemIcon_Dark][ELEM:Dark] attacks when hitting the enemy's elemental weakness by {Passive1_EffectValue1}%. (Does not stack)",
             "passives": [
                 "ElementBoostWeakness_Dark_PartnerSkill_1"
             ]
@@ -28056,7 +28056,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Dragon Kaiser",
-            "description": "Can be ridden. While in party, improves player's and Pals' [ICON:ElemIcon_Dragon][ELEM:Dragon] damage to enemy weak points by {Passive1_EffectValue1}%. (Does not stack)",
+            "description": "Can be ridden. While in party, increases damage dealt by Player and Pals' [ICON:ElemIcon_Dragon][ELEM:Dragon] attacks when hitting the enemy's elemental weakness by {Passive1_EffectValue1}%. (Does not stack)",
             "passives": [
                 "ElementBoostWeakness_Dragon_PartnerSkill_1"
             ]
@@ -28401,7 +28401,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Swift Deity",
-            "description": "Can be ridden. While in party, improves player's and Pals' [ICON:ElemIcon_Electric][ELEM:Electricity] damage to weak points by {Passive1_EffectValue1}%. (Does not stack)",
+            "description": "Can be ridden. While in party, increases damage dealt by Player and Pals' [ICON:ElemIcon_Electric][ELEM:Electricity] attacks when hitting the enemy's elemental weakness by {Passive1_EffectValue1}%. (Does not stack)",
             "passives": [
                 "ElementBoostWeakness_Electricity_PartnerSkill_1"
             ]
@@ -29658,7 +29658,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Glorious Mist",
-            "description": "Can be ridden. While in party, the player's attacks inflict [EFFECT:Wetness] {Passive1_EffectValue1}. (Does not stack)",
+            "description": "Can be ridden. While in party, the player's attacks increase [EFFECT:Wetness] buildup by {Passive1_EffectValue1}. (Does not stack)",
             "passives": [
                 "AdditionalEffect_Wetness_PartnerSkill_SleeveRabbit_1"
             ]
@@ -29962,7 +29962,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Master of Unlocking",
-            "description": "While fighting together, Mimog can open treasure chests without using a key. {ReferenceMsgId_CooldownReduction}"
+            "description": "While fighting together, Mimog can open treasure chests without using a key. Does not apply to chests that require a specific Work Suitability. {ReferenceMsgId_CooldownReduction}"
         },
         {
             "name": "Tanzee (Boss)",
@@ -31260,7 +31260,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Night Dancer",
-            "description": "Can be ridden. Boosts jumping ability while mounted. This Pal's movement speed increases by +{Passive1_EffectValue1}% at night.",
+            "description": "Can be ridden. Boosts Jump Power while mounted. This Pal's movement speed increases by +{Passive1_EffectValue1}% at night.",
             "passives": [
                 "MoveSpeed_Night_01",
                 "JumpPower_Increase_Ride_PartnerSkill"
@@ -31868,7 +31868,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Pengullet Lux Launcher",
-            "description": "When activated, the player equips Pengullet Lux to fire Rocket Launcher as ammunition. Pengullet Lux explodes on impact and is incapacitated. {ReferenceMsgId_DamageUp}"
+            "description": "When activated, the player equips a Rocket Launcher to fire Pengullet Lux as ammunition. Pengullet Lux explodes on impact and is incapacitated. {ReferenceMsgId_DamageUp}"
         },
         {
             "name": "Cattiva (Boss)",
@@ -32153,7 +32153,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Ground 'n' Pound",
-            "description": "While in party, improves player's and Pals' [ICON:ElemIcon_Grass][ELEM:Leaf] damage to enemy weak points by {Passive1_EffectValue1}%. (Does not stack) Increases efficiency by {Passive2_EffectValue1}% when working at a Weapon Workbench, Weapon Assembly Line, or other related facilities.",
+            "description": "While in party, increases damage dealt by Player and Pals' [ICON:ElemIcon_Grass][ELEM:Leaf] attacks when hitting the enemy's elemental weakness by {Passive1_EffectValue1}%. (Does not stack) Increases efficiency by {Passive2_EffectValue1}% when working at a Weapon Workbench, Weapon Assembly Line, or other related facilities.",
             "passives": [
                 "ElementBoostWeakness_Leaf_PartnerSkill_1",
                 "CraftSpeed_PartnerSkill_1"
@@ -33722,7 +33722,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Sand Swimmer",
-            "description": "Can be ridden. While in party, the player's attacks inflict [EFFECT:Muddy] {Passive1_EffectValue1}. (Does not stack) {ReferenceMsgId_RideSpeedUp}",
+            "description": "Can be ridden. While in party, the player's attacks increase [EFFECT:Muddy] buildup by {Passive1_EffectValue1}. (Does not stack) {ReferenceMsgId_RideSpeedUp}",
             "passives": [
                 "AdditionalEffect_Muddy_PartnerSkill_Serpent_Ground_1",
                 "MoveSpeed_up_PartnerSkill_Ride_1"
@@ -34315,7 +34315,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Snake's Sagacity",
-            "description": "While in party, the player's attacks inflict [EFFECT:Darkness] {Passive1_EffectValue1}. (Does not stack)",
+            "description": "While in party, the player's attacks increase [EFFECT:Darkness] buildup by {Passive1_EffectValue1}. (Does not stack)",
             "passives": [
                 "AdditionalEffect_Darkness_PartnerSkill_SnakeGirl_1"
             ]
@@ -34781,7 +34781,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Ember Chamber",
-            "description": "While in party, Finsider Ignis helps carry supplies, reducing the weight of weapons in your inventory by {Passive1_EffectValue1}%. Also improves player's and Pals' [ICON:ElemIcon_Fire][ELEM:Fire] damage to enemy weak points by {Passive2_EffectValue1}%. (Does not stack)",
+            "description": "While in party, Finsider Ignis helps carry supplies, reducing the weight of weapons in your inventory by {Passive1_EffectValue1}%. Also increases damage dealt by Player and Pals' [ICON:ElemIcon_Fire][ELEM:Fire] attacks when hitting the enemy's elemental weakness by {Passive2_EffectValue1}%. (Does not stack)",
             "passives": [
                 "ItemWeightReduction_Gun_PartnerSkill_1",
                 "ElementBoostWeakness_Fire_PartnerSkill_1"
@@ -35260,7 +35260,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Spikey Carrier",
-            "description": "While in party, reduces Ore weight by {Passive1_EffectValue1}%. (Does not stack)",
+            "description": "While in party, reduces the weight of the item Ore by {Passive1_EffectValue1}%. (Does not stack)",
             "passives": [
                 "ItemWeightReduction_PartnerSkill_TentacleTurtle_1"
             ]
@@ -35324,7 +35324,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Shiny Hauler",
-            "description": "While in party, reduces weight of Sulfur and Coal by {Passive1_EffectValue1}%. Also improves player's and Pals' [ICON:ElemIcon_Ground][ELEM:Earth] damage to enemy weak points by {Passive1_EffectValue1}%. (Does not stack)",
+            "description": "While in party, reduces weight of Sulfur and Coal by {Passive1_EffectValue1}%. Also increases damage dealt by Player and Pals' [ICON:ElemIcon_Ground][ELEM:Earth] attacks when hitting the enemy's elemental weakness by {Passive2_EffectValue1}%. (Does not stack)",
             "passives": [
                 "ItemWeightReduction_PartnerSkill_TentacleTurtle_Ground_1",
                 "ElementBoostWeakness_Earth_PartnerSkill_1"
@@ -36429,7 +36429,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Ice Overload",
-            "description": "Can be ridden. While in party, improves player's and Pals' [ICON:ElemIcon_Ice][ELEM:Ice] damage to enemy weak points by {Passive1_EffectValue1}%. (Does not stack)",
+            "description": "Can be ridden. While in party, increases damage dealt by Player and Pals' [ICON:ElemIcon_Ice][ELEM:Ice] attacks when hitting the enemy's elemental weakness by {Passive1_EffectValue1}%. (Does not stack)",
             "passives": [
                 "ElementBoostWeakness_Ice_PartnerSkill_1"
             ]
@@ -42066,7 +42066,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Night Dancer",
-            "description": "Can be ridden. Boosts jumping ability while mounted. This Pal's movement speed increases by +{Passive1_EffectValue1}% at night.",
+            "description": "Can be ridden. Boosts Jump Power while mounted. This Pal's movement speed increases by +{Passive1_EffectValue1}% at night.",
             "passives": [
                 "MoveSpeed_Night_01",
                 "JumpPower_Increase_Ride_PartnerSkill"
@@ -42661,7 +42661,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Snake's Sagacity",
-            "description": "While in party, the player's attacks inflict [EFFECT:Darkness] {Passive1_EffectValue1}. (Does not stack)",
+            "description": "While in party, the player's attacks increase [EFFECT:Darkness] buildup by {Passive1_EffectValue1}. (Does not stack)",
             "passives": [
                 "AdditionalEffect_Darkness_PartnerSkill_SnakeGirl_1"
             ]
@@ -43643,7 +43643,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Dragon Kaiser",
-            "description": "Can be ridden. While in party, improves player's and Pals' [ICON:ElemIcon_Dragon][ELEM:Dragon] damage to enemy weak points by {Passive1_EffectValue1}%. (Does not stack)",
+            "description": "Can be ridden. While in party, increases damage dealt by Player and Pals' [ICON:ElemIcon_Dragon][ELEM:Dragon] attacks when hitting the enemy's elemental weakness by {Passive1_EffectValue1}%. (Does not stack)",
             "passives": [
                 "ElementBoostWeakness_Dragon_PartnerSkill_1"
             ]
@@ -43707,7 +43707,7 @@
                 "MonsterFarm": 0
             },
             "partner_skill": "Dragon Kaiser",
-            "description": "Can be ridden. While in party, improves player's and Pals' [ICON:ElemIcon_Dragon][ELEM:Dragon] damage to enemy weak points by {Passive1_EffectValue1}%. (Does not stack)",
+            "description": "Can be ridden. While in party, increases damage dealt by Player and Pals' [ICON:ElemIcon_Dragon][ELEM:Dragon] attacks when hitting the enemy's elemental weakness by {Passive1_EffectValue1}%. (Does not stack)",
             "passives": [
                 "ElementBoostWeakness_Dragon_PartnerSkill_1"
             ]

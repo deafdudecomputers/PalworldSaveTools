@@ -1,4 +1,5 @@
 #2.3.6
+- **Game data fully refreshed for Palworld v1.0.3** — this is a real data update, not just the version label. Pal names (Snock Terra, Tetroise), boss bounty tokens (Kingpaca Cryst, Mycora, Pierdon, Relaxaurus Lux), and passive skills (Sky Strider, World Tree's Bounty, Party Pal Trust Boost, Extended Dodge Invincibility) now match what the game shows, several structure crafting costs have been corrected to the current values, and item, skill, building, and partner skill descriptions have been brought up to date.
 - Bumped version to 2.3.6
 
 #2.3.5

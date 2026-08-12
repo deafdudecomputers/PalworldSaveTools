@@ -7057,7 +7057,7 @@
             "category": "EPalPassiveCategory::SortNotDisplayable"
         },
         {
-            "name": "Extended Dodge Immunity",
+            "name": "Extended Dodge Invincibility",
             "asset": "AvoidDurationUp_EquipSkill_2",
             "rank": 1,
             "icon": "/icons/passives/T_icon_skillstatus_rank_arrow_01.webp",
@@ -30185,7 +30185,7 @@
             "category": "EPalPassiveCategory::SortNotDisplayable"
         },
         {
-            "name": "Party Pals Bond Boost",
+            "name": "Party Pal Trust Boost",
             "asset": "FriendshipPoint_Increase_EquipSkill",
             "rank": -1,
             "icon": "/icons/passives/T_icon_skillstatus_rank_arrow_00.webp",
@@ -39765,7 +39765,7 @@
             "asset": "MutationPal_Immortal",
             "rank": 4,
             "icon": "/icons/passives/T_icon_skillstatus_rank_arrow_04.webp",
-            "description": "Life Steal +{EffectValue1}%\r\nPal Auto Health Regeneration Rate +{EffectValue2}%\r\nAttack +{EffectValue3}%",
+            "description": "Absorbs {EffectValue2}% of damage dealt and restores Health.\r\nPal Auto Health Regeneration Rate +{EffectValue2}%.\r\nAttack +{EffectValue3}%.",
             "effect1": 5.0,
             "effect2": 100.0,
             "effect3": 15.0,
@@ -40241,7 +40241,7 @@
             "asset": "OctaviaArmorVampire",
             "rank": 4,
             "icon": "/icons/passives/T_icon_skillstatus_rank_arrow_04.webp",
-            "description": "Absorbs a portion of the damage dealt to restore HP. \r\nDoes not sleep at night and continues to work.",
+            "description": "Absorbs {EffectValue2}% of damage dealt and restores Health.\r\nDoes not sleep at night and continues to work.",
             "effect1": 1.0,
             "effect2": 0.0,
             "effect3": 0.0,
@@ -43373,7 +43373,7 @@
             "category": "EPalPassiveCategory::SortDisplayable"
         },
         {
-            "name": "Skymarcher",
+            "name": "Sky Strider",
             "asset": "RideJumpCount_Increase2",
             "rank": 4,
             "icon": "/icons/passives/T_icon_skillstatus_rank_arrow_04.webp",
@@ -43937,7 +43937,7 @@
             "asset": "SelfDeathAddItemDrop_up_1",
             "rank": 1,
             "icon": "/icons/passives/T_icon_skillstatus_rank_arrow_01.webp",
-            "description": "Your Dropped Items + {EffectValue1}%",
+            "description": "Drop Items obtained from this Pal +{EffectValue1}%",
             "effect1": 15.0,
             "effect2": 0.0,
             "effect3": 0.0,
@@ -43965,7 +43965,7 @@
             "asset": "SelfDeathAddItemDrop_up_2",
             "rank": 3,
             "icon": "/icons/passives/T_icon_skillstatus_rank_arrow_03.webp",
-            "description": "Your Dropped Items + {EffectValue1}%",
+            "description": "Drop Items obtained from this Pal +{EffectValue1}%",
             "effect1": 50.0,
             "effect2": 0.0,
             "effect3": 0.0,
@@ -43993,7 +43993,7 @@
             "asset": "SelfDeathAddItemDrop_up_3",
             "rank": 4,
             "icon": "/icons/passives/T_icon_skillstatus_rank_arrow_04.webp",
-            "description": "Your Dropped Items + {EffectValue1}%",
+            "description": "Drop Items obtained from this Pal +{EffectValue1}%",
             "effect1": 100.0,
             "effect2": 0.0,
             "effect3": 0.0,
@@ -49705,7 +49705,7 @@
             "asset": "Vampire",
             "rank": 4,
             "icon": "/icons/passives/T_icon_skillstatus_rank_arrow_04.webp",
-            "description": "Absorbs a portion of the damage dealt to restore HP. \r\nDoes not sleep at night and continues to work.",
+            "description": "Absorbs {EffectValue2}% of damage dealt and restores Health.\r\nDoes not sleep at night and continues to work.",
             "effect1": 0.0,
             "effect2": 5.0,
             "effect3": 0.0,
@@ -52533,7 +52533,7 @@
             "asset": "WorldTree_CraftSpeed",
             "rank": 5,
             "icon": "/icons/passives/T_icon_skillstatus_rank_arrow_05.webp",
-            "description": "Work Speed +{EffectValue1}%\r\nSAN dreceases +15.0% faster\r\nWorld Tree harvestables won't vanish when approached.",
+            "description": "Work Speed +{EffectValue1}%\r\nSAN decreases +15.0% faster\r\nWorld Tree resources will not vanish when approached.",
             "effect1": 90.0,
             "effect2": 15.0,
             "effect3": 0.0,
@@ -52585,7 +52585,7 @@
             "category": "EPalPassiveCategory::SortDisplayable"
         },
         {
-            "name": "World Tree Seedbed",
+            "name": "World Tree's Bounty",
             "asset": "WorldTree_FullStomach",
             "rank": 5,
             "icon": "/icons/passives/T_icon_skillstatus_rank_arrow_05.webp",
@@ -54212,7 +54212,7 @@
             "is_weapon_damage": false,
             "is_explosion_damage": false,
             "camera_shake": "EPalPlayerDamageCameraShakeCategory::Waza_S",
-            "description": "Shoots fireballs towards an enemy. \r\nThe fireballs explode after a short distance, \r\ngenerating smaller fireballs that spread forward.",
+            "description": "Shoots a fireball toward an enemy. \r\nThe fireball explodes after a short distance, \r\ngenerating smaller fireballs that spread forward.",
             "WazaPowerRate": 0.1,
             "MaxHitNum": null,
             "HitInterval": null
@@ -55187,7 +55187,7 @@
             "is_weapon_damage": false,
             "is_explosion_damage": false,
             "camera_shake": "EPalPlayerDamageCameraShakeCategory::Waza_S",
-            "description": "Charges energy\r\ninto a focused blast.",
+            "description": "Charges energy into a focused blast.",
             "WazaPowerRate": null,
             "MaxHitNum": 3,
             "HitInterval": 0.25
@@ -57087,7 +57087,7 @@
             "is_weapon_damage": false,
             "is_explosion_damage": false,
             "camera_shake": "EPalPlayerDamageCameraShakeCategory::Waza_L",
-            "description": "Tetroise 's exclusive skill.\r\nLeaps into the air and crushes enemies with its massive weight.",
+            "description": "Tetroise's exclusive skill.\r\nLeaps into the air and crushes enemies with its massive weight.",
             "WazaPowerRate": null,
             "MaxHitNum": null,
             "HitInterval": null
@@ -58787,7 +58787,7 @@
             "is_weapon_damage": false,
             "is_explosion_damage": false,
             "camera_shake": "EPalPlayerDamageCameraShakeCategory::Waza_L",
-            "description": "Jetragon's exclusive skill.\r\nIlluminates its wings and fires innumerable beams as it flies towards the enemy.\r\nThe beams explode on impact.",
+            "description": "Jetragon's exclusive skill.\r\nIlluminates its wings and fires innumerable beams that fly towards the enemy. \r\nThe beams explode on impact.",
             "WazaPowerRate": 0.071429,
             "MaxHitNum": null,
             "HitInterval": null
@@ -60012,7 +60012,7 @@
             "is_weapon_damage": false,
             "is_explosion_damage": false,
             "camera_shake": "EPalPlayerDamageCameraShakeCategory::Waza_M",
-            "description": "Leafan's exclusive skill.\r\nRapidly delivers a series of consecutive roundhouse kicks, finishing with an engery blast.",
+            "description": "Leafan's exclusive skill.\r\nRapidly delivers a series of consecutive roundhouse kicks, finishing with an energy blast.",
             "WazaPowerRate": 0.4,
             "MaxHitNum": null,
             "HitInterval": null
