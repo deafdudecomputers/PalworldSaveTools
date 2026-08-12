@@ -13,9 +13,9 @@ except ImportError:
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 LANGUAGES = {'zh_CN': {'name': 'Simplified Chinese', 'code': 'zh-CN'}, 'de_DE': {'name': 'German', 'code': 'de'}, 'es_ES': {'name': 'Spanish', 'code': 'es'}, 'fr_FR': {'name': 'French', 'code': 'fr'}, 'ru_RU': {'name': 'Russian', 'code': 'ru'}, 'ja_JP': {'name': 'Japanese', 'code': 'ja'}, 'ko_KR': {'name': 'Korean', 'code': 'ko'}, 'pt_BR': {'name': 'Portuguese (Brazil)', 'code': 'pt'}, 'pt_PT': {'name': 'Portuguese (Portugal)', 'code': 'pt'}}
 NEW_TRANSLATIONS = {
-    'edit_pals.ctx.clone_bulk': 'Bulk Clone Pals',
+    'modify_all_guild_chest_slots_prompt': 'Enter new slot count for all guild chests:',
 }
-OLD_KEYS = ['edit_pals.ctx.clone_pals']
+OLD_KEYS = []
 def _clean_uv_locks():
     for p in [Path.cwd() / 'uv.lock', PROJECT_ROOT / 'uv.lock']:
         if p.exists():

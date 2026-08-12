@@ -1903,7 +1903,63 @@ def modify_all_player_slots(new_slot_num, parent=None):
         constants.invalidate_container_lookup()
     return {'modified': modified, 'skipped': skipped}
 def modify_all_guild_chest_slots(new_slot_num, parent=None):
-    return modify_container_slots(new_slot_num, parent)
+    if not constants.loaded_level_json:
+        return 0
+    try:
+        new_slot_num = max(1, min(1000, int(new_slot_num)))
+    except (TypeError, ValueError):
+        return 0
+    try:
+        wsd = constants.loaded_level_json['properties']['worldSaveData']['value']
+    except KeyError:
+        return 0
+    import copy
+    valid_container_ids = set()
+    guild_extra_map = wsd.get('GuildExtraSaveDataMap', {}).get('value', [])
+    for guild_entry in guild_extra_map:
+        try:
+            guild_storage = guild_entry.get('value', {}).get('GuildItemStorage', {})
+            raw_data = guild_storage.get('value', {}).get('RawData', {}).get('value', {})
+            container_id_raw = raw_data.get('container_id')
+            if container_id_raw:
+                valid_container_ids.add(str(container_id_raw))
+        except:
+            pass
+    if not valid_container_ids:
+        return 0
+    item_containers = wsd.get('ItemContainerSaveData', {}).get('value', [])
+    modified = 0
+    for cont in item_containers:
+        try:
+            container_id_str = str(cont['key']['ID']['value'])
+            if container_id_str not in valid_container_ids:
+                continue
+            value = cont['value']
+            current_slot_num = value.get('SlotNum', {}).get('value', 0)
+            slots = value.get('Slots', {}).get('value', {}).get('values', [])
+            if current_slot_num == new_slot_num:
+                continue
+            if len(slots) < new_slot_num:
+                if slots:
+                    template = copy.deepcopy(slots[0])
+                    template['RawData']['value']['item']['static_id'] = ''
+                    template['RawData']['value']['item']['dynamic_id']['created_world_id'] = '00000000-0000-0000-0000-000000000000'
+                    template['RawData']['value']['item']['dynamic_id']['local_id'] = '00000000-0000-0000-0000-000000000000'
+                    template['RawData']['value']['count'] = 0
+                    while len(slots) < new_slot_num:
+                        new_slot = copy.deepcopy(template)
+                        new_slot['RawData']['value']['slot_index'] = len(slots)
+                        slots.append(new_slot)
+                else:
+                    pass
+            elif len(slots) > new_slot_num:
+                slots[:] = slots[:new_slot_num]
+            if 'SlotNum' in value:
+                value['SlotNum']['value'] = new_slot_num
+                modified += 1
+        except:
+            pass
+    return modified
 def repair_structures(parent=None):
     if not constants.loaded_level_json:
         return None

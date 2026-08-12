@@ -2096,7 +2096,7 @@
     "modify_all_player_slots_prompt": "输入所有玩家的新库存槽数 (42-999)：",
     "modify_all_player_slots_result": "将 {total} 玩家库存的 {modified} 调整为 {slots} 插槽",
     "modify_all_guild_chest_slots_title": "修改所有公会宝箱槽位",
-    "modify_all_guild_chest_slots_prompt": "输入所有公会和基础宝箱的新槽位数量：",
+    "modify_all_guild_chest_slots_prompt": "输入所有公会宝箱的新槽位数量：",
     "modify_all_guild_chest_slots_result": "修改后的 {modified} 公会宝箱容器",
     "menu.file.load_gps.select_source_msg": "您要加载哪个平台的 Global Pal Storage？",
     "menu.file.load_gps.btn_gamepass": "游戏通行证",

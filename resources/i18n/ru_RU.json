@@ -2092,7 +2092,7 @@
     "modify_all_player_slots_prompt": "Введите новое количество слотов инвентаря (42-999) для всех игроков:",
     "modify_all_player_slots_result": "Изменен размер {modified} из {total} инвентаря игроков до {slots} слотов.",
     "modify_all_guild_chest_slots_title": "Изменить все слоты для сундуков гильдии",
-    "modify_all_guild_chest_slots_prompt": "Введите новое количество слотов для всех сундуков гильдии и баз:",
+    "modify_all_guild_chest_slots_prompt": "Введите новое количество слотов для всех сундуков гильдии:",
     "modify_all_guild_chest_slots_result": "Модифицированные контейнеры сундуков гильдии {modified}.",
     "menu.file.load_gps.select_source_msg": "Global Pal Storage какой платформы вы хотите загрузить?",
     "menu.file.load_gps.btn_gamepass": "GamePass",

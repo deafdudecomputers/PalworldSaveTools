@@ -2458,7 +2458,7 @@ class MainWindow(QMainWindow):
         if not constants.loaded_level_json:
             self._show_warning(t('Error'), t('error.no_save_loaded'))
             return
-        new_slot_num, ok = QInputDialog.getInt(self, t('modify_all_guild_chest_slots_title') if t else 'Modify All Guild Chest Slots', t('modify_all_guild_chest_slots_prompt') if t else 'Enter new slot count for all guild and base chests:', 50, 1, 1000, 1)
+        new_slot_num, ok = QInputDialog.getInt(self, t('modify_all_guild_chest_slots_title') if t else 'Modify All Guild Chest Slots', t('modify_all_guild_chest_slots_prompt') if t else 'Enter new slot count for all guild chests:', 50, 1, 1000, 1)
         if ok:
             def task():
                 return modify_all_guild_chest_slots(new_slot_num, self)

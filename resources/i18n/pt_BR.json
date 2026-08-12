@@ -2381,7 +2381,7 @@
     "modify_all_player_slots_prompt": "Insira a nova contagem de slots de inventário (42-999) para todos os jogadores:",
     "modify_all_player_slots_result": "Redimensionado {modified} dos inventários de {total} jogadores para {slots} slots",
     "modify_all_guild_chest_slots_title": "Modifique todos os slots do baú da guilda",
-    "modify_all_guild_chest_slots_prompt": "Insira a nova contagem de slots para todos os baús de guilda e base:",
+    "modify_all_guild_chest_slots_prompt": "Insira a nova contagem de slots para todos os baús de guilda:",
     "modify_all_guild_chest_slots_result": "Recipientes de baú de guilda {modified} modificados",
     "menu.file.load_gps.select_source_msg": "Global Pal Storage de qual plataforma você deseja carregar?",
     "menu.file.load_gps.btn_gamepass": "Game Pass",

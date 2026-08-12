@@ -2093,7 +2093,7 @@
     "modify_all_player_slots_prompt": "모든 플레이어에 대해 새 인벤토리 슬롯 수(42-999)를 입력하십시오.",
     "modify_all_player_slots_result": "{total} 플레이어 인벤토리의 {modified} 크기를 {slots} 슬롯으로 조정했습니다.",
     "modify_all_guild_chest_slots_title": "모든 길드 상자 슬롯 수정",
-    "modify_all_guild_chest_slots_prompt": "모든 길드 및 기본 상자에 대한 새 슬롯 수를 입력하세요.",
+    "modify_all_guild_chest_slots_prompt": "모든 길드 상자에 대한 새 슬롯 수를 입력하세요.",
     "modify_all_guild_chest_slots_result": "{modified} 길드 상자 컨테이너를 수정했습니다.",
     "menu.file.load_gps.select_source_msg": "어떤 플랫폼의 Global Pal Storage를 로드하시겠습니까?",
     "menu.file.load_gps.btn_gamepass": "게임패스",

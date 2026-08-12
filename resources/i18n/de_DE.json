@@ -2118,7 +2118,7 @@
     "modify_all_player_slots_prompt": "Geben Sie die neue Anzahl der Inventarplätze (42–999) für alle Spieler ein:",
     "modify_all_player_slots_result": "Die Größe von {modified} von {total} Spielerinventaren wurde auf {slots} Plätze geändert",
     "modify_all_guild_chest_slots_title": "Ändere alle Gildentruhen-Slots",
-    "modify_all_guild_chest_slots_prompt": "Geben Sie die neue Anzahl an Slots für alle Gilden- und Basistruhen ein:",
+    "modify_all_guild_chest_slots_prompt": "Geben Sie die neue Anzahl an Plätzen für alle Gildentruhen ein:",
     "modify_all_guild_chest_slots_result": "Modifizierte Gildentruhencontainer {modified}",
     "menu.file.load_gps.select_source_msg": "Von welcher Plattform möchten Sie den Global Pal Storage laden?",
     "menu.file.load_gps.btn_gamepass": "GamePass",

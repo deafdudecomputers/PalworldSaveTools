@@ -2094,7 +2094,7 @@
     "modify_all_player_slots_prompt": "すべてのプレイヤーの新しいインベントリ スロット数 (42 ～ 999) を入力します。",
     "modify_all_player_slots_result": "{total} プレーヤーのインベントリの {modified} を {slots} スロットにサイズ変更しました",
     "modify_all_guild_chest_slots_title": "すべてのギルドチェストスロットを変更する",
-    "modify_all_guild_chest_slots_prompt": "すべてのギルドとベースチェストの新しいスロット数を入力します。",
+    "modify_all_guild_chest_slots_prompt": "すべてのギルドチェストの新しいスロット数を入力してください:",
     "modify_all_guild_chest_slots_result": "{modified} ギルドチェストコンテナを修正",
     "menu.file.load_gps.select_source_msg": "どのプラットフォームの Global Pal Storage をロードしますか?",
     "menu.file.load_gps.btn_gamepass": "ゲームパス",
