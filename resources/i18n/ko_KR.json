@@ -2086,5 +2086,13 @@
     "deletion.menu.delete_imported_pals": "가져온 친구 삭제",
     "deletion.delete_imported_pals.title": "가져온 친구 삭제",
     "deletion.delete_imported_pals.confirm": "모든 플레이어의 파티, 팔박스, DPS 저장소 및 모든 기본 작업자에서 가져온 모든 친구(DNA)를 삭제하시겠습니까? 이 작업은 취소할 수 없습니다. 계속하다?",
-    "deletion.imported_pals_removed": "{count} 가져온 친구를 삭제했습니다."
+    "deletion.imported_pals_removed": "{count} 가져온 친구를 삭제했습니다.",
+    "deletion.menu.modify_all_player_slots": "모든 플레이어 슬롯 수정",
+    "deletion.menu.modify_all_guild_chest_slots": "모든 길드 상자 슬롯 수정",
+    "modify_all_player_slots_title": "모든 플레이어 슬롯 수정",
+    "modify_all_player_slots_prompt": "모든 플레이어에 대해 새 인벤토리 슬롯 수(42-999)를 입력하십시오.",
+    "modify_all_player_slots_result": "{total} 플레이어 인벤토리의 {modified} 크기를 {slots} 슬롯으로 조정했습니다.",
+    "modify_all_guild_chest_slots_title": "모든 길드 상자 슬롯 수정",
+    "modify_all_guild_chest_slots_prompt": "모든 길드 및 기본 상자에 대한 새 슬롯 수를 입력하세요.",
+    "modify_all_guild_chest_slots_result": "{modified} 길드 상자 컨테이너를 수정했습니다."
 }

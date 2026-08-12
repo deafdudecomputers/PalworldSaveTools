@@ -1,3 +1,10 @@
+#2.3.5
+- **Saving after a JSON Editor import no longer fails** — in the JSON Editor tab you can export the loaded save as JSON, edit it, and import it back in. Large raw-data blocks (world foliage, spawners, structure locations and rotations) were turned back into a different data shape by that export-import round trip, so saving afterwards crashed with an error instead of writing your save. Those blocks are now converted back to their original form when the save is written, so a JSON round trip saves cleanly.
+- **Resize every player's inventory at once** — a new "Modify All Player Slots" option (Functions > Misc) expands or shrinks the main inventory of every player at once, anywhere from 42 up to 999 slots. Players who are carrying more items than the new size are left untouched.
+- **Resize every guild and base chest at once** — a new "Modify All Guild Chest Slots" option (Functions > Misc) expands or shrinks every guild and base chest in the save in one go, so you no longer have to edit each container one by one.
+- **Fix All Pals runs automatically in Fix Host Save and Character Transfer** — when either tool loads a save, every pal is fixed on the spot: HP, FullStomach and Sanity are restored, sickness is removed, and unowned pals are assigned to their owners. The fixed save is written back in Fix Host Save, and in Character Transfer the fix is applied to the loaded save automatically.
+- Bumped version to 2.3.5
+
 #2.3.4
 - **Global Pal Storage editor opens again** �?" the new Sort button that was added to Global Pal Storage in 2.3.4 was wired to a handler that didn't exist, so the whole editor crashed and could not be opened at all. The editor now opens normally and the Sort button reorders your Global Pal Storage pals by Paldeck number, level, name, or rarity and IVs, exactly like the Pal Editor box sort.
 - **Importing/cloning a base no longer risks touching works from your other bases** — after an import, only the newly imported camp's orphan work records get cleaned up. Work records belonging to pre-existing bases are left alone, so a base import can no longer interfere with anything you already built.

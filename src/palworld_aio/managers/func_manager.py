@@ -1870,6 +1870,40 @@ def modify_container_slots(new_slot_num, parent=None, container_id=None):
         return modified
     except:
         return 0
+def modify_all_player_slots(new_slot_num, parent=None):
+    if not constants.loaded_level_json or not constants.current_save_path:
+        return {'modified': 0, 'skipped': 0}
+    try:
+        new_slot_num = max(42, min(999, int(new_slot_num)))
+    except (TypeError, ValueError):
+        return {'modified': 0, 'skipped': 0}
+    players_dir = os.path.join(constants.current_save_path, 'Players')
+    if not os.path.exists(players_dir):
+        return {'modified': 0, 'skipped': 0}
+    player_files = [f for f in os.listdir(players_dir) if f.endswith('.sav') and '_dps' not in f]
+    from palworld_aio.inventory.inventory_manager import PlayerInventory
+    modified = 0
+    skipped = 0
+    for filename in player_files:
+        uid = filename[:-4]
+        try:
+            inv = PlayerInventory(uid)
+            if not inv.load():
+                skipped += 1
+                continue
+            if inv.set_max_slots(new_slot_num):
+                modified += 1
+            else:
+                skipped += 1
+        except Exception as e:
+            print(f'Error resizing slots for player {uid}: {e}')
+            skipped += 1
+            continue
+    if modified:
+        constants.invalidate_container_lookup()
+    return {'modified': modified, 'skipped': skipped}
+def modify_all_guild_chest_slots(new_slot_num, parent=None):
+    return modify_container_slots(new_slot_num, parent)
 def repair_structures(parent=None):
     if not constants.loaded_level_json:
         return None
@@ -2405,8 +2439,8 @@ def _restore_one_pal(raw):
         return True
     return False
 
-def _apply_to_dps_files(transform_fn):
-    players_dir = os.path.join(constants.current_save_path, 'Players')
+def _apply_to_dps_files(transform_fn, save_path=None):
+    players_dir = os.path.join(save_path or constants.current_save_path, 'Players')
     if not os.path.exists(players_dir):
         return 0
     count = 0
@@ -2459,11 +2493,8 @@ def restore_all_pals(parent=None):
     count += _apply_to_dps_files(_restore_one_pal)
     return count
 
-def fix_all_pals_combined(parent=None):
-    if not constants.current_save_path or not constants.loaded_level_json:
-        return 0
+def _fix_all_pals_core(wsd, save_path=None):
     from palworld_aio.utils import resolve_name
-    wsd = constants.loaded_level_json['properties']['worldSaveData']['value']
     cmap = wsd.get('CharacterSaveParameterMap', {}).get('value', [])
     ownership = ContainerOwnership.build(cmap, wsd.get('CharacterContainerSaveData', {}).get('value', []))
     PALMAP = load_game_data_map('characters.json', 'pals')
@@ -2506,8 +2537,19 @@ def fix_all_pals_combined(parent=None):
                 count += 1
         except Exception:
             continue
-    count += _apply_to_dps_files(_restore_one_pal)
+    count += _apply_to_dps_files(_restore_one_pal, save_path)
     return count
+
+def fix_all_pals_in_save(level_json, save_path):
+    if not level_json:
+        return 0
+    wsd = level_json['properties']['worldSaveData']['value']
+    return _fix_all_pals_core(wsd, save_path)
+
+def fix_all_pals_combined(parent=None):
+    if not constants.current_save_path or not constants.loaded_level_json:
+        return 0
+    return fix_all_pals_in_save(constants.loaded_level_json, constants.current_save_path)
 def _max_one_pal(raw):
     from palworld_aio.editor.pal_editor.data import get_pal_base_data, _ensure_friendship_thresholds
     from palworld_aio.editor.pal_editor.legacy_frame import PalFrame

@@ -2089,5 +2089,13 @@
     "deletion.menu.delete_imported_pals": "删除导入的好友",
     "deletion.delete_imported_pals.title": "删除导入的好友",
     "deletion.delete_imported_pals.confirm": "从每个玩家的队伍、palbox、DPS 存储和所有基地工作人员中删除所有导入的好友 (DNA)？此操作无法撤消。继续？",
-    "deletion.imported_pals_removed": "删除了 {count} 导入的好友"
+    "deletion.imported_pals_removed": "删除了 {count} 导入的好友",
+    "deletion.menu.modify_all_player_slots": "修改所有玩家槽位",
+    "deletion.menu.modify_all_guild_chest_slots": "修改所有公会宝箱槽位",
+    "modify_all_player_slots_title": "修改所有玩家槽位",
+    "modify_all_player_slots_prompt": "输入所有玩家的新库存槽数 (42-999)：",
+    "modify_all_player_slots_result": "将 {total} 玩家库存的 {modified} 调整为 {slots} 插槽",
+    "modify_all_guild_chest_slots_title": "修改所有公会宝箱槽位",
+    "modify_all_guild_chest_slots_prompt": "输入所有公会和基础宝箱的新槽位数量：",
+    "modify_all_guild_chest_slots_result": "修改后的 {modified} 公会宝箱容器"
 }

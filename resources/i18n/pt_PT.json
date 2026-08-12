@@ -2210,7 +2210,15 @@
     "edit_pals.sort.rarity": "Por raridade e IVs",
     "edit_pals.sort_done": "{count} pals ordenados.",
     "deletion.menu.delete_imported_pals": "Excluir amigos importados",
-    "deletion.delete_imported_pals.title": "Delete Imported Pals",
-    "deletion.delete_imported_pals.confirm": "Delete ALL imported pals (DNA) from every player's party, palbox, DPS storage, and all base workers? This cannot be undone. Continue?",
-    "deletion.imported_pals_removed": "Amigos importados {count} removidos"
+    "deletion.delete_imported_pals.title": "Excluir amigos importados",
+    "deletion.delete_imported_pals.confirm": "Excluir TODOS os amigos importados (DNA) do grupo de cada jogador, palbox, armazenamento DPS e todos os trabalhadores da base? Isto não pode ser desfeito. Continuar?",
+    "deletion.imported_pals_removed": "Amigos importados {count} removidos",
+    "deletion.menu.modify_all_player_slots": "Modifique todos os slots de jogadores",
+    "deletion.menu.modify_all_guild_chest_slots": "Modifique todos os slots do baú da guilda",
+    "modify_all_player_slots_title": "Modifique todos os slots de jogadores",
+    "modify_all_player_slots_prompt": "Insira a nova contagem de slots de inventário (42-999) para todos os jogadores:",
+    "modify_all_player_slots_result": "Redimensionado {modified} dos inventários de {total} jogadores para {slots} slots",
+    "modify_all_guild_chest_slots_title": "Modifique todos os slots do baú da guilda",
+    "modify_all_guild_chest_slots_prompt": "Insira a nova contagem de slots para todos os baús de guilda e base:",
+    "modify_all_guild_chest_slots_result": "Recipientes de baú de guilda {modified} modificados"
 }

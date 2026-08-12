@@ -2081,5 +2081,13 @@
     "deletion.menu.delete_imported_pals": "Eliminar amigos importados",
     "deletion.delete_imported_pals.title": "Eliminar amigos importados",
     "deletion.delete_imported_pals.confirm": "¿Eliminar TODOS los amigos importados (ADN) del grupo, palbox, almacenamiento de DPS y todos los trabajadores de la base de cada jugador? Esto no se puede deshacer. ¿Continuar?",
-    "deletion.imported_pals_removed": "Se eliminaron {count} amigos importados."
+    "deletion.imported_pals_removed": "Se eliminaron {count} amigos importados.",
+    "deletion.menu.modify_all_player_slots": "Modificar todas las ranuras de jugador",
+    "deletion.menu.modify_all_guild_chest_slots": "Modificar todas las ranuras del cofre del gremio",
+    "modify_all_player_slots_title": "Modificar todas las ranuras de jugador",
+    "modify_all_player_slots_prompt": "Ingrese el nuevo número de espacios de inventario (42-999) para todos los jugadores:",
+    "modify_all_player_slots_result": "Redimensionado {modified} de {total} inventarios de jugadores a {slots} espacios",
+    "modify_all_guild_chest_slots_title": "Modificar todas las ranuras del cofre del gremio",
+    "modify_all_guild_chest_slots_prompt": "Ingrese un nuevo número de espacios para todos los cofres de base y gremio:",
+    "modify_all_guild_chest_slots_result": "Contenedores de cofres de gremio {modified} modificados"
 }

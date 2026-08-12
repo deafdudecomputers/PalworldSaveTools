@@ -410,10 +410,6 @@ def filter_treeview(tree, query):
         values = [item.text(col) for col in range(item.columnCount())]
         if not any((query in str(value).lower() for value in values)):
             tree.takeTopLevelItem(tree.indexOfTopLevelItem(item))
-def background_load_task(path):
-    level_json = sav_to_json(path)
-    player_files, _ = _build_player_list_from_level(level_json)
-    return (player_files, level_json)
 def choose_level_file(window, level_sav_entry, old_tree, new_tree):
     from common import get_preferred_save_path
     path, _ = QFileDialog.getOpenFileName(window, t('Select Level.sav file'), get_preferred_save_path(), 'SAV Files(*.sav)')
@@ -424,7 +420,7 @@ def choose_level_file(window, level_sav_entry, old_tree, new_tree):
         show_warning(window, t('error.title'), t('character_transfer.no_players_folder'))
         return
     def task():
-        return background_load_task(path)
+        return load_save_with_fix(path)
     def on_task_complete(result):
         global player_list_cache
         player_data_list, level_json = result
@@ -432,7 +428,6 @@ def choose_level_file(window, level_sav_entry, old_tree, new_tree):
         window.level_sav_path = path
         window.level_sav_mtime = os.path.getmtime(path)
         level_sav_entry.setText(path)
-        backup_whole_directory(os.path.dirname(path), 'Backups/Fix Host Save')
         old_tree.clear()
         new_tree.clear()
         for uid, name, guild, level, pals_count, last_seen, sort_key in player_data_list:
@@ -603,6 +598,20 @@ def fix_save_wrapper(window, level_sav_entry, old_tree, new_tree):
             populate_player_tree(new_tree, folder_path)
             show_information(window, t('Success'), t('Fix has been applied! Have fun!'))
     run_with_loading(on_combined_done, combined_task)
+def load_save_with_fix(path, backup_label='Backups/Fix Host Save'):
+    folder = os.path.dirname(path)
+    backup_whole_directory(folder, backup_label)
+    level_json = sav_to_json(path)
+    try:
+        from palworld_aio.managers.func_manager import fix_all_pals_in_save
+        count = fix_all_pals_in_save(level_json, folder)
+        if count:
+            json_to_sav(level_json, os.path.join(folder, 'Level.sav'))
+        print(f'[FIX_ALL_PALS] Fixed {count} pals on load.')
+    except Exception as e:
+        print(f'[FIX_ALL_PALS] Error: {e}')
+    player_files, _ = _build_player_list_from_level(level_json)
+    return (player_files, level_json)
 def center_window(win):
     screen = QApplication.primaryScreen().availableGeometry()
     geo = win.frameGeometry()
@@ -877,7 +886,7 @@ class FixHostSaveWindow(QWidget):
             show_critical(self, t('error.title'), t('character_transfer.no_players_folder'))
             return
         def task():
-            return background_load_task(fpath)
+            return load_save_with_fix(fpath)
         def on_task_complete(result):
             global player_list_cache
             player_data_list, level_json = result
@@ -885,7 +894,6 @@ class FixHostSaveWindow(QWidget):
             self.level_sav_path = fpath
             self.level_sav_mtime = os.path.getmtime(fpath)
             self.level_sav_entry.setText(fpath)
-            backup_whole_directory(tmp, 'Backups/Fix Host Save')
             self.old_tree.clear()
             self.new_tree.clear()
             for uid, name, guild, level, pals_count, last_seen, sort_key in player_data_list:

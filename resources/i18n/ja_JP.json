@@ -2087,5 +2087,13 @@
     "deletion.menu.delete_imported_pals": "インポートした仲間を削除する",
     "deletion.delete_imported_pals.title": "インポートした仲間を削除する",
     "deletion.delete_imported_pals.confirm": "すべてのプレイヤーのパーティー、パルボックス、DPS ストレージ、およびすべてのベース ワーカーからインポートされたすべてのパル (DNA) を削除しますか?これを元に戻すことはできません。続く？",
-    "deletion.imported_pals_removed": "{count} インポートされた仲間を削除しました"
+    "deletion.imported_pals_removed": "{count} インポートされた仲間を削除しました",
+    "deletion.menu.modify_all_player_slots": "すべてのプレーヤーのスロットを変更する",
+    "deletion.menu.modify_all_guild_chest_slots": "すべてのギルドチェストスロットを変更する",
+    "modify_all_player_slots_title": "すべてのプレーヤーのスロットを変更する",
+    "modify_all_player_slots_prompt": "すべてのプレイヤーの新しいインベントリ スロット数 (42 ～ 999) を入力します。",
+    "modify_all_player_slots_result": "{total} プレーヤーのインベントリの {modified} を {slots} スロットにサイズ変更しました",
+    "modify_all_guild_chest_slots_title": "すべてのギルドチェストスロットを変更する",
+    "modify_all_guild_chest_slots_prompt": "すべてのギルドとベースチェストの新しいスロット数を入力します。",
+    "modify_all_guild_chest_slots_result": "{modified} ギルドチェストコンテナを修正"
 }

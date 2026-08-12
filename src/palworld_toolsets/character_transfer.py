@@ -40,6 +40,16 @@ def _write_sav(gvas_file, path):
     tmp = path + '.tmp'
     save_sav(gvas_file, tmp, custom_properties=SKP_PALWORLD_CUSTOM_PROPERTIES)
     os.replace(tmp, path)
+def _fix_pals_on_load(gvas_file, save_path, label):
+    try:
+        from palworld_aio.managers.func_manager import fix_all_pals_in_save
+        wrapper = {'properties': gvas_file.properties}
+        count = fix_all_pals_in_save(wrapper, save_path)
+        print(f'[FIX_ALL_PALS] {label}: fixed {count} pals.')
+        return count
+    except Exception as e:
+        print(f'[FIX_ALL_PALS] {label}: Error: {e}')
+        return 0
 def extract_value(data, key, default_value=''):
     value = data.get(key, default_value)
     if isinstance(value, dict):
@@ -491,6 +501,10 @@ class CharacterTransferWindow(QWidget):
         def task():
             gvas_file = _load_sav(level_path)
             wsd = gvas_file.properties['worldSaveData']['value']
+            folder = os.path.dirname(level_path)
+            if which == 'target':
+                backup_whole_directory(folder, 'Backups/Character Transfer')
+            _fix_pals_on_load(gvas_file, folder, f'{which} save')
             return (level_path, gvas_file, wsd)
         def on_finished(result):
             if not result:
@@ -512,7 +526,6 @@ class CharacterTransferWindow(QWidget):
                 targ_lvl = wsd
                 t_level_mtime = os.path.getmtime(path)
                 target_level_path_label.setText(path)
-                backup_whole_directory(tmp, 'Backups/Character Transfer')
                 selected_target_player = None
                 load_players(wsd, False)
                 modified_target_players = set()
@@ -1513,6 +1526,7 @@ def source_level_file():
             source_world_tick = wsd['GameTimeSaveData']['value']['RealDateTimeTicks']['value']
         except:
             source_world_tick = 0
+        _fix_pals_on_load(gvas_file, os.path.dirname(tmp), 'Source save')
         return (tmp, wsd)
     def on_finished(result):
         global level_sav_path, level_json, selected_source_player
@@ -1556,6 +1570,8 @@ def target_level_file():
             target_world_tick = wsd['GameTimeSaveData']['value']['RealDateTimeTicks']['value']
         except:
             target_world_tick = 0
+        backup_whole_directory(os.path.dirname(tmp), 'Backups/Character Transfer')
+        _fix_pals_on_load(gvas_file, os.path.dirname(tmp), 'Target save')
         return (tmp, gvas_file, wsd)
     def on_finished(result):
         global t_level_sav_path, targ_lvl, target_gvas_file, selected_target_player
@@ -1569,7 +1585,6 @@ def target_level_file():
         targ_lvl = wsd
         t_level_mtime = os.path.getmtime(path)
         target_level_path_label.setText(path)
-        backup_whole_directory(os.path.dirname(path), 'Backups/Character Transfer')
         selected_target_player = None
         load_players(wsd, False)
         current_selection_label.setText(f'Source: {selected_source_player},Target: {selected_target_player}')

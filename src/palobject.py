@@ -1,7 +1,7 @@
 import ctypes
 from typing import Any
 from multiprocessing import shared_memory
-from palsav.archive import FArchiveReader, FArchiveWriter, UUID
+from palsav.archive import FArchiveReader, FArchiveWriter, UUID, coerce_bytes
 from palsav.paltypes import PALWORLD_CUSTOM_PROPERTIES, PALWORLD_TYPE_HINTS
 try:
     import msgpack
@@ -168,24 +168,27 @@ def skip_encode(writer: FArchiveWriter, property_type: str, properties: dict[str
         del properties['skip_type']
         writer.fstring(properties['array_type'])
         writer.optional_guid(properties.get('id', None))
-        writer.write(properties['value'])
-        return len(properties['value'])
+        value = coerce_bytes(properties['value'])
+        writer.write(value)
+        return len(value)
     elif property_type == 'MapProperty':
         del properties['custom_type']
         del properties['skip_type']
         writer.fstring(properties['key_type'])
         writer.fstring(properties['value_type'])
         writer.optional_guid(properties.get('id', None))
-        writer.write(properties['value'])
-        return len(properties['value'])
+        value = coerce_bytes(properties['value'])
+        writer.write(value)
+        return len(value)
     elif property_type == 'StructProperty':
         del properties['custom_type']
         del properties['skip_type']
         writer.fstring(properties['struct_type'])
         writer.guid(properties['struct_id'])
         writer.optional_guid(properties.get('id', None))
-        writer.write(properties['value'])
-        return len(properties['value'])
+        value = coerce_bytes(properties['value'])
+        writer.write(value)
+        return len(value)
     else:
         raise Exception(f'Expected ArrayProperty or MapProperty or StructProperty,got {property_type}')
 class MappingCacheObject:

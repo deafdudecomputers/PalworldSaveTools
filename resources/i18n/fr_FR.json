@@ -2069,5 +2069,13 @@
     "deletion.menu.delete_imported_pals": "Supprimer les amis importés",
     "deletion.delete_imported_pals.title": "Supprimer les amis importés",
     "deletion.delete_imported_pals.confirm": "Supprimer TOUS les amis importés (ADN) du groupe, de la palbox, du stockage DPS et de tous les travailleurs de la base de chaque joueur ? Cela ne peut pas être annulé. Continuer?",
-    "deletion.imported_pals_removed": "Suppression des amis importés {count}"
+    "deletion.imported_pals_removed": "Suppression des amis importés {count}",
+    "deletion.menu.modify_all_player_slots": "Modifier tous les emplacements de joueur",
+    "deletion.menu.modify_all_guild_chest_slots": "Modifier tous les emplacements de coffre de guilde",
+    "modify_all_player_slots_title": "Modifier tous les emplacements de joueur",
+    "modify_all_player_slots_prompt": "Entrez le nouveau nombre d'emplacements d'inventaire (42-999) pour tous les joueurs :",
+    "modify_all_player_slots_result": "Redimensionnement de {modified} des inventaires de joueurs {total} vers {slots} emplacements",
+    "modify_all_guild_chest_slots_title": "Modifier tous les emplacements de coffre de guilde",
+    "modify_all_guild_chest_slots_prompt": "Entrez le nouveau nombre d'emplacements pour tous les coffres de guilde et de base :",
+    "modify_all_guild_chest_slots_result": "Conteneurs de coffre de guilde {modified} modifiés"
 }

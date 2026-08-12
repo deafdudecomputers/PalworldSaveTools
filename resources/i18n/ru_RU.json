@@ -2085,5 +2085,13 @@
     "deletion.menu.delete_imported_pals": "Удалить импортированных друзей",
     "deletion.delete_imported_pals.title": "Удалить импортированных друзей",
     "deletion.delete_imported_pals.confirm": "Удалить ВСЕХ импортированных приятелей (ДНК) из группы каждого игрока, палбокса, хранилища ДПС и всех рабочих базы? Это невозможно отменить. Продолжать?",
-    "deletion.imported_pals_removed": "Удалены импортированные друзья {count}."
+    "deletion.imported_pals_removed": "Удалены импортированные друзья {count}.",
+    "deletion.menu.modify_all_player_slots": "Изменить все слоты игроков",
+    "deletion.menu.modify_all_guild_chest_slots": "Изменить все слоты для сундуков гильдии",
+    "modify_all_player_slots_title": "Изменить все слоты игроков",
+    "modify_all_player_slots_prompt": "Введите новое количество слотов инвентаря (42-999) для всех игроков:",
+    "modify_all_player_slots_result": "Изменен размер {modified} из {total} инвентаря игроков до {slots} слотов.",
+    "modify_all_guild_chest_slots_title": "Изменить все слоты для сундуков гильдии",
+    "modify_all_guild_chest_slots_prompt": "Введите новое количество слотов для всех сундуков гильдии и баз:",
+    "modify_all_guild_chest_slots_result": "Модифицированные контейнеры сундуков гильдии {modified}."
 }
