@@ -1,3 +1,7 @@
+#2.3.7
+- **Game Pass worlds load normally even when the Global Pal Storage has nothing to read** — after Game Pass Global Pal Storage support was added, loading a Game Pass world sometimes failed with "Save Data Unreadable" when the Global Pal Storage file was missing on your PC (common for players who don't use it, or when cloud sync was holding the file). The world save now loads fine on its own, and the Global Pal Storage is opened separately whenever its file is there. A storage file that exists but simply has no pals in it was always loadable and still is.
+- Bumped version to 2.3.7
+
 #2.3.6
 - **Game data fully refreshed for Palworld v1.0.3** — this is a real data update, not just the version label. Pal names (Snock Terra, Tetroise), boss bounty tokens (Kingpaca Cryst, Mycora, Pierdon, Relaxaurus Lux), and passive skills (Sky Strider, World Tree's Bounty, Party Pal Trust Boost, Extended Dodge Invincibility) now match what the game shows, several structure crafting costs have been corrected to the current values, and item, skill, building, and partner skill descriptions have been brought up to date.
 - Bumped version to 2.3.6

@@ -390,7 +390,11 @@ def _read_container_data_by_name_multi(container_path: str, index: ContainerInde
 def _read_container_data_by_exact_name(container_path: str, index: ContainerIndex, name: str) -> Optional[bytes]:
     for c in index.containers:
         if c.container_name == name:
-            return _read_container_data(container_path, c)
+            try:
+                return _read_container_data(container_path, c)
+            except FileNotFoundError as e:
+                print(f'[_read_container_data_by_exact_name] {name} not readable: {e}')
+                return None
     return None
 
 

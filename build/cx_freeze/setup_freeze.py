@@ -31,4 +31,4 @@ build_exe_options = {'packages': _BUILD_PACKAGES, 'excludes': _BUILD_EXCLUDES, '
 ps6_a = find_pyside6_assets()
 if ps6_a:
     build_exe_options['include_files'].extend(ps6_a)
-setup(name='PalworldSaveTools', version="2.3.6", options={'build_exe': build_exe_options}, executables=[Executable('src/palworld_aio/main.py', base='gui', target_name='PalworldSaveTools.exe', icon='resources/assets/icons/app/icon.ico')])
+setup(name='PalworldSaveTools', version="2.3.7", options={'build_exe': build_exe_options}, executables=[Executable('src/palworld_aio/main.py', base='gui', target_name='PalworldSaveTools.exe', icon='resources/assets/icons/app/icon.ico')])
