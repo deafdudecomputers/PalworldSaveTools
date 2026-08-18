@@ -10,6 +10,7 @@ from palworld_aio.widgets.toggle_check import ToggleCheckBtn
 from palsav import json_tools
 from palworld_aio import constants as _constants
 from palworld_aio.inventory.inventory_manager import PlayerInventory, ItemData, get_player_inventory, UI_SLOT_BINDINGS, FOOD_POUCH_ITEMS, ACCESSORY_UNLOCK_ITEMS, WEAPON_UNLOCK_ITEMS, INVENTORY_EXPANSION_ITEMS
+from palworld_aio.editor.pal_editor.data import get_paldeck_pals
 from palworld_aio.editor.edit_pals import _clean_desc_for_tooltip, get_pal_base_data, _get_cached_pixmap, _get_pal_icon_path, _get_element_pixmap, _resolve_partner_desc, _partner_desc_to_html, PalInfoWidget
 from palworld_aio.managers.player_manager import max_all_abilities
 from resource_resolver import resource_path
@@ -1381,7 +1382,7 @@ class PalpediaPanelWidget(QFrame):
         self._deck_set = set()
         self._pal_entries = []
         self._row_widgets = []
-        self._selected_indices = set()
+        self._selected_assets = set()
         self._search_text = ''
         self._save_path = None
         self._gvas = None
@@ -1390,69 +1391,56 @@ class PalpediaPanelWidget(QFrame):
         self._load_pal_data()
         self._rebuild()
 
-    def _variant_score(self, asset):
-        a = (asset or '').lower()
-        score = 0
-        for tok in self.PALPEDIA_VARIANT_PREFIXES:
-            if a.startswith(tok):
-                score += 10
-        for tok in self.PALPEDIA_VARIANT_SUFFIXES:
-            if a.endswith(tok):
-                score += 5
-        return score
-
     def _load_pal_data(self):
-        entries = {}
-        try:
-            base_dir = constants.get_base_path()
-            path = resource_path(base_dir, 'game_data', 'characters.json')
-            data = json_tools.load(path)
-            pals = data.get('pals', [])
-        except Exception:
-            pals = []
-        by_index = {}
-        for p in pals:
-            idx = (p.get('stats') or {}).get('zukan_index')
-            if idx is None or idx < 1:
-                continue
-            by_index.setdefault(idx, []).append(p)
-        for idx in sorted(by_index):
-            group = by_index[idx]
-            rep = min(group, key=lambda p: self._variant_score(p.get('asset', '')))
-            elements = [e for e in (rep.get('elements') or {}).keys() if e and e.lower() != 'none']
+        raw = get_paldeck_pals()
+        self._pal_entries = []
+        for e in raw:
+            elements = [en for en in (e.get('elements') or {}).keys() if en and en.lower() != 'none']
             if not elements:
-                elements = [e for e in [(rep.get('stats') or {}).get('element_type1', ''), (rep.get('stats') or {}).get('element_type2', '')] if e and e.lower() != 'none']
-            entries[idx] = {
-                'index': idx,
-                'name': rep.get('name', ''),
-                'asset': rep.get('asset', ''),
-                'icon': rep.get('icon', ''),
+                stats = e.get('stats') or {}
+                elements = [en for en in [stats.get('element_type1', ''), stats.get('element_type2', '')] if en and en.lower() != 'none']
+            self._pal_entries.append({
+                'asset': e.get('asset', ''),
+                'display_index': e.get('display_index', ''),
+                'name': e.get('name', ''),
+                'icon': e.get('icon', ''),
                 'elements': elements,
-                'description': rep.get('description', ''),
-            }
-        self._pal_entries = [entries[i] for i in sorted(entries)]
+                'description': e.get('description', ''),
+            })
 
     def _uid_filename(self, uid):
         return str(uid).replace('-', '').upper()
 
-    def _zukan_for_key(self, key):
+    def _asset_for_key(self, key):
         if not key:
             return None
+        kl = str(key).lower()
+        for e in self._pal_entries:
+            if e['asset'].lower() == kl:
+                return e['asset']
         entry = get_pal_base_data(str(key))
         if not entry:
             return None
-        idx = (entry.get('stats') or {}).get('zukan_index')
-        if idx is None or idx < 1:
-            return None
-        return int(idx)
+        ea = entry.get('asset', '').lower()
+        for e in self._pal_entries:
+            if e['asset'].lower() == ea:
+                return e['asset']
+        return None
 
     def _row_matches_search(self, entry):
         text = self._search_text.lower()
         if not text:
             return True
-        if text in str(entry['index']):
+        disp = entry['display_index'].lower()
+        if text in disp:
             return True
-        if text in f'#{entry["index"]}'.lower():
+        if text in f'#{disp}':
+            return True
+        # Also match unpadded (e.g., "9" -> "009", "9b" -> "009b")
+        unpadded = disp.lstrip('0')
+        if text in unpadded:
+            return True
+        if text in f'#{unpadded}':
             return True
         if text in (entry.get('name') or '').lower():
             return True
@@ -1467,24 +1455,18 @@ class PalpediaPanelWidget(QFrame):
         for entry, row in zip(self._pal_entries, self._row_widgets):
             row.setVisible(self._row_matches_search(entry))
 
-    def _on_row_checked(self, index, checked):
+    def _on_row_checked(self, asset, checked):
         if checked:
-            self._selected_indices.add(index)
+            self._selected_assets.add(asset)
         else:
-            self._selected_indices.discard(index)
-        n = len(self._selected_indices)
+            self._selected_assets.discard(asset)
+        n = len(self._selected_assets)
         self._sel_label.setText(t('inventory.palpedia_selected', count=n, default=f'{n} selected') if n else '')
 
-    def _target_indices(self):
-        if self._selected_indices:
-            return sorted(self._selected_indices)
-        return [e['index'] for e in self._pal_entries]
-
-    def _asset_for_index(self, index):
-        for e in self._pal_entries:
-            if e['index'] == index:
-                return e['asset']
-        return None
+    def _target_assets(self):
+        if self._selected_assets:
+            return sorted(self._selected_assets)
+        return [e['asset'] for e in self._pal_entries]
 
     def _ensure_map_prop(self, key, value_type):
         rd = self._record_data
@@ -1519,22 +1501,18 @@ class PalpediaPanelWidget(QFrame):
         msg.exec()
 
     def _on_register_all(self):
-        self._set_registered(self._target_indices(), True)
+        self._set_registered(self._target_assets(), True)
 
     def _on_unregister_all(self):
-        self._set_registered(self._target_indices(), False)
+        self._set_registered(self._target_assets(), False)
 
-    def _set_registered(self, indices, register):
-        if not self._player_uid or not indices:
+    def _set_registered(self, assets, register):
+        if not self._player_uid or not assets:
             return
         deck = self._ensure_map_prop('PaldeckUnlockFlag', 'BoolProperty')
         if deck is None:
             return
-        target_assets = set()
-        for index in indices:
-            asset = self._asset_for_index(index)
-            if asset:
-                target_assets.add(asset)
+        target_assets = set(assets)
         existing = {}
         for e in deck['value']:
             if isinstance(e, dict):
@@ -1555,19 +1533,23 @@ class PalpediaPanelWidget(QFrame):
                     continue
                 filtered.append(e)
             new_value = filtered
-        if changed and self._persist_save():
+        if changed:
+            original = deck['value']
             deck['value'] = new_value
-            if register:
-                self._deck_set.update(indices)
+            if self._persist_save():
+                if register:
+                    self._deck_set.update(target_assets)
+                else:
+                    self._deck_set.difference_update(target_assets)
+                self._rebuild()
             else:
-                self._deck_set.difference_update(indices)
-            self._rebuild()
+                deck['value'] = original
 
-    def _toggle_register(self, index):
-        self._set_registered([index], index not in self._deck_set)
+    def _toggle_register(self, asset):
+        self._set_registered([asset], asset not in self._deck_set)
 
     def _on_caught_all(self):
-        indices = self._target_indices()
+        assets = self._target_assets()
         if not self._player_uid:
             return
         dlg = QInputDialog(self)
@@ -1580,32 +1562,28 @@ class PalpediaPanelWidget(QFrame):
         ok = dlg.exec() == QDialog.Accepted
         if not ok:
             return
-        self._set_caught_counts(indices, dlg.intValue())
+        self._set_caught_counts(assets, dlg.intValue())
 
-    def _edit_caught_count(self, index):
+    def _edit_caught_count(self, asset):
         if not self._player_uid:
             return
         dlg = QInputDialog(self)
         dlg.setWindowTitle(t('inventory.palpedia_edit_caught', default='Edit Caught Count'))
         dlg.setLabelText(t('inventory.palpedia_caught_count_prompt', default='Set caught count:'))
-        dlg.setIntValue(self._capture_map.get(index, 0))
+        dlg.setIntValue(self._capture_map.get(asset, 0))
         dlg.setIntRange(0, 999999)
         dlg.setInputMode(QInputDialog.IntInput)
         dlg.setStyleSheet(INPUT_DIALOG_STYLE)
         ok = dlg.exec() == QDialog.Accepted
         if not ok:
             return
-        self._set_caught_counts([index], dlg.intValue())
+        self._set_caught_counts([asset], dlg.intValue())
 
-    def _set_caught_counts(self, indices, count):
+    def _set_caught_counts(self, assets, count):
         cap = self._ensure_map_prop('PalCaptureCount', 'IntProperty')
         if cap is None:
             return
-        target_assets = set()
-        for index in indices:
-            asset = self._asset_for_index(index)
-            if asset:
-                target_assets.add(asset)
+        target_assets = set(assets)
         new_value = []
         changed = False
         for e in cap['value']:
@@ -1621,15 +1599,19 @@ class PalpediaPanelWidget(QFrame):
             if asset not in {e.get('key') for e in new_value if isinstance(e, dict)}:
                 new_value.append({'key': asset, 'value': count})
                 changed = True
-        if changed and self._persist_save():
+        if changed:
+            original = cap['value']
             cap['value'] = new_value
-            for index in indices:
-                self._capture_map[index] = count
-            self._rebuild()
+            if self._persist_save():
+                for asset in target_assets:
+                    self._capture_map[asset] = count
+                self._rebuild()
+            else:
+                cap['value'] = original
 
     def load_player(self, uid):
         self._player_uid = uid
-        self._selected_indices = set()
+        self._selected_assets = set()
         self._capture_map = {}
         self._deck_set = set()
         self._save_path = None
@@ -1651,9 +1633,9 @@ class PalpediaPanelWidget(QFrame):
                             key, val = e.get('key', ''), e.get('value', 0)
                         else:
                             key, val = str(e), 1
-                        idx = self._zukan_for_key(key)
-                        if idx is not None:
-                            self._capture_map[idx] = self._capture_map.get(idx, 0) + max(0, int(val or 0))
+                        asset = self._asset_for_key(key)
+                        if asset:
+                            self._capture_map[asset] = self._capture_map.get(asset, 0) + max(0, int(val or 0))
                 deck_list = rd.get('PaldeckUnlockFlag', {}).get('value', [])
                 if isinstance(deck_list, list):
                     for e in deck_list:
@@ -1662,16 +1644,16 @@ class PalpediaPanelWidget(QFrame):
                         else:
                             key, val = str(e), True
                         if val:
-                            idx = self._zukan_for_key(key)
-                            if idx is not None:
-                                self._deck_set.add(idx)
+                            asset = self._asset_for_key(key)
+                            if asset:
+                                self._deck_set.add(asset)
         except Exception:
             pass
         self._rebuild()
 
     def clear(self):
         self._player_uid = None
-        self._selected_indices = set()
+        self._selected_assets = set()
         self._capture_map = {}
         self._deck_set = set()
         self._save_path = None
@@ -1737,14 +1719,15 @@ class PalpediaPanelWidget(QFrame):
         rl = QHBoxLayout(row)
         rl.setContentsMargins(6, 2, 6, 2)
         rl.setSpacing(8)
-        index = entry['index']
+        asset = entry['asset']
+        display_index = entry['display_index']
         cb = QCheckBox()
-        cb.setChecked(index in self._selected_indices)
-        cb.toggled.connect(lambda checked, i=index: self._on_row_checked(i, checked))
+        cb.setChecked(asset in self._selected_assets)
+        cb.toggled.connect(lambda checked, a=asset: self._on_row_checked(a, checked))
         cb.setStyleSheet('QCheckBox::indicator { width: 14px; height: 14px; }')
         rl.addWidget(cb)
-        idx_lbl = QLabel(f'#{index}')
-        idx_lbl.setFixedWidth(44)
+        idx_lbl = QLabel(f'#{display_index}')
+        idx_lbl.setFixedWidth(52)
         idx_lbl.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         idx_lbl.setStyleSheet('font-size: 10px; font-weight: bold; color: #7dd3fc;')
         rl.addWidget(idx_lbl)
@@ -1768,7 +1751,7 @@ class PalpediaPanelWidget(QFrame):
                 el.setPixmap(ep)
                 el.setStyleSheet('background: transparent; border: none;')
                 rl.addWidget(el)
-        caught = self._capture_map.get(index, 0)
+        caught = self._capture_map.get(asset, 0)
         caught_btn = QPushButton(str(caught))
         caught_btn.setFixedWidth(46)
         caught_btn.setCursor(Qt.PointingHandCursor)
@@ -1777,9 +1760,9 @@ class PalpediaPanelWidget(QFrame):
             caught_btn.setStyleSheet('font-size: 10px; font-weight: bold; color: #4ade80; background: rgba(74,222,128,0.10); border: 1px solid rgba(74,222,128,0.25); border-radius: 4px; padding: 1px 4px;')
         else:
             caught_btn.setStyleSheet('font-size: 10px; font-weight: bold; color: #555; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 4px; padding: 1px 4px;')
-        caught_btn.clicked.connect(lambda checked=False, i=index: self._edit_caught_count(i))
+        caught_btn.clicked.connect(lambda checked=False, a=asset: self._edit_caught_count(a))
         rl.addWidget(caught_btn)
-        registered = index in self._deck_set
+        registered = asset in self._deck_set
         reg_btn = QPushButton()
         reg_btn.setFixedWidth(108)
         reg_btn.setCursor(Qt.PointingHandCursor)
@@ -1792,10 +1775,10 @@ class PalpediaPanelWidget(QFrame):
             reg_btn.setToolTip(t('inventory.palpedia_click_register', default='Click to register'))
             reg_btn.setStyleSheet('font-size: 9px; color: #555; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 4px; padding: 1px 5px;')
         reg_btn.setCursor(Qt.PointingHandCursor)
-        reg_btn.clicked.connect(lambda checked=False, i=index: self._toggle_register(i))
+        reg_btn.clicked.connect(lambda checked=False, a=asset: self._toggle_register(a))
         rl.addWidget(reg_btn)
         elem_names = ', '.join(entry['elements']) or 'Unknown'
-        tip = f'<b>#{index} {entry["name"]}</b><br><i>{entry["asset"]}</i>'
+        tip = f'<b>#{display_index} {entry["name"]}</b><br><i>{entry["asset"]}</i>'
         tip += f'<br><br>Elements: {elem_names}'
         tip += f'<br>Caught: {caught}'
         tip += f'<br>{t("inventory.palpedia_registered", default="Registered")}: {"Yes" if registered else "No"}'
@@ -1827,8 +1810,8 @@ class PalpediaPanelWidget(QFrame):
                 w.deleteLater()
         self._row_widgets = []
         total = len(self._pal_entries)
-        registered = len([e for e in self._pal_entries if e['index'] in self._deck_set])
-        total_caught = sum(self._capture_map.get(e['index'], 0) for e in self._pal_entries)
+        registered = len([e for e in self._pal_entries if e['asset'] in self._deck_set])
+        total_caught = sum(self._capture_map.get(e['asset'], 0) for e in self._pal_entries)
         if not self._player_uid:
             self._summary.setText(t('inventory.palpedia_no_player', default='Select a player to view their Palpedia'))
         else:
@@ -1840,7 +1823,7 @@ class PalpediaPanelWidget(QFrame):
                 row.setVisible(self._row_matches_search(entry))
             self._scroll_layout.addWidget(row)
         self._scroll_layout.addStretch()
-        n = len(self._selected_indices)
+        n = len(self._selected_assets)
         self._sel_label.setText(t('inventory.palpedia_selected', count=n, default=f'{n} selected') if n else '')
 
     def refresh_labels(self):

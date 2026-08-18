@@ -196,6 +196,70 @@ def _ensure_predator_set():
         pass
     return _PREDATOR_SET
 
+
+_PALDECK_PALS_CACHE = None
+_PALDECK_NOISE_PREFIXES = ('boss_', 'b_o_s_s_', 'gym_', 'raid_', 'predator_', 'police_', 'quest_', 'summon_', 'tower_', 'npc_', 'prd_', 'dummy_')
+_PALDECK_NOISE_SUFFIXES = ('_oilrig', '_tower', '_bossrush', '_boss', '_quest', '_otomo', '_servant', '_avatar', '_small', '_friend', '_enemy', '_shadow', '_rainbow')
+
+def _paldeck_variant_score(asset: str) -> int:
+    a = (asset or '').lower()
+    score = 0
+    for tok in _PALDECK_NOISE_PREFIXES:
+        if a.startswith(tok):
+            score += 10
+    for tok in _PALDECK_NOISE_SUFFIXES:
+        if a.endswith(tok):
+            score += 5
+    return score
+
+
+def get_paldeck_pals():
+    """Return base pals + distinct-named variants per zukan index, excluding noise.
+    Each entry is the full characters.json pal dict augmented with:
+      - 'display_index': str like '009' or '009b'
+      - '_deck_sub': '' for base, 'b', 'c'... for variants
+    """
+    global _PALDECK_PALS_CACHE
+    if _PALDECK_PALS_CACHE is not None:
+        return _PALDECK_PALS_CACHE
+
+    entries = []
+    try:
+        base_dir = constants.get_base_path()
+        path = resource_path(base_dir, 'game_data', 'characters.json')
+        data = json_tools.load(path)
+        pals = data.get('pals', [])
+    except Exception:
+        pals = []
+
+    by_index = {}
+    for p in pals:
+        idx = (p.get('stats') or {}).get('zukan_index')
+        if idx is None or idx < 1:
+            continue
+        al = p.get('asset', '').lower()
+        if al.startswith(_PALDECK_NOISE_PREFIXES):
+            continue
+        by_index.setdefault(int(idx), []).append(p)
+
+    for idx in sorted(by_index):
+        group = by_index[idx]
+        by_name = {}
+        for p in group:
+            nm = p.get('name', '')
+            by_name.setdefault(nm, []).append(p)
+        names = sorted(by_name, key=lambda nm: (min(_paldeck_variant_score(p.get('asset', '')) for p in by_name[nm]), nm))
+        for sub_pos, nm in enumerate(names):
+            rep = min(by_name[nm], key=lambda p: _paldeck_variant_score(p.get('asset', '')))
+            e = dict(rep)
+            sub = '' if sub_pos == 0 else chr(ord('b') + sub_pos - 1)
+            e['_deck_sub'] = sub
+            e['display_index'] = f'{idx:03d}' + sub
+            entries.append(e)
+
+    _PALDECK_PALS_CACHE = entries
+    return entries
+
 def _pal_can_toggle_boss(cid: str) -> tuple[bool, bool]:
     cache = _load_pal_base_data()
     cid_lower = cid.lower()

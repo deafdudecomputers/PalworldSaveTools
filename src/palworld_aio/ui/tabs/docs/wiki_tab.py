@@ -10,6 +10,7 @@ from PySide6.QtGui import QPixmap, QIcon, QCursor, QPainter, QColor, QBrush
 from i18n import t
 from palworld_aio import constants
 from palworld_aio.editor.pal_editor.icons import _get_element_pixmap
+from palworld_aio.editor.pal_editor.data import get_paldeck_pals
 from resource_resolver import resource_path
 
 _CATEGORIES = [
@@ -1336,14 +1337,17 @@ class WikiCategoryPage(QWidget):
         return btn
 
     def load(self):
-        idx = [c[0] for c in _CATEGORIES].index(self._cat)
-        _, _, fname, data_key = _CATEGORIES[idx]
-        items = _load_json(fname, data_key)
-        if self._cat == 'work_suitability':
-            for item in items:
-                fixed = _work_icon(item.get('id', ''))
-                if fixed:
-                    item['icon'] = fixed
+        if self._cat == 'pals':
+            items = get_paldeck_pals()
+        else:
+            idx = [c[0] for c in _CATEGORIES].index(self._cat)
+            _, _, fname, data_key = _CATEGORIES[idx]
+            items = _load_json(fname, data_key)
+            if self._cat == 'work_suitability':
+                for item in items:
+                    fixed = _work_icon(item.get('id', ''))
+                    if fixed:
+                        item['icon'] = fixed
         self._all_data = items
         self._loaded = True
         self._active_filters = {}
@@ -1441,8 +1445,12 @@ class WikiCategoryPage(QWidget):
                             break
                         found += 1
             if self._cat == 'pals':
-                deck = _resolve_zukan(item)
-                display = f'#{deck}  {name}' if deck else name
+                display_idx = item.get('display_index')
+                if display_idx:
+                    display = f'#{display_idx}  {name}'
+                else:
+                    deck = _resolve_zukan(item)
+                    display = f'#{deck}  {name}' if deck else name
                 li = QListWidgetItem(display)
                 li.setData(Qt.UserRole, idx)
                 ip = _icon(icon_path)
