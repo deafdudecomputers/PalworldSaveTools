@@ -1539,9 +1539,14 @@ class MainWindow(QMainWindow):
             return delete_unreferenced_data(self)
         def on_finished(result):
             self.refresh_all()
-            msg = f"Removed {result.get('characters', 0)} players,{result.get('pals', 0)} pals,{result.get('guilds', 0)} guilds\n"
-            msg += f"Removed {result.get('broken_objects', 0)} broken objects,{result.get('dropped_items', 0)} dropped items"
-            self._show_info(t('Done'), msg)
+            self._show_info(t('Done'), t('deletion.unreferenced_result',
+                                        characters=result.get('characters', 0),
+                                        pals=result.get('pals', 0),
+                                        guilds=result.get('guilds', 0),
+                                        broken_objects=result.get('broken_objects', 0),
+                                        dropped_items=result.get('dropped_items', 0),
+                                        treasure_dupes=result.get('treasure_dupes', 0),
+                                        orphaned_containers=result.get('orphaned_containers', 0)))
         run_with_loading(on_finished, task)
     def _delete_non_base_map_objs(self):
         if not constants.loaded_level_json:

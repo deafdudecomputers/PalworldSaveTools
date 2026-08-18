@@ -2101,5 +2101,6 @@
     "menu.file.load_gps.gamepass_not_found_msg": "No Global Pal Storage was found for Game Pass on this PC.\n\nPlay Palworld (Game Pass version) and interact with a Global Pal Storage first, then try again.",
     "menu.file.load_gps.gamepass_sync_held_title": "GamePass GPS недоступен",
     "menu.file.load_gps.gamepass_sync_held_msg": "Контейнер Game Pass Global Pal Storage в настоящее время пуст на этом компьютере — возможно, его задерживает облачная синхронизация.\n\nЗапустите Palworld (версию Game Pass) один раз, чтобы синхронизация восстановила контейнер, затем повторите попытку.",
-    "edit_pals.ctx.clone_bulk": "Массовые друзья-клоны"
+    "edit_pals.ctx.clone_bulk": "Массовые друзья-клоны",
+    "deletion.unreferenced_result": "Удалены игроки {characters}, друзья {pals}, гильдии {guilds}.\nУдалены {broken_objects} сломанные объекты, {dropped_items} выпавшие предметы.\nУдалены дубликаты сундуков с сокровищами {treasure_dupes}, бесхозные контейнеры {orphaned_containers}."
 }

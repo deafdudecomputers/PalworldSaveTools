@@ -568,6 +568,7 @@ def delete_unreferenced_data(parent=None):
     map_objects = map_objects_wrapper.get('values', [])
     broken_ids, dropped_ids = ([], [])
     new_map_objects = []
+    deleted_container_ids = set()
     for obj in map_objects:
         if is_broken_mapobject(obj):
             if is_entity_in_exclusion_zones(obj):
@@ -575,24 +576,29 @@ def delete_unreferenced_data(parent=None):
             else:
                 instance_id = obj.get('Model', {}).get('value', {}).get('RawData', {}).get('value', {}).get('instance_id')
                 broken_ids.append(instance_id)
+                deleted_container_ids |= _map_object_container_ids(obj)
         elif is_dropped_item(obj):
             if is_entity_in_exclusion_zones(obj):
                 new_map_objects.append(obj)
             else:
                 instance_id = obj.get('ConcreteModel', {}).get('value', {}).get('RawData', {}).get('value', {}).get('instance_id')
                 dropped_ids.append(instance_id)
+                deleted_container_ids |= _map_object_container_ids(obj)
         elif is_death_bag(obj):
             new_map_objects.append(obj)
         else:
             new_map_objects.append(obj)
     map_objects_wrapper['values'] = new_map_objects
     removed_broken, removed_drops = (len(broken_ids), len(dropped_ids))
+    removed_treasure_dupes = _dedupe_treasure_boxes(wsd)
     removed_orphaned_works = 0
     deleted_ids = {normalize_uid(i) for i in broken_ids + dropped_ids if normalize_uid(i)}
     if deleted_ids:
         removed_orphaned_works = _cleanup_orphaned_works(wsd, deleted_instance_ids=deleted_ids)
+    removed_orphaned_containers = _cleanup_orphaned_containers(wsd, deleted_container_ids)
+    removed_orphaned_containers += _sweep_orphaned_item_containers(wsd)
     removed_orphaned_dynamic = delete_orphaned_dynamic_items()
-    return {'characters': len(all_removed_uids), 'pals': removed_pals + len(orphaned_pals), 'guilds': removed_guilds, 'broken_objects': removed_broken, 'dropped_items': removed_drops, 'orphaned_dynamic_items': removed_orphaned_dynamic, 'orphaned_works': removed_orphaned_works}
+    return {'characters': len(all_removed_uids), 'pals': removed_pals + len(orphaned_pals), 'guilds': removed_guilds, 'broken_objects': removed_broken, 'dropped_items': removed_drops, 'orphaned_dynamic_items': removed_orphaned_dynamic, 'orphaned_works': removed_orphaned_works, 'orphaned_containers': removed_orphaned_containers, 'treasure_dupes': removed_treasure_dupes}
 def _cleanup_orphaned_works(wsd, deleted_instance_ids=None, deleted_base_camp_ids=None, scope_base_camp_id=None):
     work_root = wsd.get('WorkSaveData', {})
     if not work_root or 'value' not in work_root:
@@ -628,6 +634,302 @@ def _cleanup_orphaned_works(wsd, deleted_instance_ids=None, deleted_base_camp_id
             return True
     work_entries[:] = [we for we in work_entries if should_keep_work(we)]
     return initial_count - len(work_entries)
+def _map_object_container_ids(m):
+    ids = set()
+    try:
+        module_map = m.get('ConcreteModel', {}).get('value', {}).get('ModuleMap', {}).get('value', [])
+        if not isinstance(module_map, list):
+            return ids
+        for mod in module_map:
+            raw_mod = mod.get('value', {}).get('RawData', {}).get('value', {})
+            if not isinstance(raw_mod, dict):
+                continue
+            cid = raw_mod.get('target_container_id')
+            if cid:
+                norm = str(cid).replace('-', '').lower()
+                if norm:
+                    ids.add(norm)
+    except:
+        pass
+    return ids
+def _purge_dynamic_items_for_containers(wsd, container_ids):
+    removed = 0
+    if not container_ids:
+        return 0
+    dyn_root = wsd.get('DynamicItemSaveData', {})
+    dyn_list = dyn_root.get('value', {}).get('values', []) if isinstance(dyn_root, dict) else []
+    if not isinstance(dyn_list, list):
+        return 0
+    keep = []
+    for d in dyn_list:
+        try:
+            cid = str(d.get('RawData', {}).get('value', {}).get('container_id', '')).replace('-', '').lower()
+        except:
+            cid = ''
+        if cid in container_ids:
+            removed += 1
+        else:
+            keep.append(d)
+    dyn_list[:] = keep
+    return removed
+def _cleanup_orphaned_containers(wsd, deleted_container_ids):
+    removed = 0
+    if not deleted_container_ids:
+        return 0
+    for key in ('ItemContainerSaveData', 'CharacterContainerSaveData'):
+        cont_root = wsd.get(key, {})
+        cont_list = cont_root.get('value', []) if isinstance(cont_root, dict) else []
+        if not isinstance(cont_list, list):
+            continue
+        keep = []
+        for c in cont_list:
+            try:
+                cid = str(c.get('key', {}).get('ID', {}).get('value', '')).replace('-', '').lower()
+            except:
+                cid = ''
+            if cid in deleted_container_ids:
+                removed += 1
+            else:
+                keep.append(c)
+        cont_list[:] = keep
+    removed += _purge_dynamic_items_for_containers(wsd, deleted_container_ids)
+    return removed
+def _collect_referenced_container_ids(wsd, item_ids):
+    referenced = set()
+    def walk(node):
+        if isinstance(node, dict):
+            for k, v in node.items():
+                if k == 'ItemContainerSaveData':
+                    continue
+                if isinstance(v, str):
+                    if len(v) == 36 and v[8] == '-' and v[13] == '-' and v[18] == '-' and v[23] == '-':
+                        n = v.replace('-', '').lower()
+                        if n in item_ids:
+                            referenced.add(n)
+                elif isinstance(v, UUID):
+                    n = str(v).replace('-', '').lower()
+                    if n in item_ids:
+                        referenced.add(n)
+                elif isinstance(v, (dict, list)):
+                    walk(v)
+        elif isinstance(node, list):
+            for v in node:
+                walk(v)
+    walk(wsd)
+    return referenced
+def _scan_player_saves_for_container_ids(candidate_ids):
+    found = set()
+    if not candidate_ids or not constants.current_save_path:
+        return found
+    players_dir = os.path.join(constants.current_save_path, 'Players')
+    if not os.path.isdir(players_dir):
+        return set(candidate_ids)
+    patterns = []
+    cid_by_pattern = {}
+    for cid in candidate_ids:
+        try:
+            raw = bytes.fromhex(cid)
+            if len(raw) != 16:
+                continue
+            pat = bytes([raw[3], raw[2], raw[1], raw[0],
+                         raw[7], raw[6], raw[5], raw[4],
+                         raw[11], raw[10], raw[9], raw[8],
+                         raw[15], raw[14], raw[13], raw[12]])
+            cid_by_pattern[pat] = cid
+            patterns.append(pat)
+        except Exception:
+            pass
+    if not patterns:
+        return found
+    from palsav.core import decompress_sav_to_gvas
+    trie = {}
+    output = {}
+    root = 0
+    trie[root] = {}
+    node_count = 0
+    for p in patterns:
+        node = root
+        for b in p:
+            nxt = trie[node].get(b)
+            if nxt is None:
+                node_count += 1
+                nxt = node_count
+                trie[nxt] = {}
+                trie[node][b] = nxt
+            node = nxt
+        output[node] = cid_by_pattern[p]
+    fail = [0] * (node_count + 1)
+    from collections import deque
+    dq = deque()
+    for b, nxt in trie[root].items():
+        fail[nxt] = root
+        dq.append(nxt)
+    while dq:
+        r = dq.popleft()
+        for b, nxt in trie[r].items():
+            dq.append(nxt)
+            f = fail[r]
+            while f != root and b not in trie[f]:
+                f = fail[f]
+            fail[nxt] = trie[f].get(b, root)
+    for fn in sorted(os.listdir(players_dir)):
+        if not fn.endswith('.sav') or fn.endswith('_dps.sav'):
+            continue
+        try:
+            with open(os.path.join(players_dir, fn), 'rb') as f:
+                data = f.read()
+            blob, _ = decompress_sav_to_gvas(data)
+        except Exception:
+            return set(candidate_ids)
+        node = root
+        for i in range(len(blob)):
+            b = blob[i]
+            while node != root and b not in trie[node]:
+                node = fail[node]
+            node = trie[node].get(b, root)
+            if node in output:
+                found.add(output[node])
+    return found
+def _sweep_orphaned_item_containers(wsd):
+    item_cont_root = wsd.get('ItemContainerSaveData', {})
+    item_cont_list = item_cont_root.get('value', []) if isinstance(item_cont_root, dict) else []
+    if not isinstance(item_cont_list, list) or not item_cont_list:
+        return 0
+    item_ids = set()
+    for c in item_cont_list:
+        try:
+            cid = str(c.get('key', {}).get('ID', {}).get('value', '')).replace('-', '').lower()
+        except:
+            cid = ''
+        if cid:
+            item_ids.add(cid)
+    if not item_ids:
+        return 0
+    referenced = _collect_referenced_container_ids(wsd, item_ids)
+    candidates = item_ids - referenced
+    if not candidates:
+        return 0
+    candidates -= constants.death_bag_protected_container_ids
+    if candidates:
+        candidates -= _scan_player_saves_for_container_ids(candidates)
+    orphans = candidates
+    if not orphans:
+        return 0
+    keep = []
+    removed = 0
+    for c in item_cont_list:
+        try:
+            cid = str(c.get('key', {}).get('ID', {}).get('value', '')).replace('-', '').lower()
+        except:
+            cid = ''
+        if cid in orphans:
+            removed += 1
+        else:
+            keep.append(c)
+    item_cont_list[:] = keep
+    removed += _purge_dynamic_items_for_containers(wsd, orphans)
+    return removed
+def _dedupe_treasure_boxes(wsd):
+    map_objs = wsd.get('MapObjectSaveData', {}).get('value', {}).get('values', [])
+    if not isinstance(map_objs, list):
+        return 0
+    targets = []
+    for idx, m in enumerate(map_objs):
+        oid = str(m.get('MapObjectId', {}).get('value', ''))
+        if not oid.startswith('TreasureBox'):
+            continue
+        raw_data = m.get('Model', {}).get('value', {}).get('RawData', {}).get('value', {})
+        instance_id = raw_data.get('instance_id')
+        if not instance_id:
+            continue
+        trans = raw_data.get('initital_transform_cache')
+        loc = trans.get('translation') if isinstance(trans, dict) else None
+        if not isinstance(loc, dict):
+            continue
+        try:
+            pos = (round(float(loc['x']), 1), round(float(loc['y']), 1), round(float(loc['z']), 1))
+        except Exception:
+            continue
+        targets.append((idx, oid, str(instance_id).replace('-', '').lower(), pos))
+    if not targets:
+        return 0
+    from collections import deque
+    trie = {0: {}}
+    output = {}
+    root = 0
+    node_count = 0
+    for idx, oid, iid, pos in targets:
+        try:
+            raw = bytes.fromhex(iid)
+        except Exception:
+            continue
+        if len(raw) != 16:
+            continue
+        pat = bytes([raw[3], raw[2], raw[1], raw[0],
+                     raw[7], raw[6], raw[5], raw[4],
+                     raw[11], raw[10], raw[9], raw[8],
+                     raw[15], raw[14], raw[13], raw[12]])
+        node = root
+        for b in pat:
+            nxt = trie[node].get(b)
+            if nxt is None:
+                node_count += 1
+                nxt = node_count
+                trie[nxt] = {}
+                trie[node][b] = nxt
+            node = nxt
+        output[node] = iid
+    fail = [0] * (node_count + 1)
+    dq = deque()
+    for b, nxt in trie[root].items():
+        fail[nxt] = root
+        dq.append(nxt)
+    while dq:
+        r = dq.popleft()
+        for b, nxt in trie[r].items():
+            dq.append(nxt)
+            f = fail[r]
+            while f != root and b not in trie[f]:
+                f = fail[f]
+            fail[nxt] = trie[f].get(b, root)
+    spawner_blob = wsd.get('MapObjectSpawnerInStageSaveData', {}).get('value')
+    ref = set()
+    if isinstance(spawner_blob, bytes) and spawner_blob:
+        node = root
+        for i in range(len(spawner_blob)):
+            b = spawner_blob[i]
+            while node != root and b not in trie[node]:
+                node = fail[node]
+            node = trie[node].get(b, root)
+            if node in output:
+                ref.add(output[node])
+    groups = defaultdict(list)
+    for ti, (idx, oid, iid, pos) in enumerate(targets):
+        groups[(pos, oid)].append(ti)
+    drop = set()
+    for idxs in groups.values():
+        chosen = next((i for i in idxs if targets[i][2] in ref), idxs[-1])
+        drop.update(i for i in idxs if i != chosen)
+    if not drop:
+        return 0
+    dropped_instance_ids = set()
+    dropped_container_ids = set()
+    drop_indices = {targets[ti][0] for ti in drop}
+    for ti in drop:
+        m = map_objs[targets[ti][0]]
+        raw_data = m.get('Model', {}).get('value', {}).get('RawData', {}).get('value', {})
+        instance_id = raw_data.get('instance_id')
+        if instance_id:
+            dropped_instance_ids.add(str(instance_id).replace('-', '').lower())
+        concrete_id = raw_data.get('concrete_model_instance_id')
+        if concrete_id:
+            dropped_instance_ids.add(str(concrete_id).replace('-', '').lower())
+        dropped_container_ids |= _map_object_container_ids(m)
+    map_objs[:] = [m for i, m in enumerate(map_objs) if i not in drop_indices]
+    if dropped_instance_ids:
+        _cleanup_orphaned_works(wsd, deleted_instance_ids=dropped_instance_ids)
+    _cleanup_orphaned_containers(wsd, dropped_container_ids)
+    return len(drop)
 def delete_non_base_map_objects(parent=None):
     if not constants.loaded_level_json:
         return 0
@@ -638,6 +940,7 @@ def delete_non_base_map_objects(parent=None):
     initial_count = len(map_objs)
     new_map_objs = []
     deleted_instance_ids = set()
+    deleted_container_ids = set()
     for m in map_objs:
         raw_data = m.get('Model', {}).get('value', {}).get('RawData', {}).get('value', {})
         base_camp_id = raw_data.get('base_camp_id_belong_to')
@@ -661,10 +964,12 @@ def delete_non_base_map_objects(parent=None):
                 concrete_str = str(concrete_id).replace('-', '').lower()
                 if concrete_str:
                     deleted_instance_ids.add(concrete_str)
+            deleted_container_ids |= _map_object_container_ids(m)
     deleted_count = initial_count - len(new_map_objs)
     map_objs[:] = new_map_objs
     if deleted_instance_ids:
         _cleanup_orphaned_works(wsd, deleted_instance_ids=deleted_instance_ids)
+    _cleanup_orphaned_containers(wsd, deleted_container_ids)
     return deleted_count
 def delete_invalid_structure_map_objects(parent=None):
     if not constants.loaded_level_json:
@@ -686,6 +991,7 @@ def delete_invalid_structure_map_objects(parent=None):
     initial_count = len(map_objs)
     new_map_objs = []
     deleted_instance_ids = set()
+    deleted_container_ids = set()
     for m in map_objs:
         object_id_node = m.get('MapObjectId', {})
         object_name = object_id_node.get('value')
@@ -707,10 +1013,12 @@ def delete_invalid_structure_map_objects(parent=None):
                 concrete_str = str(concrete_id).replace('-', '').lower()
                 if concrete_str:
                     deleted_instance_ids.add(concrete_str)
+            deleted_container_ids |= _map_object_container_ids(m)
     deleted_count = initial_count - len(new_map_objs)
     map_objs[:] = new_map_objs
     if deleted_instance_ids:
         _cleanup_orphaned_works(wsd, deleted_instance_ids=deleted_instance_ids)
+    _cleanup_orphaned_containers(wsd, deleted_container_ids)
     return deleted_count
 def delete_all_skins(parent=None):
     if not constants.loaded_level_json:

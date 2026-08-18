@@ -2359,7 +2359,7 @@ class PlayerInventoryTab(QWidget):
             all_items = ItemData.get_all_items()
             unlock_assets = set(FOOD_POUCH_ITEMS + ACCESSORY_UNLOCK_ITEMS + WEAPON_UNLOCK_ITEMS)
             boss_map = self.inventory._build_boss_key_map()
-            key_candidates = [i for i in all_items if i.get('type_a') == 'EPalItemTypeA::Essential' and (i['asset'] not in unlock_assets) and (i.get('sort_id', 0) != 9999) and (i.get('name', '') != i.get('asset', '')) and ('en_text' not in i.get('name', '').lower()) and (not i['asset'].startswith('BossDefeatReward_') or i['asset'] in boss_map)]
+            key_candidates = [i for i in all_items if i.get('type_a') == 'EPalItemTypeA::Essential' and (i['asset'] not in unlock_assets) and (i.get('sort_id', 0) != 9999) and (i.get('name', '') != i.get('asset', '')) and ('en_text' not in i.get('name', '').lower())]
             key_container = self.inventory.get_container('key')
             if not key_container:
                 return
@@ -2411,7 +2411,7 @@ class PlayerInventoryTab(QWidget):
                 for item_id in missing_unlocks:
                     std_container.add_item(item_id, 1)
                 for item in to_add:
-                    if item['asset'].startswith('BossDefeatReward_'):
+                    if item['asset'] in boss_map:
                         self.inventory.add_item(item_id=item['asset'], quantity=1)
                     else:
                         std_container.add_item(item['asset'], 1)

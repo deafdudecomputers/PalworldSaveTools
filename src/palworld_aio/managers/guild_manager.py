@@ -462,6 +462,7 @@ def rebuild_all_guilds():
     new_container_slots = []
     new_guild_handles = {}
     container_next_slot = {}
+    remap = {}
     create_ok = 0
     create_skip = 0
     for gn, entries in guild_pal_entries.items():
@@ -541,6 +542,9 @@ def rebuild_all_guilds():
                         continue
                 skeleton = _generate_pal_save_param(cid, nick, owner, target_cid, slot_idx, group_id)
                 new_inst = skeleton['key']['InstanceId']['value']
+                old_inst = ch['key']['InstanceId']['value']
+                if old_inst:
+                    remap[nu(str(old_inst))] = new_inst
                 new_sp = skeleton['value']['RawData']['value']['object']['SaveParameter']['value']
                 for k, v in sp.items():
                     if k in ('CharacterID', 'NickName', 'OwnerPlayerUId', 'SlotId', 'IndividualId'):
@@ -636,6 +640,26 @@ def rebuild_all_guilds():
             if key not in seen:
                 raw['individual_character_handle_ids'].append({'guid': zero, 'instance_id': inst})
                 seen.add(key)
+    if remap:
+        new_obj_by_old = {old: UUID.from_str(new) for old, new in remap.items()}
+        new_str_by_old = {old: new for old, new in remap.items()}
+        def _apply_remap(node):
+            if isinstance(node, dict):
+                for k in node:
+                    node[k] = _apply_remap(node[k])
+                return node
+            if isinstance(node, list):
+                for i in range(len(node)):
+                    node[i] = _apply_remap(node[i])
+                return node
+            if isinstance(node, UUID):
+                return new_obj_by_old.get(str(node).replace('-', '').lower(), node)
+            if isinstance(node, str):
+                if len(node) == 36 and node[8] == '-' and node[13] == '-' and node[18] == '-' and node[23] == '-':
+                    return new_str_by_old.get(node.replace('-', '').lower(), node)
+                return node
+            return node
+        _apply_remap(wsd)
     duplicates = debug_check_duplicate_handles()
     if duplicates:
         print(f'DUPLICATE HANDLES DETECTED: {duplicates}')

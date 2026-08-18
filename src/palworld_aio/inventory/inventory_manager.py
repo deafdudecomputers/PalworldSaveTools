@@ -563,6 +563,11 @@ class PlayerInventory:
         except:
             PlayerInventory._BOSS_MAP_CACHE = {}
             return {}
+    def _is_bounty_token(self, item_id: str) -> bool:
+        if not item_id:
+            return False
+        boss_map = self._build_boss_key_map()
+        return item_id in boss_map if boss_map else False
     def _save_player_sav(self):
         if not self.player_gvas or not constants.current_save_path:
             return
@@ -670,7 +675,7 @@ class PlayerInventory:
             self.set_effigy_count(relic_type, cur + quantity)
             return True
         # Bounty tokens: only update player save flags, never add to container
-        if item_id and item_id.startswith('BossDefeatReward_'):
+        if item_id and self._is_bounty_token(item_id):
             for _ in range(quantity):
                 self._ensure_boss_defeat_flags([item_id])
             self._save_player_sav()
@@ -704,7 +709,7 @@ class PlayerInventory:
             if slot.get('slot_index') == slot_index:
                 item_id = slot.get('item_id', '')
                 break
-        if item_id and item_id.startswith('BossDefeatReward_'):
+        if item_id and self._is_bounty_token(item_id):
             self._cleanup_boss_defeat_flags([item_id])
             self._save_player_sav()
         # Always try container removal (may be in container from old code)

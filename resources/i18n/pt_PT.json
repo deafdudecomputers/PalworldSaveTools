@@ -2229,5 +2229,6 @@
     "menu.file.load_gps.gamepass_sync_held_title": "GPS GamePass indisponível",
     "menu.file.load_gps.gamepass_sync_held_msg": "O contêiner de armazenamento Global Pal do Game Pass está vazio neste PC - a sincronização na nuvem pode estar retendo-o.\n\nInicie o Palworld (versão Game Pass) uma vez para que a sincronização restaure o contêiner e tente novamente.",
     "edit_pals.ctx.clone_bulk": "Amigos clones em massa",
-    "edit_pals.ctx.bulk_max_buff": "Alimentar Alimentos"
+    "edit_pals.ctx.bulk_max_buff": "Alimentar Alimentos",
+    "deletion.unreferenced_result": "Removidos {characters} jogadores, {pals} amigos, {guilds} guildas\nRemovidos {broken_objects} objetos quebrados, {dropped_items} itens descartados\nRemovido {treasure_dupes} baús de tesouro duplicados, {orphaned_containers} contêineres órfãos"
 }

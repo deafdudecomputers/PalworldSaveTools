@@ -2102,5 +2102,6 @@
     "menu.file.load_gps.gamepass_not_found_msg": "이 PC에서는 Game Pass에 대한 Global Pal 저장소를 찾을 수 없습니다.\n\nPalworld(Game Pass 버전)를 플레이하고 먼저 Global Pal Storage와 상호작용한 후 다시 시도하세요.",
     "menu.file.load_gps.gamepass_sync_held_title": "GamePass GPS를 사용할 수 없음",
     "menu.file.load_gps.gamepass_sync_held_msg": "Game Pass Global Pal Storage 컨테이너는 현재 이 PC에 비어 있습니다. 클라우드 동기화가 이를 보유하고 있을 수 있습니다.\n\nPalworld(Game Pass 버전)를 한 번 실행하여 동기화를 통해 컨테이너를 복원한 후 다시 시도하세요.",
-    "edit_pals.ctx.clone_bulk": "대량 복제 친구"
+    "edit_pals.ctx.clone_bulk": "대량 복제 친구",
+    "deletion.unreferenced_result": "{characters} 플레이어, {pals} 친구, {guilds} 길드가 제거되었습니다.\n{broken_objects} 깨진 개체, {dropped_items} 떨어진 항목을 제거했습니다.\n{treasure_dupes} 중복된 보물 상자, {orphaned_containers} 고아 컨테이너를 제거했습니다."
 }

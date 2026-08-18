@@ -2085,5 +2085,6 @@
     "menu.file.load_gps.gamepass_not_found_msg": "Aucun stockage Global Pal n'a été trouvé pour Game Pass sur ce PC.\n\nJouez à Palworld (version Game Pass) et interagissez d'abord avec un Global Pal Storage, puis réessayez.",
     "menu.file.load_gps.gamepass_sync_held_title": "GamePass GPS indisponible",
     "menu.file.load_gps.gamepass_sync_held_msg": "Le conteneur de stockage Game Pass Global Pal est actuellement vide sur ce PC – la synchronisation cloud peut le contenir.\n\nLancez Palworld (version Game Pass) une fois pour que la synchronisation restaure le conteneur, puis réessayez.",
-    "edit_pals.ctx.clone_bulk": "Copains clones en vrac"
+    "edit_pals.ctx.clone_bulk": "Copains clones en vrac",
+    "deletion.unreferenced_result": "Suppression des joueurs {characters}, des copains {pals} et des guildes {guilds}.\nSuppression de {broken_objects} objets cassés, {dropped_items} objets supprimés\nSuppression des coffres au trésor en double {treasure_dupes} et des conteneurs orphelins {orphaned_containers}."
 }

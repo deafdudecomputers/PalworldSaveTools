@@ -2103,5 +2103,6 @@
     "menu.file.load_gps.gamepass_not_found_msg": "この PC では Game Pass 用の Global Pal Storage が見つかりませんでした。\n\nまず Palworld (Game Pass バージョン) をプレイし、Global Pal Storage と対話してから、もう一度お試しください。",
     "menu.file.load_gps.gamepass_sync_held_title": "GamePass GPS は利用できません",
     "menu.file.load_gps.gamepass_sync_held_msg": "この PC 上の Game Pass Global Pal Storage コンテナは現在空です。クラウド同期がそれを保持している可能性があります。\n\nPalworld (Game Pass バージョン) を一度起動して、同期によってコンテナーが復元されてから、もう一度お試しください。",
-    "edit_pals.ctx.clone_bulk": "バルククローン仲間"
+    "edit_pals.ctx.clone_bulk": "バルククローン仲間",
+    "deletion.unreferenced_result": "{characters} プレイヤー、{pals} 仲間、{guilds} ギルドを削除しました\n{broken_objects} の壊れたオブジェクト、{dropped_items} のドロップアイテムを削除しました\n{treasure_dupes} の重複した宝箱、{orphaned_containers} の孤立したコンテナを削除しました"
 }

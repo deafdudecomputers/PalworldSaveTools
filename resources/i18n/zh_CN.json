@@ -2105,5 +2105,6 @@
     "menu.file.load_gps.gamepass_not_found_msg": "在此 PC 上未找到 Game Pass 的 Global Pal Storage。\n\n玩 Palworld（Game Pass 版本）并先与 Global Pal Storage 交互，然后重试。",
     "menu.file.load_gps.gamepass_sync_held_title": "GamePass GPS 不可用",
     "menu.file.load_gps.gamepass_sync_held_msg": "此 PC 上的 Game Pass Global Pal Storage 容器当前为空 - 云同步可能正在保存它。\n\n启动 Palworld（Game Pass 版本）一次，以便同步恢复容器，然后重试。",
-    "edit_pals.ctx.clone_bulk": "批量克隆朋友"
+    "edit_pals.ctx.clone_bulk": "批量克隆朋友",
+    "deletion.unreferenced_result": "删除了 {characters} 玩家、{pals} 好友、{guilds} 公会\n移除了 {broken_objects} 损坏的物品，{dropped_items} 掉落的物品\n删除了 {treasure_dupes} 重复的宝箱，{orphaned_containers} 孤立的容器"
 }
