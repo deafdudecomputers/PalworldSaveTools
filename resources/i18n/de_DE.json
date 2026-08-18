@@ -2128,5 +2128,20 @@
     "menu.file.load_gps.gamepass_sync_held_title": "GamePass-GPS nicht verfügbar",
     "menu.file.load_gps.gamepass_sync_held_msg": "Der Game Pass Global Pal-Speichercontainer ist auf diesem PC derzeit leer – die Cloud-Synchronisierung hält ihn möglicherweise zurück.\n\nStarten Sie Palworld (Game Pass-Version) einmal, damit die Synchronisierung den Container wiederherstellt, und versuchen Sie es dann erneut.",
     "edit_pals.ctx.clone_bulk": "Massenklon-Freunde",
-    "deletion.unreferenced_result": "{characters} Spieler, {pals} Freunde, {guilds} Gilden entfernt\n{broken_objects} kaputte Objekte entfernt, {dropped_items} fallen gelassene Objekte entfernt\n{treasure_dupes} doppelte Schatztruhen und {orphaned_containers} verwaiste Container entfernt"
+    "deletion.unreferenced_result": "{characters} Spieler, {pals} Freunde, {guilds} Gilden entfernt\n{broken_objects} kaputte Objekte entfernt, {dropped_items} fallen gelassene Objekte entfernt\n{treasure_dupes} doppelte Schatztruhen und {orphaned_containers} verwaiste Container entfernt",
+    "inventory.palpedia": "Palpädie",
+    "inventory.palpedia_registered": "Eingetragen",
+    "inventory.palpedia_not_registered": "Nicht registriert",
+    "inventory.palpedia_summary": "Registriert {registered}/{total} • Insgesamt gefangen {caught}",
+    "inventory.palpedia_no_player": "Wählen Sie einen Spieler aus, um dessen Palpedia anzuzeigen",
+    "inventory.palpedia_search": "Suche Freunde...",
+    "inventory.palpedia_register_all": "Alle registrieren",
+    "inventory.palpedia_unregister_all": "Alle abmelden",
+    "inventory.palpedia_caught_all": "Alles gefangen",
+    "inventory.palpedia_edit_caught": "Anzahl der gefangenen Personen bearbeiten",
+    "inventory.palpedia_caught_count_prompt": "Anzahl der gefangenen Personen festlegen:",
+    "inventory.palpedia_selected": "{count} ausgewählt",
+    "inventory.palpedia_save_failed": "Palpedia-Änderungen konnten nicht gespeichert werden",
+    "inventory.palpedia_click_register": "Klicken Sie hier, um sich zu registrieren",
+    "inventory.palpedia_click_unregister": "Klicken Sie hier, um die Registrierung aufzuheben"
 }

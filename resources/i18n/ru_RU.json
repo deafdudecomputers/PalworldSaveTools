@@ -2102,5 +2102,20 @@
     "menu.file.load_gps.gamepass_sync_held_title": "GamePass GPS недоступен",
     "menu.file.load_gps.gamepass_sync_held_msg": "Контейнер Game Pass Global Pal Storage в настоящее время пуст на этом компьютере — возможно, его задерживает облачная синхронизация.\n\nЗапустите Palworld (версию Game Pass) один раз, чтобы синхронизация восстановила контейнер, затем повторите попытку.",
     "edit_pals.ctx.clone_bulk": "Массовые друзья-клоны",
-    "deletion.unreferenced_result": "Удалены игроки {characters}, друзья {pals}, гильдии {guilds}.\nУдалены {broken_objects} сломанные объекты, {dropped_items} выпавшие предметы.\nУдалены дубликаты сундуков с сокровищами {treasure_dupes}, бесхозные контейнеры {orphaned_containers}."
+    "deletion.unreferenced_result": "Удалены игроки {characters}, друзья {pals}, гильдии {guilds}.\nУдалены {broken_objects} сломанные объекты, {dropped_items} выпавшие предметы.\nУдалены дубликаты сундуков с сокровищами {treasure_dupes}, бесхозные контейнеры {orphaned_containers}.",
+    "inventory.palpedia": "Палпедия",
+    "inventory.palpedia_registered": "Зарегистрирован",
+    "inventory.palpedia_not_registered": "Не зарегистрирован",
+    "inventory.palpedia_summary": "Зарегистрировано {registered}/{total} • Всего поймано {caught}",
+    "inventory.palpedia_no_player": "Выберите игрока, чтобы просмотреть его Палпедию",
+    "inventory.palpedia_search": "Ищите, друзья...",
+    "inventory.palpedia_register_all": "Зарегистрировать все",
+    "inventory.palpedia_unregister_all": "Отменить регистрацию всех",
+    "inventory.palpedia_caught_all": "Поймал все",
+    "inventory.palpedia_edit_caught": "Изменить количество пойманных",
+    "inventory.palpedia_caught_count_prompt": "Установить количество пойманных:",
+    "inventory.palpedia_selected": "{count} выбрано",
+    "inventory.palpedia_save_failed": "Не удалось сохранить изменения Palpedia.",
+    "inventory.palpedia_click_register": "Нажмите, чтобы зарегистрироваться",
+    "inventory.palpedia_click_unregister": "Нажмите, чтобы отменить регистрацию"
 }

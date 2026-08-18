@@ -2086,5 +2086,20 @@
     "menu.file.load_gps.gamepass_sync_held_title": "GamePass GPS indisponible",
     "menu.file.load_gps.gamepass_sync_held_msg": "Le conteneur de stockage Game Pass Global Pal est actuellement vide sur ce PC – la synchronisation cloud peut le contenir.\n\nLancez Palworld (version Game Pass) une fois pour que la synchronisation restaure le conteneur, puis réessayez.",
     "edit_pals.ctx.clone_bulk": "Copains clones en vrac",
-    "deletion.unreferenced_result": "Suppression des joueurs {characters}, des copains {pals} et des guildes {guilds}.\nSuppression de {broken_objects} objets cassés, {dropped_items} objets supprimés\nSuppression des coffres au trésor en double {treasure_dupes} et des conteneurs orphelins {orphaned_containers}."
+    "deletion.unreferenced_result": "Suppression des joueurs {characters}, des copains {pals} et des guildes {guilds}.\nSuppression de {broken_objects} objets cassés, {dropped_items} objets supprimés\nSuppression des coffres au trésor en double {treasure_dupes} et des conteneurs orphelins {orphaned_containers}.",
+    "inventory.palpedia": "Palpédia",
+    "inventory.palpedia_registered": "Inscrit",
+    "inventory.palpedia_not_registered": "Non enregistré",
+    "inventory.palpedia_summary": "Enregistrés {registered}/{total} • Total capturé {caught}",
+    "inventory.palpedia_no_player": "Sélectionnez un joueur pour voir son Palpedia",
+    "inventory.palpedia_search": "Cherche les copains...",
+    "inventory.palpedia_register_all": "Tout enregistrer",
+    "inventory.palpedia_unregister_all": "Tout désinscrire",
+    "inventory.palpedia_caught_all": "Tout attrapé",
+    "inventory.palpedia_edit_caught": "Modifier le nombre de captures",
+    "inventory.palpedia_caught_count_prompt": "Définir le nombre de captures :",
+    "inventory.palpedia_selected": "{count} sélectionné",
+    "inventory.palpedia_save_failed": "Échec de l'enregistrement des modifications Palpedia",
+    "inventory.palpedia_click_register": "Cliquez pour vous inscrire",
+    "inventory.palpedia_click_unregister": "Cliquez pour vous désinscrire"
 }

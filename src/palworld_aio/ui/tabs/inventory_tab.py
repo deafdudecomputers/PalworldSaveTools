@@ -1,6 +1,6 @@
 import os
 import json
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QScrollArea, QLabel, QPushButton, QFrame, QDialog, QLineEdit, QListWidget, QListWidgetItem, QSpinBox, QMessageBox, QTabWidget, QSizePolicy, QAbstractItemView, QMenu, QToolTip, QListView, QProgressBar, QComboBox, QApplication, QInputDialog
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QScrollArea, QLabel, QPushButton, QFrame, QDialog, QLineEdit, QListWidget, QListWidgetItem, QSpinBox, QMessageBox, QTabWidget, QSizePolicy, QAbstractItemView, QMenu, QToolTip, QListView, QProgressBar, QComboBox, QApplication, QInputDialog, QCheckBox, QDialogButtonBox
 from PySide6.QtCore import Qt, QSize, Signal, QPoint, QTimer, QThread, QEvent
 from PySide6.QtGui import QPixmap, QIcon, QFont, QCursor, QColor, QPainter, QPen, QIntValidator
 from PySide6.QtWidgets import QStyledItemDelegate
@@ -10,7 +10,7 @@ from palworld_aio.widgets.toggle_check import ToggleCheckBtn
 from palsav import json_tools
 from palworld_aio import constants as _constants
 from palworld_aio.inventory.inventory_manager import PlayerInventory, ItemData, get_player_inventory, UI_SLOT_BINDINGS, FOOD_POUCH_ITEMS, ACCESSORY_UNLOCK_ITEMS, WEAPON_UNLOCK_ITEMS, INVENTORY_EXPANSION_ITEMS
-from palworld_aio.editor.edit_pals import _clean_desc_for_tooltip
+from palworld_aio.editor.edit_pals import _clean_desc_for_tooltip, get_pal_base_data, _get_cached_pixmap, _get_pal_icon_path, _get_element_pixmap, _resolve_partner_desc, _partner_desc_to_html, PalInfoWidget
 from palworld_aio.managers.player_manager import max_all_abilities
 from resource_resolver import resource_path
 from import_libs import run_with_loading
@@ -1370,6 +1370,488 @@ class TechnologyPanelWidget(QFrame):
         self._sel_all_btn.setText(t('player_technology.select_all', default='Select All'))
         self._desel_all_btn.setText(t('player_technology.deselect_all', default='Deselect All'))
         self._apply_btn.setText(t('button.apply', default='Apply'))
+class PalpediaPanelWidget(QFrame):
+    PALPEDIA_VARIANT_PREFIXES = ('boss_', 'b_o_s_s_', 'gym_', 'raid_', 'predator_', 'police_', 'quest_', 'tower_', 'npc_')
+    PALPEDIA_VARIANT_SUFFIXES = ('_dark', '_fire', '_ice', '_water', '_ground', '_electric', '_grass', '_neutral', '_otomo', '_oilrig', '_gold', '_servant', '_avatar', '_small', '_friend', '_enemy', '_bossrush', '_boss', '_quest', '_shadow', '_blue', '_green', '_pink', '_purple', '_red', '_rainbow')
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._player_uid = None
+        self._capture_map = {}
+        self._deck_set = set()
+        self._pal_entries = []
+        self._row_widgets = []
+        self._selected_indices = set()
+        self._search_text = ''
+        self._save_path = None
+        self._gvas = None
+        self._record_data = None
+        self._setup_ui()
+        self._load_pal_data()
+        self._rebuild()
+
+    def _variant_score(self, asset):
+        a = (asset or '').lower()
+        score = 0
+        for tok in self.PALPEDIA_VARIANT_PREFIXES:
+            if a.startswith(tok):
+                score += 10
+        for tok in self.PALPEDIA_VARIANT_SUFFIXES:
+            if a.endswith(tok):
+                score += 5
+        return score
+
+    def _load_pal_data(self):
+        entries = {}
+        try:
+            base_dir = constants.get_base_path()
+            path = resource_path(base_dir, 'game_data', 'characters.json')
+            data = json_tools.load(path)
+            pals = data.get('pals', [])
+        except Exception:
+            pals = []
+        by_index = {}
+        for p in pals:
+            idx = (p.get('stats') or {}).get('zukan_index')
+            if idx is None or idx < 1:
+                continue
+            by_index.setdefault(idx, []).append(p)
+        for idx in sorted(by_index):
+            group = by_index[idx]
+            rep = min(group, key=lambda p: self._variant_score(p.get('asset', '')))
+            elements = [e for e in (rep.get('elements') or {}).keys() if e and e.lower() != 'none']
+            if not elements:
+                elements = [e for e in [(rep.get('stats') or {}).get('element_type1', ''), (rep.get('stats') or {}).get('element_type2', '')] if e and e.lower() != 'none']
+            entries[idx] = {
+                'index': idx,
+                'name': rep.get('name', ''),
+                'asset': rep.get('asset', ''),
+                'icon': rep.get('icon', ''),
+                'elements': elements,
+                'description': rep.get('description', ''),
+            }
+        self._pal_entries = [entries[i] for i in sorted(entries)]
+
+    def _uid_filename(self, uid):
+        return str(uid).replace('-', '').upper()
+
+    def _zukan_for_key(self, key):
+        if not key:
+            return None
+        entry = get_pal_base_data(str(key))
+        if not entry:
+            return None
+        idx = (entry.get('stats') or {}).get('zukan_index')
+        if idx is None or idx < 1:
+            return None
+        return int(idx)
+
+    def _row_matches_search(self, entry):
+        text = self._search_text.lower()
+        if not text:
+            return True
+        if text in str(entry['index']):
+            return True
+        if text in f'#{entry["index"]}'.lower():
+            return True
+        if text in (entry.get('name') or '').lower():
+            return True
+        if text in (entry.get('asset') or '').lower():
+            return True
+        if text in ' '.join(e for e in entry.get('elements', [])).lower():
+            return True
+        return False
+
+    def _on_search_changed(self, text):
+        self._search_text = text or ''
+        for entry, row in zip(self._pal_entries, self._row_widgets):
+            row.setVisible(self._row_matches_search(entry))
+
+    def _on_row_checked(self, index, checked):
+        if checked:
+            self._selected_indices.add(index)
+        else:
+            self._selected_indices.discard(index)
+        n = len(self._selected_indices)
+        self._sel_label.setText(t('inventory.palpedia_selected', count=n, default=f'{n} selected') if n else '')
+
+    def _target_indices(self):
+        if self._selected_indices:
+            return sorted(self._selected_indices)
+        return [e['index'] for e in self._pal_entries]
+
+    def _asset_for_index(self, index):
+        for e in self._pal_entries:
+            if e['index'] == index:
+                return e['asset']
+        return None
+
+    def _ensure_map_prop(self, key, value_type):
+        rd = self._record_data
+        if rd is None:
+            return None
+        prop = rd.get(key)
+        if not isinstance(prop, dict):
+            prop = {'key_type': 'NameProperty', 'value_type': value_type, 'key_struct_type': None, 'value_struct_type': None, 'id': None, 'value': [], 'type': 'MapProperty'}
+            rd[key] = prop
+        if not isinstance(prop.get('value'), list):
+            prop['value'] = []
+        return prop
+
+    def _persist_save(self):
+        if not self._gvas or not self._save_path:
+            self._show_error(t('inventory.palpedia_no_player', default='Select a player to view their Palpedia'))
+            return False
+        try:
+            from palworld_aio.utils import gvasfile_to_sav
+            gvasfile_to_sav(self._gvas, self._save_path)
+            return True
+        except Exception:
+            self._show_error(t('inventory.palpedia_save_failed', default='Failed to save Palpedia changes'))
+            return False
+
+    def _show_error(self, text):
+        msg = QMessageBox(self)
+        msg.setIcon(QMessageBox.Warning)
+        msg.setWindowTitle(t('error.title', default='Error'))
+        msg.setText(text)
+        msg.setStyleSheet(DARK_THEME_STYLE)
+        msg.exec()
+
+    def _on_register_all(self):
+        self._set_registered(self._target_indices(), True)
+
+    def _on_unregister_all(self):
+        self._set_registered(self._target_indices(), False)
+
+    def _set_registered(self, indices, register):
+        if not self._player_uid or not indices:
+            return
+        deck = self._ensure_map_prop('PaldeckUnlockFlag', 'BoolProperty')
+        if deck is None:
+            return
+        target_assets = set()
+        for index in indices:
+            asset = self._asset_for_index(index)
+            if asset:
+                target_assets.add(asset)
+        existing = {}
+        for e in deck['value']:
+            if isinstance(e, dict):
+                existing[e.get('key', '')] = e
+        new_value = list(deck['value'])
+        changed = False
+        if register:
+            for asset in target_assets:
+                if asset not in existing:
+                    new_value.append({'key': asset, 'value': True})
+                    existing[asset] = True
+                    changed = True
+        else:
+            filtered = []
+            for e in new_value:
+                if isinstance(e, dict) and e.get('key') in target_assets:
+                    changed = True
+                    continue
+                filtered.append(e)
+            new_value = filtered
+        if changed and self._persist_save():
+            deck['value'] = new_value
+            if register:
+                self._deck_set.update(indices)
+            else:
+                self._deck_set.difference_update(indices)
+            self._rebuild()
+
+    def _toggle_register(self, index):
+        self._set_registered([index], index not in self._deck_set)
+
+    def _on_caught_all(self):
+        indices = self._target_indices()
+        if not self._player_uid:
+            return
+        dlg = QInputDialog(self)
+        dlg.setWindowTitle(t('inventory.palpedia_caught_all', default='Caught All'))
+        dlg.setLabelText(t('inventory.palpedia_caught_count_prompt', default='Set caught count for selected pals:'))
+        dlg.setIntValue(999)
+        dlg.setIntRange(0, 999999)
+        dlg.setInputMode(QInputDialog.IntInput)
+        dlg.setStyleSheet(INPUT_DIALOG_STYLE)
+        ok = dlg.exec() == QDialog.Accepted
+        if not ok:
+            return
+        self._set_caught_counts(indices, dlg.intValue())
+
+    def _edit_caught_count(self, index):
+        if not self._player_uid:
+            return
+        dlg = QInputDialog(self)
+        dlg.setWindowTitle(t('inventory.palpedia_edit_caught', default='Edit Caught Count'))
+        dlg.setLabelText(t('inventory.palpedia_caught_count_prompt', default='Set caught count:'))
+        dlg.setIntValue(self._capture_map.get(index, 0))
+        dlg.setIntRange(0, 999999)
+        dlg.setInputMode(QInputDialog.IntInput)
+        dlg.setStyleSheet(INPUT_DIALOG_STYLE)
+        ok = dlg.exec() == QDialog.Accepted
+        if not ok:
+            return
+        self._set_caught_counts([index], dlg.intValue())
+
+    def _set_caught_counts(self, indices, count):
+        cap = self._ensure_map_prop('PalCaptureCount', 'IntProperty')
+        if cap is None:
+            return
+        target_assets = set()
+        for index in indices:
+            asset = self._asset_for_index(index)
+            if asset:
+                target_assets.add(asset)
+        new_value = []
+        changed = False
+        for e in cap['value']:
+            if isinstance(e, dict) and e.get('key') in target_assets:
+                if e.get('value') != count:
+                    new_value.append({'key': e.get('key'), 'value': count})
+                    changed = True
+                else:
+                    new_value.append(e)
+            else:
+                new_value.append(e)
+        for asset in target_assets:
+            if asset not in {e.get('key') for e in new_value if isinstance(e, dict)}:
+                new_value.append({'key': asset, 'value': count})
+                changed = True
+        if changed and self._persist_save():
+            cap['value'] = new_value
+            for index in indices:
+                self._capture_map[index] = count
+            self._rebuild()
+
+    def load_player(self, uid):
+        self._player_uid = uid
+        self._selected_indices = set()
+        self._capture_map = {}
+        self._deck_set = set()
+        self._save_path = None
+        self._gvas = None
+        self._record_data = None
+        try:
+            from palworld_aio.utils import sav_to_gvasfile
+            save_path = os.path.join(constants.current_save_path, 'Players', f'{self._uid_filename(uid)}.sav')
+            if os.path.exists(save_path):
+                self._save_path = save_path
+                self._gvas = sav_to_gvasfile(save_path)
+                sd = self._gvas.properties.get('SaveData', {}).get('value', {})
+                self._record_data = sd.get('RecordData', {}).get('value', {})
+                rd = self._record_data
+                cap_list = rd.get('PalCaptureCount', {}).get('value', [])
+                if isinstance(cap_list, list):
+                    for e in cap_list:
+                        if isinstance(e, dict):
+                            key, val = e.get('key', ''), e.get('value', 0)
+                        else:
+                            key, val = str(e), 1
+                        idx = self._zukan_for_key(key)
+                        if idx is not None:
+                            self._capture_map[idx] = self._capture_map.get(idx, 0) + max(0, int(val or 0))
+                deck_list = rd.get('PaldeckUnlockFlag', {}).get('value', [])
+                if isinstance(deck_list, list):
+                    for e in deck_list:
+                        if isinstance(e, dict):
+                            key, val = e.get('key', ''), e.get('value', True)
+                        else:
+                            key, val = str(e), True
+                        if val:
+                            idx = self._zukan_for_key(key)
+                            if idx is not None:
+                                self._deck_set.add(idx)
+        except Exception:
+            pass
+        self._rebuild()
+
+    def clear(self):
+        self._player_uid = None
+        self._selected_indices = set()
+        self._capture_map = {}
+        self._deck_set = set()
+        self._save_path = None
+        self._gvas = None
+        self._record_data = None
+        self._search_text = ''
+        if hasattr(self, '_search_edit'):
+            self._search_edit.clear()
+        self._rebuild()
+
+    def _setup_ui(self):
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(6, 6, 6, 6)
+        layout.setSpacing(4)
+        self._title = QLabel(t('inventory.palpedia', default='Palpedia'))
+        self._title.setStyleSheet('font-size: 11px; font-weight: bold; color: #fff;')
+        self._title.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self._title)
+
+        self._search_edit = QLineEdit()
+        self._search_edit.setPlaceholderText(t('inventory.palpedia_search', default='Search pals...'))
+        self._search_edit.setStyleSheet(PICKER_SEARCH_STYLE)
+        self._search_edit.setClearButtonEnabled(True)
+        self._search_edit.textChanged.connect(self._on_search_changed)
+        layout.addWidget(self._search_edit)
+
+        toolbar = QHBoxLayout()
+        toolbar.setSpacing(4)
+        self._btn_register_all = QPushButton(t('inventory.palpedia_register_all', default='Register All'))
+        self._btn_unregister_all = QPushButton(t('inventory.palpedia_unregister_all', default='Unregister All'))
+        self._btn_caught_all = QPushButton(t('inventory.palpedia_caught_all', default='Caught All'))
+        for btn in (self._btn_register_all, self._btn_unregister_all, self._btn_caught_all):
+            btn.setStyleSheet('QPushButton { background: rgba(125,211,252,0.08); border: 1px solid rgba(125,211,252,0.2); border-radius: 4px; padding: 3px 8px; font-size: 10px; color: #e2e8f0; } QPushButton:hover { background: rgba(125,211,252,0.16); }')
+            toolbar.addWidget(btn)
+        self._sel_label = QLabel('')
+        self._sel_label.setStyleSheet('color: #94a3b8; font-size: 10px; padding: 2px 6px;')
+        toolbar.addStretch()
+        toolbar.addWidget(self._sel_label)
+        self._btn_register_all.clicked.connect(self._on_register_all)
+        self._btn_unregister_all.clicked.connect(self._on_unregister_all)
+        self._btn_caught_all.clicked.connect(self._on_caught_all)
+        layout.addLayout(toolbar)
+
+        self._summary = QLabel('')
+        self._summary.setStyleSheet('color: #94a3b8; font-size: 10px; padding: 2px 4px;')
+        self._summary.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self._summary)
+        self._scroll = QScrollArea()
+        self._scroll.setWidgetResizable(True)
+        self._scroll.setStyleSheet('QScrollArea { border: none; background: transparent; }')
+        self._scroll_content = QWidget()
+        self._scroll_layout = QVBoxLayout(self._scroll_content)
+        self._scroll_layout.setContentsMargins(0, 0, 0, 0)
+        self._scroll_layout.setSpacing(2)
+        self._scroll_layout.addStretch()
+        self._scroll.setWidget(self._scroll_content)
+        layout.addWidget(self._scroll, 1)
+
+    def _make_row(self, entry):
+        row = QFrame()
+        row.setFixedHeight(42)
+        row.setStyleSheet('QFrame:hover { background: rgba(255,255,255,0.03); }')
+        rl = QHBoxLayout(row)
+        rl.setContentsMargins(6, 2, 6, 2)
+        rl.setSpacing(8)
+        index = entry['index']
+        cb = QCheckBox()
+        cb.setChecked(index in self._selected_indices)
+        cb.toggled.connect(lambda checked, i=index: self._on_row_checked(i, checked))
+        cb.setStyleSheet('QCheckBox::indicator { width: 14px; height: 14px; }')
+        rl.addWidget(cb)
+        idx_lbl = QLabel(f'#{index}')
+        idx_lbl.setFixedWidth(44)
+        idx_lbl.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        idx_lbl.setStyleSheet('font-size: 10px; font-weight: bold; color: #7dd3fc;')
+        rl.addWidget(idx_lbl)
+        icon_lbl = QLabel()
+        icon_lbl.setFixedSize(36, 36)
+        icon_lbl.setAlignment(Qt.AlignCenter)
+        icon_lbl.setStyleSheet('background: transparent; border: none;')
+        pix = _get_cached_pixmap(_get_pal_icon_path(entry['asset']), 36)
+        if pix:
+            icon_lbl.setPixmap(pix)
+        rl.addWidget(icon_lbl)
+        name_lbl = QLabel(entry['name'])
+        name_lbl.setStyleSheet('font-size: 10px; color: #e2e8f0;')
+        name_lbl.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        rl.addWidget(name_lbl, 1)
+        for en in entry['elements'][:2]:
+            ep = _get_element_pixmap(en, 'small', 14)
+            if ep:
+                el = QLabel()
+                el.setFixedSize(14, 14)
+                el.setPixmap(ep)
+                el.setStyleSheet('background: transparent; border: none;')
+                rl.addWidget(el)
+        caught = self._capture_map.get(index, 0)
+        caught_btn = QPushButton(str(caught))
+        caught_btn.setFixedWidth(46)
+        caught_btn.setCursor(Qt.PointingHandCursor)
+        caught_btn.setToolTip(t('inventory.palpedia_edit_caught', default='Click to edit caught count'))
+        if caught > 0:
+            caught_btn.setStyleSheet('font-size: 10px; font-weight: bold; color: #4ade80; background: rgba(74,222,128,0.10); border: 1px solid rgba(74,222,128,0.25); border-radius: 4px; padding: 1px 4px;')
+        else:
+            caught_btn.setStyleSheet('font-size: 10px; font-weight: bold; color: #555; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 4px; padding: 1px 4px;')
+        caught_btn.clicked.connect(lambda checked=False, i=index: self._edit_caught_count(i))
+        rl.addWidget(caught_btn)
+        registered = index in self._deck_set
+        reg_btn = QPushButton()
+        reg_btn.setFixedWidth(108)
+        reg_btn.setCursor(Qt.PointingHandCursor)
+        if registered:
+            reg_btn.setText(t('inventory.palpedia_registered', default='Registered'))
+            reg_btn.setToolTip(t('inventory.palpedia_click_unregister', default='Click to unregister'))
+            reg_btn.setStyleSheet('font-size: 9px; font-weight: 600; color: #38bdf8; background: rgba(56,189,248,0.10); border: 1px solid rgba(56,189,248,0.25); border-radius: 4px; padding: 1px 5px;')
+        else:
+            reg_btn.setText(t('inventory.palpedia_not_registered', default='Not Registered'))
+            reg_btn.setToolTip(t('inventory.palpedia_click_register', default='Click to register'))
+            reg_btn.setStyleSheet('font-size: 9px; color: #555; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 4px; padding: 1px 5px;')
+        reg_btn.setCursor(Qt.PointingHandCursor)
+        reg_btn.clicked.connect(lambda checked=False, i=index: self._toggle_register(i))
+        rl.addWidget(reg_btn)
+        elem_names = ', '.join(entry['elements']) or 'Unknown'
+        tip = f'<b>#{index} {entry["name"]}</b><br><i>{entry["asset"]}</i>'
+        tip += f'<br><br>Elements: {elem_names}'
+        tip += f'<br>Caught: {caught}'
+        tip += f'<br>{t("inventory.palpedia_registered", default="Registered")}: {"Yes" if registered else "No"}'
+        desc = entry.get('description', '')
+        if desc:
+            try:
+                base = get_pal_base_data(entry['asset']) or {}
+                p_list = base.get('passives', []) or []
+                ref_list = base.get('reference_passives', []) or []
+                resolved = _resolve_partner_desc(desc, p_list, 0, base.get('active_skill_main_value'), base.get('active_skill_overwrite_effect'), p_list, ref_list)
+                elem_colors = PalInfoWidget._ELEMENT_COLORS if hasattr(PalInfoWidget, '_ELEMENT_COLORS') else {}
+                html_desc = _partner_desc_to_html(resolved, elem_colors, tooltip=True)
+                if html_desc:
+                    tip += f'<br><br>{html_desc}'
+            except Exception:
+                cleaned = _clean_desc_for_tooltip(desc)
+                if cleaned:
+                    tip += f'<br><br><span style="color:#94a3b8;font-size:11px">{wrap_tooltip_text(cleaned)}</span>'
+        row.setToolTip(tip)
+        return row
+
+    def _rebuild(self):
+        while self._scroll_layout.count():
+            item = self._scroll_layout.takeAt(0)
+            w = item.widget()
+            if w:
+                w.setParent(None)
+                w.hide()
+                w.deleteLater()
+        self._row_widgets = []
+        total = len(self._pal_entries)
+        registered = len([e for e in self._pal_entries if e['index'] in self._deck_set])
+        total_caught = sum(self._capture_map.get(e['index'], 0) for e in self._pal_entries)
+        if not self._player_uid:
+            self._summary.setText(t('inventory.palpedia_no_player', default='Select a player to view their Palpedia'))
+        else:
+            self._summary.setText(t('inventory.palpedia_summary', registered=registered, total=total, caught=total_caught, default=f'Registered {registered}/{total}   •   Total Caught {total_caught}'))
+        for entry in self._pal_entries:
+            row = self._make_row(entry)
+            self._row_widgets.append(row)
+            if self._search_text:
+                row.setVisible(self._row_matches_search(entry))
+            self._scroll_layout.addWidget(row)
+        self._scroll_layout.addStretch()
+        n = len(self._selected_indices)
+        self._sel_label.setText(t('inventory.palpedia_selected', count=n, default=f'{n} selected') if n else '')
+
+    def refresh_labels(self):
+        self._title.setText(t('inventory.palpedia', default='Palpedia'))
+        self._search_edit.setPlaceholderText(t('inventory.palpedia_search', default='Search pals...'))
+        self._btn_register_all.setText(t('inventory.palpedia_register_all', default='Register All'))
+        self._btn_unregister_all.setText(t('inventory.palpedia_unregister_all', default='Unregister All'))
+        self._btn_caught_all.setText(t('inventory.palpedia_caught_all', default='Caught All'))
+        self._rebuild()
+
+
 class InventoryGridWidget(QWidget):
     item_added = Signal(int, str, int)
     item_removed = Signal(int, int)
@@ -2035,6 +2517,13 @@ class PlayerInventoryTab(QWidget):
         self.tech_panel.tech_changed.connect(self._on_tech_changed)
         tech_tab_layout.addWidget(self.tech_panel)
         self.inv_tabs.addTab(self.tech_tab, t('inventory.technology', default='Technology'))
+        self.palpedia_tab = QWidget()
+        palpedia_tab_layout = QHBoxLayout(self.palpedia_tab)
+        palpedia_tab_layout.setContentsMargins(6, 6, 6, 6)
+        palpedia_tab_layout.setSpacing(10)
+        self.palpedia_panel = PalpediaPanelWidget()
+        palpedia_tab_layout.addWidget(self.palpedia_panel)
+        self.inv_tabs.addTab(self.palpedia_tab, t('inventory.palpedia', default='Palpedia'))
         self.inv_tabs.currentChanged.connect(self._on_tab_changed)
         inner_content.addWidget(self.inv_tabs, 2)
         equip_wrapper = QWidget()
@@ -2199,7 +2688,7 @@ class PlayerInventoryTab(QWidget):
     def _on_tab_changed(self, idx):
         if not self.current_player_uid:
             return
-        if idx not in (3, 4):
+        if idx not in (3, 4, 5):
             return
         uid = self.current_player_uid
         if self._tab_loaded_for.get(idx) == uid:
@@ -2211,6 +2700,8 @@ class PlayerInventoryTab(QWidget):
                 self.missions_panel.load_player(uid)
             elif idx == 4:
                 self.tech_panel.load_player(uid)
+            elif idx == 5:
+                self.palpedia_panel.load_player(uid)
             self._tab_loaded_for[idx] = uid
         finally:
             QApplication.processEvents()
@@ -2331,6 +2822,7 @@ class PlayerInventoryTab(QWidget):
         self.stats_panel.clear()
         self.missions_panel.clear()
         self.tech_panel.clear()
+        self.palpedia_panel.clear()
         for slot_widget in self.equip_slots.values():
             slot_widget.clear_item()
     def _on_add_all_effigies(self):
@@ -3383,8 +3875,10 @@ class PlayerInventoryTab(QWidget):
         self.inv_tabs.setTabText(2, t('inventory.stats', default='Stats'))
         self.inv_tabs.setTabText(3, t('inventory.missions', default='Missions'))
         self.inv_tabs.setTabText(4, t('inventory.technology', default='Technology'))
+        self.inv_tabs.setTabText(5, t('inventory.palpedia', default='Palpedia'))
         self.missions_panel.refresh_labels()
         self.tech_panel.refresh_labels()
+        self.palpedia_panel.refresh_labels()
         if not self.current_player_uid:
             self.player_select_btn.setText(t('inventory.select_player', default='Select Player...'))
         self.equip_title.setText(t('inventory.equipment', default='Equipment'))

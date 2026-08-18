@@ -2098,5 +2098,20 @@
     "menu.file.load_gps.gamepass_sync_held_title": "GPS GamePass no disponible",
     "menu.file.load_gps.gamepass_sync_held_msg": "El contenedor Game Pass Global Pal Storage está actualmente vacío en esta PC; es posible que la sincronización en la nube lo esté reteniendo.\n\nInicie Palworld (versión Game Pass) una vez para que la sincronización restaure el contenedor y vuelva a intentarlo.",
     "edit_pals.ctx.clone_bulk": "Amigos clonados a granel",
-    "deletion.unreferenced_result": "Se eliminaron {characters} jugadores, {pals} amigos, {guilds} gremios.\nSe eliminaron {broken_objects} objetos rotos, {dropped_items} objetos caídos\nSe eliminaron {treasure_dupes} cofres del tesoro duplicados, {orphaned_containers} contenedores huérfanos"
+    "deletion.unreferenced_result": "Se eliminaron {characters} jugadores, {pals} amigos, {guilds} gremios.\nSe eliminaron {broken_objects} objetos rotos, {dropped_items} objetos caídos\nSe eliminaron {treasure_dupes} cofres del tesoro duplicados, {orphaned_containers} contenedores huérfanos",
+    "inventory.palpedia": "Palpedia",
+    "inventory.palpedia_registered": "Registrado",
+    "inventory.palpedia_not_registered": "No registrado",
+    "inventory.palpedia_summary": "Registrado {registered}/{total} • Total capturado {caught}",
+    "inventory.palpedia_no_player": "Selecciona un jugador para ver su Palpedia",
+    "inventory.palpedia_search": "Buscar amigos...",
+    "inventory.palpedia_register_all": "Registrar todo",
+    "inventory.palpedia_unregister_all": "Dar de baja todo",
+    "inventory.palpedia_caught_all": "Atrapado todo",
+    "inventory.palpedia_edit_caught": "Editar recuento capturado",
+    "inventory.palpedia_caught_count_prompt": "Establecer recuento de capturas:",
+    "inventory.palpedia_selected": "{count} seleccionado",
+    "inventory.palpedia_save_failed": "No se pudieron guardar los cambios de Palpedia",
+    "inventory.palpedia_click_register": "Haga clic para registrarse",
+    "inventory.palpedia_click_unregister": "Haga clic para cancelar el registro"
 }

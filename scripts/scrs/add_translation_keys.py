@@ -15,6 +15,21 @@ LANGUAGES = {'zh_CN': {'name': 'Simplified Chinese', 'code': 'zh-CN'}, 'de_DE': 
 NEW_TRANSLATIONS = {
     'modify_all_guild_chest_slots_prompt': 'Enter new slot count for all guild chests:',
     'deletion.unreferenced_result': 'Removed {characters} players, {pals} pals, {guilds} guilds\nRemoved {broken_objects} broken objects, {dropped_items} dropped items\nRemoved {treasure_dupes} duplicate treasure chests, {orphaned_containers} orphaned containers',
+    'inventory.palpedia': 'Palpedia',
+    'inventory.palpedia_registered': 'Registered',
+    'inventory.palpedia_not_registered': 'Not Registered',
+    'inventory.palpedia_summary': 'Registered {registered}/{total}   \u2022   Total Caught {caught}',
+    'inventory.palpedia_no_player': 'Select a player to view their Palpedia',
+    'inventory.palpedia_search': 'Search pals...',
+    'inventory.palpedia_register_all': 'Register All',
+    'inventory.palpedia_unregister_all': 'Unregister All',
+    'inventory.palpedia_caught_all': 'Caught All',
+    'inventory.palpedia_edit_caught': 'Edit Caught Count',
+    'inventory.palpedia_caught_count_prompt': 'Set caught count:',
+    'inventory.palpedia_selected': '{count} selected',
+    'inventory.palpedia_save_failed': 'Failed to save Palpedia changes',
+    'inventory.palpedia_click_register': 'Click to register',
+    'inventory.palpedia_click_unregister': 'Click to unregister',
 }
 OLD_KEYS = []
 def _clean_uv_locks():

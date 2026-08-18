@@ -2104,5 +2104,20 @@
     "menu.file.load_gps.gamepass_sync_held_title": "GamePass GPS は利用できません",
     "menu.file.load_gps.gamepass_sync_held_msg": "この PC 上の Game Pass Global Pal Storage コンテナは現在空です。クラウド同期がそれを保持している可能性があります。\n\nPalworld (Game Pass バージョン) を一度起動して、同期によってコンテナーが復元されてから、もう一度お試しください。",
     "edit_pals.ctx.clone_bulk": "バルククローン仲間",
-    "deletion.unreferenced_result": "{characters} プレイヤー、{pals} 仲間、{guilds} ギルドを削除しました\n{broken_objects} の壊れたオブジェクト、{dropped_items} のドロップアイテムを削除しました\n{treasure_dupes} の重複した宝箱、{orphaned_containers} の孤立したコンテナを削除しました"
+    "deletion.unreferenced_result": "{characters} プレイヤー、{pals} 仲間、{guilds} ギルドを削除しました\n{broken_objects} の壊れたオブジェクト、{dropped_items} のドロップアイテムを削除しました\n{treasure_dupes} の重複した宝箱、{orphaned_containers} の孤立したコンテナを削除しました",
+    "inventory.palpedia": "パルペディア",
+    "inventory.palpedia_registered": "登録済み",
+    "inventory.palpedia_not_registered": "未登録",
+    "inventory.palpedia_summary": "登録済み {registered}/{total} • 総捕獲数 {caught}",
+    "inventory.palpedia_no_player": "プレイヤーを選択してパルペディアを表示します",
+    "inventory.palpedia_search": "友達を検索...",
+    "inventory.palpedia_register_all": "全て登録",
+    "inventory.palpedia_unregister_all": "すべて登録解除",
+    "inventory.palpedia_caught_all": "全部捕まえた",
+    "inventory.palpedia_edit_caught": "捕獲数の編集",
+    "inventory.palpedia_caught_count_prompt": "キャッチ数を設定します:",
+    "inventory.palpedia_selected": "{count} が選択されました",
+    "inventory.palpedia_save_failed": "Palpedia の変更を保存できませんでした",
+    "inventory.palpedia_click_register": "クリックして登録",
+    "inventory.palpedia_click_unregister": "クリックして登録を解除します"
 }

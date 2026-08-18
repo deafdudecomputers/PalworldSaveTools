@@ -2106,5 +2106,20 @@
     "menu.file.load_gps.gamepass_sync_held_title": "GamePass GPS 不可用",
     "menu.file.load_gps.gamepass_sync_held_msg": "此 PC 上的 Game Pass Global Pal Storage 容器当前为空 - 云同步可能正在保存它。\n\n启动 Palworld（Game Pass 版本）一次，以便同步恢复容器，然后重试。",
     "edit_pals.ctx.clone_bulk": "批量克隆朋友",
-    "deletion.unreferenced_result": "删除了 {characters} 玩家、{pals} 好友、{guilds} 公会\n移除了 {broken_objects} 损坏的物品，{dropped_items} 掉落的物品\n删除了 {treasure_dupes} 重复的宝箱，{orphaned_containers} 孤立的容器"
+    "deletion.unreferenced_result": "删除了 {characters} 玩家、{pals} 好友、{guilds} 公会\n移除了 {broken_objects} 损坏的物品，{dropped_items} 掉落的物品\n删除了 {treasure_dupes} 重复的宝箱，{orphaned_containers} 孤立的容器",
+    "inventory.palpedia": "触足百科",
+    "inventory.palpedia_registered": "挂号的",
+    "inventory.palpedia_not_registered": "未注册",
+    "inventory.palpedia_summary": "已登记 {registered}/{total} • 总捕获量 {caught}",
+    "inventory.palpedia_no_player": "选择一个玩家来查看他们的 Palpedia",
+    "inventory.palpedia_search": "搜索好友...",
+    "inventory.palpedia_register_all": "全部注册",
+    "inventory.palpedia_unregister_all": "全部取消注册",
+    "inventory.palpedia_caught_all": "全部捕获",
+    "inventory.palpedia_edit_caught": "编辑捕获数",
+    "inventory.palpedia_caught_count_prompt": "设置捕获数：",
+    "inventory.palpedia_selected": "已选择 {count}",
+    "inventory.palpedia_save_failed": "无法保存 Palpedia 更改",
+    "inventory.palpedia_click_register": "点击注册",
+    "inventory.palpedia_click_unregister": "点击取消注册"
 }
