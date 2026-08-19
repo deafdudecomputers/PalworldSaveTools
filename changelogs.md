@@ -6,6 +6,7 @@
 - **Palpedia gets search, multi-select, and bulk actions** — the Palpedia tab now has a search box to filter pals by number, name, or element, checkboxes to pick several pals at once, and "Register All", "Unregister All" and "Caught All" buttons that act on everything you selected (or the whole list when nothing is selected). Each pal's caught count is now a button that opens an editor directly.
 - **Registering a pal is now one click** — clicking the "Registered" / "Not Registered" badge on any pal row immediately toggles it, so you can build your Paldeck one pal at a time without the bulk buttons.
 - **Palpedia tooltips now match the rest of the app** — pal descriptions now render with element icons and colored tags exactly like the Pal Editor tooltips, and the caught-count / register dialogs use the same dark theme as every other input dialog.
+- **Editing a pal on a later page no longer changes a different pal on page 1** — selecting a pal on page 2 or beyond and editing it (stats, skills, etc.) used to silently apply the same edits to whatever pal sat in the matching slot on the first page, and to the same wrong slot in the Dispatch pal storage. Changes now land only on the pal you actually clicked, wherever it is in the box.
 - Bumped version to 2.3.8
 
 #2.3.7

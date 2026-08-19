@@ -977,7 +977,7 @@ class PalInfoHandlerMixin:
                     if ptype == 'party':
                         parent._highlight_party_slot(idx)
                     elif ptype == 'palbox':
-                        parent._highlight_palbox_slot(idx)
+                        parent._highlight_palbox_slot(idx % 30)
                 break
             try:
                 parent = parent.parentWidget() if hasattr(parent, 'parentWidget') else parent.parent()

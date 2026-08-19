@@ -429,7 +429,7 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
                 return
             if self.selected_pal_slot:
                 sp_type, sp_idx = self.selected_pal_slot
-                if self._multi_key(sp_type, sp_idx) not in self._multi_selected and sp_type == 'party' and sp_idx in self.party_pals:
+                if sp_type == 'party' and sp_idx in self.party_pals and (sp_type, sp_idx) not in self._multi_selected:
                     self._toggle_multi_slot(sp_type, sp_idx, force_add=True)
             if self.selected_pal_slot != ('party', idx):
                 self._toggle_multi_slot('party', idx)
@@ -486,15 +486,17 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
         pals_on_page = self._get_palbox_page_pals()
         slot_type = 'dps' if is_dps else 'palbox'
         has_pal = idx < len(pals_on_page) and pals_on_page[idx] is not None
+        abs_idx = (self.current_box_index - 1) * 30 + idx
         if mods & Qt.ControlModifier:
             if not has_pal:
                 return
             if self.selected_pal_slot:
                 sp_type, sp_idx = self.selected_pal_slot
-                sp_key = self._multi_key(sp_type, sp_idx)
-                if sp_key not in self._multi_selected and sp_type == slot_type and sp_idx < len(pals_on_page) and pals_on_page[sp_idx] is not None:
-                    self._toggle_multi_slot(sp_type, sp_idx, force_add=True)
-            if self.selected_pal_slot != (slot_type, idx):
+                if sp_type == slot_type:
+                    sp_rel = sp_idx % 30
+                    if sp_rel < len(pals_on_page) and pals_on_page[sp_rel] is not None and (sp_type, sp_idx) not in self._multi_selected:
+                        self._toggle_multi_slot(sp_type, sp_rel, force_add=True)
+            if self.selected_pal_slot != (slot_type, abs_idx):
                 self._toggle_multi_slot(slot_type, idx)
             self._multi_select_anchor = (slot_type, idx)
             return
@@ -510,7 +512,7 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
             if has_pal:
                 self._clicked_pal = pals_on_page[idx]
                 self.pal_info.set_clicked_pal(pals_on_page[idx])
-                self.selected_pal_slot = (slot_type, idx)
+                self.selected_pal_slot = (slot_type, abs_idx)
                 self._highlight_palbox_slot(idx)
                 self._clear_party_highlight()
             self._update_multi_toolbar()
@@ -520,7 +522,7 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
         if has_pal:
             self._clicked_pal = pals_on_page[idx]
             self.pal_info.set_clicked_pal(pals_on_page[idx])
-            self.selected_pal_slot = (slot_type, idx)
+            self.selected_pal_slot = (slot_type, abs_idx)
             self._highlight_palbox_slot(idx)
             self._clear_party_highlight()
         else:
