@@ -19,6 +19,11 @@ from loading_manager import is_loading_active
 from palworld_aio.widgets.player_select_popup import show_player_select_popup
 SINGLETON_TYPE_A = {'EPalItemTypeA::Weapon', 'EPalItemTypeA::MonsterEquipWeapon', 'EPalItemTypeA::Armor', 'EPalItemTypeA::Accessory', 'EPalItemTypeA::Glider', 'EPalItemTypeA::CaptureItemModifier'}
 from palworld_aio import constants
+try:
+    import nerdfont as _nf
+except Exception:
+    _nf = None
+SPHERE_ICON = _nf.icons.get('nf-md-pokeball', '\u2B55') if _nf else '\u2B55'
 EQUIP_SLOT_FILTERS = {'weapon': {'type_a': ['EPalItemTypeA::Weapon', 'EPalItemTypeA::MonsterEquipWeapon']}, 'head': {'type_a': 'EPalItemTypeA::Armor', 'type_b': 'EPalItemTypeB::ArmorHead'}, 'body': {'type_a': 'EPalItemTypeA::Armor', 'type_b': 'EPalItemTypeB::ArmorBody'}, 'shield': {'type_a': 'EPalItemTypeA::Armor', 'type_b': 'EPalItemTypeB::Shield'}, 'accessory': {'type_a': 'EPalItemTypeA::Accessory'}, 'glider': {'type_a': 'EPalItemTypeA::Glider'}, 'sphere_mod': {'type_a': 'EPalItemTypeA::CaptureItemModifier'}, 'food': {'type_a': 'EPalItemTypeA::Food'}}
 GRID_COLS = 6
 class ItemSlotWidget(QFrame):
@@ -1509,41 +1514,17 @@ class PalpediaPanelWidget(QFrame):
     def _set_registered(self, assets, register):
         if not self._player_uid or not assets:
             return
-        deck = self._ensure_map_prop('PaldeckUnlockFlag', 'BoolProperty')
-        if deck is None:
-            return
         target_assets = set(assets)
-        existing = {}
-        for e in deck['value']:
-            if isinstance(e, dict):
-                existing[e.get('key', '')] = e
-        new_value = list(deck['value'])
-        changed = False
         if register:
+            by_count = {}
             for asset in target_assets:
-                if asset not in existing:
-                    new_value.append({'key': asset, 'value': True})
-                    existing[asset] = True
-                    changed = True
+                cur = self._capture_map.get(asset, 0)
+                c = cur if cur >= 1 else 1
+                by_count.setdefault(c, []).append(asset)
+            for c, group in by_count.items():
+                self._apply_pal_state(group, c)
         else:
-            filtered = []
-            for e in new_value:
-                if isinstance(e, dict) and e.get('key') in target_assets:
-                    changed = True
-                    continue
-                filtered.append(e)
-            new_value = filtered
-        if changed:
-            original = deck['value']
-            deck['value'] = new_value
-            if self._persist_save():
-                if register:
-                    self._deck_set.update(target_assets)
-                else:
-                    self._deck_set.difference_update(target_assets)
-                self._rebuild()
-            else:
-                deck['value'] = original
+            self._apply_pal_state(target_assets, 0)
 
     def _toggle_register(self, asset):
         self._set_registered([asset], asset not in self._deck_set)
@@ -1580,34 +1561,120 @@ class PalpediaPanelWidget(QFrame):
         self._set_caught_counts([asset], dlg.intValue())
 
     def _set_caught_counts(self, assets, count):
-        cap = self._ensure_map_prop('PalCaptureCount', 'IntProperty')
-        if cap is None:
+        self._apply_pal_state(assets, int(count))
+
+    def _apply_pal_state(self, assets, caught):
+        if not self._player_uid or not assets:
             return
-        target_assets = set(assets)
-        new_value = []
-        changed = False
-        for e in cap['value']:
-            if isinstance(e, dict) and e.get('key') in target_assets:
-                if e.get('value') != count:
-                    new_value.append({'key': e.get('key'), 'value': count})
-                    changed = True
+        deck = self._ensure_map_prop('PaldeckUnlockFlag', 'BoolProperty')
+        cap = self._ensure_map_prop('PalCaptureCount', 'IntProperty')
+        bonus = self._ensure_map_prop('PalCaptureBonusCount', 'IntProperty')
+        if deck is None or cap is None or bonus is None:
+            return
+        exp_idx = self._record_data.get('PalCaptureBonusExpTableIndex')
+        if not isinstance(exp_idx, dict):
+            exp_idx = {'id': None, 'value': 0, 'type': 'IntProperty'}
+            self._record_data['PalCaptureBonusExpTableIndex'] = exp_idx
+        target = set(assets)
+        registered = caught >= 1
+        has_bonus = caught >= 5
+
+        def _rebuild(prop, target_value, keep):
+            present = set()
+            new_value = []
+            changed = False
+            for e in prop['value']:
+                if not isinstance(e, dict):
+                    new_value.append(e)
+                    continue
+                key = e.get('key', '')
+                if key in target:
+                    if keep:
+                        if e.get('value') != target_value:
+                            new_value.append({'key': key, 'value': target_value})
+                            changed = True
+                        else:
+                            new_value.append(e)
+                        present.add(key)
+                    else:
+                        changed = True
                 else:
                     new_value.append(e)
+            for key in target:
+                if key not in present and keep:
+                    new_value.append({'key': key, 'value': target_value})
+                    changed = True
+            return new_value, changed
+
+        new_deck, d_ch = _rebuild(deck, True, registered)
+        new_cap, c_ch = _rebuild(cap, caught, caught > 0)
+        new_bonus, b_ch = _rebuild(bonus, 5, has_bonus)
+        if not (d_ch or c_ch or b_ch):
+            return
+        originals = (deck['value'], cap['value'], bonus['value'])
+        deck['value'], cap['value'], bonus['value'] = new_deck, new_cap, new_bonus
+        if self._persist_save():
+            for asset in target:
+                if caught >= 1:
+                    self._capture_map[asset] = caught
+                    self._deck_set.add(asset)
+                else:
+                    self._capture_map[asset] = 0
+                    self._deck_set.discard(asset)
+            for row in self._row_widgets:
+                if getattr(row, '_asset', None) in target:
+                    self._refresh_row(row)
+            self._update_summary()
+        else:
+            deck['value'], cap['value'], bonus['value'] = originals
+
+    def _refresh_row(self, row):
+        asset = getattr(row, '_asset', None)
+        if not asset:
+            return
+        caught = self._capture_map.get(asset, 0)
+        registered = asset in self._deck_set
+        entry = getattr(row, '_entry', None)
+        if entry is not None:
+            row.setToolTip(self._build_row_tooltip(entry, caught, registered))
+        sphere_lbl = getattr(row, '_sphere_lbl', None)
+        if sphere_lbl is not None:
+            if caught >= 5:
+                sphere_lbl.setText(SPHERE_ICON)
+                sphere_lbl.setStyleSheet('color: #fbbf24; background: transparent; border: none;')
+            elif caught >= 1:
+                sphere_lbl.setText(SPHERE_ICON)
+                sphere_lbl.setStyleSheet('color: #e2e8f0; background: transparent; border: none;')
             else:
-                new_value.append(e)
-        for asset in target_assets:
-            if asset not in {e.get('key') for e in new_value if isinstance(e, dict)}:
-                new_value.append({'key': asset, 'value': count})
-                changed = True
-        if changed:
-            original = cap['value']
-            cap['value'] = new_value
-            if self._persist_save():
-                for asset in target_assets:
-                    self._capture_map[asset] = count
-                self._rebuild()
+                sphere_lbl.setText('')
+        caught_btn = getattr(row, '_caught_btn', None)
+        if caught_btn is not None:
+            caught_btn.setText(str(caught))
+            if caught > 0:
+                caught_btn.setStyleSheet('font-size: 10px; font-weight: bold; color: #4ade80; background: rgba(74,222,128,0.10); border: 1px solid rgba(74,222,128,0.25); border-radius: 4px; padding: 1px 4px;')
             else:
-                cap['value'] = original
+                caught_btn.setStyleSheet('font-size: 10px; font-weight: bold; color: #555; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 4px; padding: 1px 4px;')
+        reg_btn = getattr(row, '_reg_btn', None)
+        if reg_btn is not None:
+            if registered:
+                reg_btn.setText(t('inventory.palpedia_registered', default='Registered'))
+                reg_btn.setToolTip(t('inventory.palpedia_click_unregister', default='Click to unregister'))
+                reg_btn.setStyleSheet('font-size: 9px; font-weight: 600; color: #38bdf8; background: rgba(56,189,248,0.10); border: 1px solid rgba(56,189,248,0.25); border-radius: 4px; padding: 1px 5px;')
+            else:
+                reg_btn.setText(t('inventory.palpedia_not_registered', default='Not Registered'))
+                reg_btn.setToolTip(t('inventory.palpedia_click_register', default='Click to register'))
+                reg_btn.setStyleSheet('font-size: 9px; color: #555; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 4px; padding: 1px 5px;')
+
+    def _update_summary(self):
+        total = len(self._pal_entries)
+        registered = len([e for e in self._pal_entries if e['asset'] in self._deck_set])
+        total_caught = sum(self._capture_map.get(e['asset'], 0) for e in self._pal_entries)
+        if not self._player_uid:
+            self._summary.setText(t('inventory.palpedia_no_player', default='Select a player to view their Palpedia'))
+        else:
+            self._summary.setText(t('inventory.palpedia_summary', registered=registered, total=total, caught=total_caught, default=f'Registered {registered}/{total}   •   Total Caught {total_caught}'))
+        n = len(self._selected_assets)
+        self._sel_label.setText(t('inventory.palpedia_selected', count=n, default=f'{n} selected') if n else '')
 
     def load_player(self, uid):
         self._player_uid = uid
@@ -1726,6 +1793,20 @@ class PalpediaPanelWidget(QFrame):
         cb.toggled.connect(lambda checked, a=asset: self._on_row_checked(a, checked))
         cb.setStyleSheet('QCheckBox::indicator { width: 14px; height: 14px; }')
         rl.addWidget(cb)
+        caught = self._capture_map.get(asset, 0)
+        sphere_lbl = QLabel()
+        sphere_lbl.setFixedSize(22, 22)
+        sphere_lbl.setAlignment(Qt.AlignCenter)
+        sphere_lbl.setFont(QFont(constants.FONT_FAMILY_NERD, 14))
+        if caught >= 5:
+            sphere_lbl.setText(SPHERE_ICON)
+            sphere_lbl.setStyleSheet('color: #fbbf24; background: transparent; border: none;')
+        elif caught >= 1:
+            sphere_lbl.setText(SPHERE_ICON)
+            sphere_lbl.setStyleSheet('color: #e2e8f0; background: transparent; border: none;')
+        else:
+            sphere_lbl.setText('')
+        rl.addWidget(sphere_lbl)
         idx_lbl = QLabel(f'#{display_index}')
         idx_lbl.setFixedWidth(52)
         idx_lbl.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
@@ -1751,7 +1832,6 @@ class PalpediaPanelWidget(QFrame):
                 el.setPixmap(ep)
                 el.setStyleSheet('background: transparent; border: none;')
                 rl.addWidget(el)
-        caught = self._capture_map.get(asset, 0)
         caught_btn = QPushButton(str(caught))
         caught_btn.setFixedWidth(46)
         caught_btn.setCursor(Qt.PointingHandCursor)
@@ -1777,6 +1857,16 @@ class PalpediaPanelWidget(QFrame):
         reg_btn.setCursor(Qt.PointingHandCursor)
         reg_btn.clicked.connect(lambda checked=False, a=asset: self._toggle_register(a))
         rl.addWidget(reg_btn)
+        row._asset = asset
+        row._entry = entry
+        row._sphere_lbl = sphere_lbl
+        row._caught_btn = caught_btn
+        row._reg_btn = reg_btn
+        row.setToolTip(self._build_row_tooltip(entry, caught, registered))
+        return row
+
+    def _build_row_tooltip(self, entry, caught, registered):
+        display_index = entry['display_index']
         elem_names = ', '.join(entry['elements']) or 'Unknown'
         tip = f'<b>#{display_index} {entry["name"]}</b><br><i>{entry["asset"]}</i>'
         tip += f'<br><br>Elements: {elem_names}'
@@ -1797,8 +1887,7 @@ class PalpediaPanelWidget(QFrame):
                 cleaned = _clean_desc_for_tooltip(desc)
                 if cleaned:
                     tip += f'<br><br><span style="color:#94a3b8;font-size:11px">{wrap_tooltip_text(cleaned)}</span>'
-        row.setToolTip(tip)
-        return row
+        return tip
 
     def _rebuild(self):
         while self._scroll_layout.count():

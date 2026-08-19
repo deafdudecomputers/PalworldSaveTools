@@ -1705,9 +1705,18 @@ class PalEditorWidget(QWidget, BulkOperationMixin):
             self.select_all_btn.setVisible(True)
             self.bulk_clone_btn.setVisible(True)
             self.bulk_delete_btn.setVisible(True)
-        if hasattr(self, '_palbox_layout'):
+        self._refresh_header_layout()
+    def showEvent(self, event):
+        super().showEvent(event)
+        QTimer.singleShot(0, self._refresh_header_layout)
+    def _refresh_header_layout(self):
+        if not hasattr(self, '_palbox_layout') or self._palbox_layout is None:
+            return
+        if self.isVisible():
             self._palbox_layout.invalidate()
             self._palbox_layout.activate()
+        else:
+            self._palbox_layout.invalidate()
     def _on_sort_clicked(self):
         source = self.dps_pals if self._palbox_mode == 'dps' else self.palbox_pal_dict
         if not source:

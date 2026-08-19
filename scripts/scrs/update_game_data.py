@@ -1822,6 +1822,28 @@ def update_pal_exp_table():
         return
     save_resource_json('pal_exp_table.json', all_rows)
     print(f'  Total EXP entries: {len(all_rows)}')
+def update_capture_bonus_exp_table():
+    print('\n=== Updating Capture Bonus EXP Table ===')
+    exp_data = load_export_json('Exp/DT_PalCaptureBonusExpTable.json')
+    if not exp_data:
+        print('  No capture bonus EXP table found. Skipping.')
+        return
+    all_rows = {}
+    if isinstance(exp_data, list):
+        for table in exp_data:
+            if isinstance(table, dict):
+                rows = table.get('Rows', {})
+                if rows:
+                    all_rows.update(rows)
+    elif isinstance(exp_data, dict):
+        rows = exp_data.get('Rows', {})
+        if rows:
+            all_rows.update(rows)
+    if not all_rows:
+        print('  No capture bonus EXP rows found. Skipping.')
+        return
+    save_resource_json('pal_capture_bonus_exp_table.json', all_rows)
+    print(f'  Total capture bonus EXP entries: {len(all_rows)}')
 def update_friendship_data():
     print('\n=== Updating Friendship Data ===')
     friend_data = load_export_json('Friendship/DT_FriendshipRankTable.json')
@@ -3208,6 +3230,7 @@ def main():
     _run_step('Updating skill data...', update_skill_data)
     _run_step('Updating pal learnset data...', update_learnset_data)
     _run_step('Updating pal EXP table...', update_pal_exp_table)
+    _run_step('Updating capture bonus EXP table...', update_capture_bonus_exp_table)
     _run_step('Updating friendship data...', update_friendship_data)
     _run_step('Updating items dynamic...', update_items_dynamic)
     _run_step('Updating pal passive data...', update_pal_passive_data)

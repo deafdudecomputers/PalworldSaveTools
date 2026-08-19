@@ -38,6 +38,14 @@
 
 ---
 
+### 🔐 Checksums (SHA256)
+
+```
+__CHECKSUMS__
+```
+
+---
+
 ### 📝 Changelog
 
 __CHANGELOG_ENTRY__

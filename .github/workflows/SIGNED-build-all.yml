@@ -237,6 +237,15 @@ jobs:
           path: artifacts
       - name: List all artifacts
         run: find artifacts -type f -ls
+      - name: Generate SHA256 checksums for all binaries
+        id: checksums
+        run: |
+          cd artifacts
+          find . -type f -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS.txt
+          cd ..
+          echo "=== SHA256SUMS.txt ==="
+          cat artifacts/SHA256SUMS.txt
+          cp artifacts/SHA256SUMS.txt /tmp/checksums.txt
       - name: Verify existing release by tag
         if: ${{ github.event.inputs.append_only == 'true' }}
         id: find_release
@@ -284,6 +293,10 @@ jobs:
           envsubst < .github/templates/release_notes.md > /tmp/notes_partial.md
           sed -i '/__CHANGELOG_ENTRY__/{
             r /tmp/changelog_entry.md
+            d
+          }' /tmp/notes_partial.md
+          sed -i '/__CHECKSUMS__/{
+            r /tmp/checksums.txt
             d
           }' /tmp/notes_partial.md
           mv /tmp/notes_partial.md release_notes.md
