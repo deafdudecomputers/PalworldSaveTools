@@ -260,7 +260,7 @@ jobs:
             exit 1
           fi
           echo "Found existing release: $TAG"
-      - name: Append files to existing release (no edits)
+      - name: Append files to existing release
         if: ${{ github.event.inputs.append_only == 'true' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -270,7 +270,6 @@ jobs:
             artifacts/**/* \
             --clobber
       - name: Extract changelog entry
-        if: ${{ github.event.inputs.append_only != 'true' }}
         run: |
           awk '/^#[0-9]/{if (found) exit; if ($0 == "#${{ steps.env.outputs.version }}") found=1; next} found' \
             changelogs.md > /tmp/changelog_entry.md 2>/dev/null || true
@@ -280,7 +279,6 @@ jobs:
           echo "=== Changelog entry ==="
           cat /tmp/changelog_entry.md
       - name: Render release notes from template
-        if: ${{ github.event.inputs.append_only != 'true' }}
         env:
           APP_NAME: ${{ steps.env.outputs.app_name }}
           VERSION: ${{ steps.env.outputs.version }}
@@ -302,6 +300,14 @@ jobs:
           mv /tmp/notes_partial.md release_notes.md
           echo "=== Rendered release notes ==="
           cat release_notes.md
+      - name: Update existing release notes
+        if: ${{ github.event.inputs.append_only == 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release edit "v${{ steps.env.outputs.version }}" \
+            --repo "${{ github.repository }}" \
+            --body-file release_notes.md
       - name: Create release (with notes)
         if: ${{ github.event.inputs.append_only != 'true' }}
         uses: softprops/action-gh-release@v3
