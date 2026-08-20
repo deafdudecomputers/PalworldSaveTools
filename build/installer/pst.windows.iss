@@ -1,5 +1,5 @@
 #define MyAppName "Palworld Save Tools"
-#define MyAppVersion "2.3.9"
+#define MyAppVersion "2.4.0"
 #define MyAppPublisher "Pylar"
 #define MyAppExeName "PalworldSaveTools.exe"
 #define MyAppId "{{B0E3F1A2-8C4D-4F9E-8B1A-3C5D7E9F1B2C}"

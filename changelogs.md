@@ -1,3 +1,8 @@
+#2.4.0
+- **Palpedia no longer registers the same pal more than once** — some pals could end up registered over and over, so the in-game Paldeck counted far more than the 288 catchable pals. Duplicate registrations are now cleaned up when the Palpedia is opened and when you register or unregister pals, so the counts stay exactly right.
+- **Signed releases no longer ship a bogus checksum line for the checksum file itself** — the SHA256SUMS.txt attached to signed releases included an extra entry that matched an empty file instead of the real file, which made the whole checksum list look stale or wrong. The file now lists only the actual release binaries, so every line in it can be verified against a download.
+- Bumped version to 2.4.0
+
 #2.3.9
 - **Palpedia caught-count edits no longer jump to the bottom of the list** — the Palpedia list was rebuilt from scratch every time you edited a pal's caught count, which scrolled the whole list back to the bottom (and risked a crash while old rows were still being torn down). Editing a count now updates just that pal's row in place, so the list stays exactly where you were looking.
 - **Palpedia register state stays in sync with the save** — registering, unregistering, and editing caught counts now keep the save's register flag, caught count, and capture bonus consistent with each other in a single write, so the game draws the right sphere for every pal after you edit it.

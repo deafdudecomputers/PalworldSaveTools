@@ -241,7 +241,7 @@ jobs:
         id: checksums
         run: |
           cd artifacts
-          find . -type f -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS.txt
+          find . -type f ! -name SHA256SUMS.txt -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS.txt
           cd ..
           echo "=== SHA256SUMS.txt ==="
           cat artifacts/SHA256SUMS.txt
