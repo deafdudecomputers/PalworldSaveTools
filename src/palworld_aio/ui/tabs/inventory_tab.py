@@ -1563,6 +1563,38 @@ class PalpediaPanelWidget(QFrame):
     def _set_caught_counts(self, assets, count):
         self._apply_pal_state(assets, int(count))
 
+    def _normalize_map_key(self, key):
+        return str(key or '').lower()
+
+    def _dedupe_map_prop(self, prop):
+        """Collapse duplicate keys (case-insensitive) in a MapProperty value list.
+        Keeps the last occurrence of each key, like a real map overwrite. Returns True if changed."""
+        last_index = {}
+        for i, e in enumerate(prop['value']):
+            if isinstance(e, dict):
+                kl = self._normalize_map_key(e.get('key', ''))
+                if kl:
+                    last_index[kl] = i
+        if len(last_index) == len(prop['value']):
+            return False
+        prop['value'] = [e for i, e in enumerate(prop['value'])
+                         if not isinstance(e, dict) or not self._normalize_map_key(e.get('key', ''))
+                         or last_index.get(self._normalize_map_key(e.get('key', ''))) == i]
+        return True
+
+    def _deduplicate_record_maps(self):
+        """Deduplicate the three Palpedia map properties in the loaded record and persist if changed."""
+        if not self._record_data:
+            return
+        changed = False
+        for key in ('PaldeckUnlockFlag', 'PalCaptureCount', 'PalCaptureBonusCount'):
+            prop = self._record_data.get(key)
+            if isinstance(prop, dict) and isinstance(prop.get('value'), list):
+                if self._dedupe_map_prop(prop):
+                    changed = True
+        if changed:
+            self._persist_save()
+
     def _apply_pal_state(self, assets, caught):
         if not self._player_uid or not assets:
             return
@@ -1576,6 +1608,7 @@ class PalpediaPanelWidget(QFrame):
             exp_idx = {'id': None, 'value': 0, 'type': 'IntProperty'}
             self._record_data['PalCaptureBonusExpTableIndex'] = exp_idx
         target = set(assets)
+        target_lower = {self._normalize_map_key(k) for k in target}
         registered = caught >= 1
         has_bonus = caught >= 5
 
@@ -1588,24 +1621,31 @@ class PalpediaPanelWidget(QFrame):
                     new_value.append(e)
                     continue
                 key = e.get('key', '')
-                if key in target:
+                key_lower = self._normalize_map_key(key)
+                if not key_lower:
+                    new_value.append(e)
+                    continue
+                if key_lower in target_lower:
                     if keep:
                         if e.get('value') != target_value:
                             new_value.append({'key': key, 'value': target_value})
                             changed = True
                         else:
                             new_value.append(e)
-                        present.add(key)
+                        present.add(key_lower)
                     else:
                         changed = True
                 else:
                     new_value.append(e)
             for key in target:
-                if key not in present and keep:
+                if self._normalize_map_key(key) not in present and keep:
                     new_value.append({'key': key, 'value': target_value})
                     changed = True
             return new_value, changed
 
+        self._dedupe_map_prop(deck)
+        self._dedupe_map_prop(cap)
+        self._dedupe_map_prop(bonus)
         new_deck, d_ch = _rebuild(deck, True, registered)
         new_cap, c_ch = _rebuild(cap, caught, caught > 0)
         new_bonus, b_ch = _rebuild(bonus, 5, has_bonus)
@@ -1693,6 +1733,10 @@ class PalpediaPanelWidget(QFrame):
                 sd = self._gvas.properties.get('SaveData', {}).get('value', {})
                 self._record_data = sd.get('RecordData', {}).get('value', {})
                 rd = self._record_data
+                for _key in ('PaldeckUnlockFlag', 'PalCaptureCount', 'PalCaptureBonusCount'):
+                    _prop = rd.get(_key)
+                    if isinstance(_prop, dict) and isinstance(_prop.get('value'), list):
+                        self._dedupe_map_prop(_prop)
                 cap_list = rd.get('PalCaptureCount', {}).get('value', [])
                 if isinstance(cap_list, list):
                     for e in cap_list:

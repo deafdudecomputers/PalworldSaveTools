@@ -15,6 +15,7 @@
 - **Registering a pal is now one click** — clicking the "Registered" / "Not Registered" badge on any pal row immediately toggles it, so you can build your Paldeck one pal at a time without the bulk buttons.
 - **Palpedia tooltips now match the rest of the app** — pal descriptions now render with element icons and colored tags exactly like the Pal Editor tooltips, and the caught-count / register dialogs use the same dark theme as every other input dialog.
 - **Editing a pal on a later page no longer changes a different pal on page 1** — selecting a pal on page 2 or beyond and editing it (stats, skills, etc.) used to silently apply the same edits to whatever pal sat in the matching slot on the first page, and to the same wrong slot in the Dimensional pal storage. Changes now land only on the pal you actually clicked, wherever it is in the box.
+- **Palpedia no longer registers the same pal more than once** — some pals could end up registered over and over, so the in-game Paldeck counted far more than the 288 catchable pals. Duplicate registrations are now cleaned up when the Palpedia is opened and when you register or unregister pals, so the counts stay exactly right.
 - Bumped version to 2.3.8
 
 #2.3.7
