@@ -1,6 +1,7 @@
 #2.4.0
 - **Palpedia no longer registers the same pal more than once** — some pals could end up registered over and over, so the in-game Paldeck counted far more than the 288 catchable pals. Duplicate registrations are now cleaned up when the Palpedia is opened and when you register or unregister pals, so the counts stay exactly right.
 - **Signed releases no longer ship a bogus checksum line for the checksum file itself** — the SHA256SUMS.txt attached to signed releases included an extra entry that matched an empty file instead of the real file, which made the whole checksum list look stale or wrong. The file now lists only the actual release binaries, so every line in it can be verified against a download.
+- **Rebuilding binaries for the same version refreshes the same release in place** — re-running the release build for a version that already has a release now updates that release instead of leaving a half-fresh page: the new binaries replace the old ones, the SHA256 checksums are recomputed to match them, and the release notes (checksum list and changelog) are refreshed to the latest text. The release only moves on to a new version number when the app version is actually bumped.
 - Bumped version to 2.4.0
 
 #2.3.9
