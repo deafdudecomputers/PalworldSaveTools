@@ -1,3 +1,10 @@
+#2.4.1
+- **Nudge Base now moves every building when you shift X or Y** — offsetting a base on the X or Y axis only moved the palbox itself and left all other buildings, work stations and worker spawn points behind; only Z shifts moved the whole base. Shifting on any axis now carries every structure in the camp along with it, so the entire base lands together at the new position.
+- **Rotating a base now turns it around its true center** — the rotation option in Nudge Base pivoted structures around the wrong spot, shifting the layout as it turned. The base now rotates in place around where it actually stands.
+- **Feeding medicine no longer blocks saving** — giving a pal a medicine through Feed Food produced data the app could not write back, so saving failed with an error until the change was undone. Medicines are now recorded exactly the way the game does it, saves go through cleanly, and the medicine's health regeneration actually takes effect in-game.
+- **Pals show when a medicine is still healing them** — the pal info panel's food buff row now includes a healing icon that appears whenever a pal is under a medicine's health-regeneration effect, alongside the existing attack/defense/work speed/hunger/exp food buffs.
+- Bumped version to 2.4.1
+
 #2.4.0
 - **Palpedia no longer registers the same pal more than once** — some pals could end up registered over and over, so the in-game Paldeck counted far more than the 288 catchable pals. Duplicate registrations are now cleaned up when the Palpedia is opened and when you register or unregister pals, so the counts stay exactly right.
 - **Signed releases no longer ship a bogus checksum line for the checksum file itself** — the SHA256SUMS.txt attached to signed releases included an extra entry that matched an empty file instead of the real file, which made the whole checksum list look stale or wrong. The file now lists only the actual release binaries, so every line in it can be verified against a download.

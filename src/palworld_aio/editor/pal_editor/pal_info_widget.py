@@ -382,7 +382,7 @@ class PalInfoWidget(PalInfoDisplayMixin, PalInfoHandlerMixin, QFrame):
         buff_row.addWidget(self.instance_id_lbl)
         buff_row.addStretch()
         self.buff_icons = {}
-        for key, icon_name in [('atk', 'buff_buff_02'), ('def', 'buff_buff_03'), ('ws', 'buff_buff_05'), ('hunger', 'buff_buff_08'), ('exp', 'buff_buff_11')]:
+        for key, icon_name in [('atk', 'buff_buff_02'), ('def', 'buff_buff_03'), ('ws', 'buff_buff_05'), ('hunger', 'buff_buff_08'), ('exp', 'buff_buff_11'), ('heal', 'buff_buff_10')]:
             pix = _icons._get_ui_icon_pixmap(icon_name, 16)
             lbl = QLabel()
             lbl.setFixedSize(20, 20)

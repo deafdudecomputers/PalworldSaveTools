@@ -1600,9 +1600,8 @@ def _apply_food_buff(raw, food_id):
     fb = fb_map.get(food_id, {})
     dur = fb.get('duration', 600)
     raw['Tiemr_FoodWithStatusEffect'] = {'id': None, 'type': 'IntProperty', 'value': dur}
-    has_regen = any(e.get('type') == 'Regene_Hp' for e in fb.get('effects', []))
-    if has_regen:
-        from palworld_aio.editor.pal_editor.data import _ensure_food_buff_map
+    regen_effects = [e for e in fb.get('effects', []) if str(e.get('type', '')).startswith('Regene')]
+    if regen_effects:
         raw['FoodRegeneEffectInfo'] = {
             'struct_type': 'PalFoodRegeneInfo',
             'struct_id': '00000000-0000-0000-0000-000000000000',
@@ -1612,7 +1611,25 @@ def _apply_food_buff(raw, food_id):
                 'ItemId': {'id': None, 'value': food_id, 'type': 'NameProperty'},
                 'EffectTime': {'id': None, 'value': dur, 'type': 'IntProperty'},
                 'RemainingTime': {'id': None, 'value': dur, 'type': 'IntProperty'},
-                'RegeneEfectParameters': {'array_type': 'StructProperty', 'id': None, 'value': {'prop_name': 'RegeneEfectParameters', 'prop_type': 'StructProperty', 'values': []}},
+                'RegeneEfectParameters': {
+                    'array_type': 'StructProperty',
+                    'id': None,
+                    'type': 'ArrayProperty',
+                    'value': {
+                        'prop_name': 'RegeneEfectParameters',
+                        'prop_type': 'StructProperty',
+                        'values': [
+                            {
+                                'EffectType': {'id': None, 'value': {'type': 'EPalFoodStatusEffectType', 'value': 'EPalFoodStatusEffectType::' + str(e.get('type', 'Regene_Hp'))}, 'type': 'EnumProperty'},
+                                'Value': {'id': None, 'value': int(e.get('value', 0)), 'type': 'IntProperty'},
+                                'Interval': {'id': None, 'value': int(e.get('interval', 1)), 'type': 'IntProperty'},
+                            }
+                            for e in regen_effects
+                        ],
+                        'type_name': 'PalFoodRegeneEffectParameter',
+                        'id': '00000000-0000-0000-0000-000000000000',
+                    },
+                },
             },
         }
     else:

@@ -2072,18 +2072,20 @@ class MapTab(QWidget):
             if not base_entry:
                 return False
             bt = base_entry['value']['RawData']['value']['transform']
+            ocx = bt['translation']['x']
+            ocy = bt['translation']['y']
+            def _move_pos(px, py):
+                nx, ny = _rotate_pos(ocx, ocy, px, py)
+                return (nx + dx, ny + dy)
             bt['translation']['x'] += dx
             bt['translation']['y'] += dy
             bt['translation']['z'] += dz
             _rotate_quat(bt.get('rotation'))
-            cx = bt['translation']['x']
-            cy = bt['translation']['y']
             try:
                 wd = base_entry['value']['WorkerDirector']['value']['RawData']['value']['spawn_transform']
-                if angle:
-                    sx, sy = _rotate_pos(cx, cy, wd['translation']['x'], wd['translation']['y'])
-                    wd['translation']['x'] = sx
-                    wd['translation']['y'] = sy
+                sx, sy = _move_pos(wd['translation']['x'], wd['translation']['y'])
+                wd['translation']['x'] = sx
+                wd['translation']['y'] = sy
                 wd['translation']['z'] += dz
                 _rotate_quat(wd.get('rotation'))
             except:
@@ -2097,20 +2099,18 @@ class MapTab(QWidget):
                     itc = mr.get('initital_transform_cache', {})
                     if 'translation' in itc:
                         t = itc['translation']
-                        if angle:
-                            nx, ny = _rotate_pos(cx, cy, t['x'], t['y'])
-                            t['x'] = nx
-                            t['y'] = ny
+                        nx, ny = _move_pos(t['x'], t['y'])
+                        t['x'] = nx
+                        t['y'] = ny
                         t['z'] += dz
                         _rotate_quat(itc.get('rotation'))
                         _rotate_quat(itc.get('transform', {}).get('rotation'))
                     if 'transform' in itc:
                         t2 = itc['transform'].get('translation', {})
                         if t2:
-                            if angle:
-                                nx, ny = _rotate_pos(cx, cy, t2['x'], t2['y'])
-                                t2['x'] = nx
-                                t2['y'] = ny
+                            nx, ny = _move_pos(t2['x'], t2['y'])
+                            t2['x'] = nx
+                            t2['y'] = ny
                             t2['z'] += dz
                 except:
                     pass
@@ -2124,10 +2124,9 @@ class MapTab(QWidget):
                             continue
                         tr = wr.get('transform', {})
                         if 'translation' in tr and tr['translation']:
-                            if angle:
-                                nx, ny = _rotate_pos(cx, cy, tr['translation']['x'], tr['translation']['y'])
-                                tr['translation']['x'] = nx
-                                tr['translation']['y'] = ny
+                            nx, ny = _move_pos(tr['translation']['x'], tr['translation']['y'])
+                            tr['translation']['x'] = nx
+                            tr['translation']['y'] = ny
                             tr['translation']['z'] += dz
                             _rotate_quat(tr.get('rotation'))
                     except:

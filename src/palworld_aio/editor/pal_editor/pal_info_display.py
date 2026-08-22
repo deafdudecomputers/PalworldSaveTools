@@ -187,7 +187,7 @@ class PalInfoDisplayMixin:
                         if et == 'Attack': food_atk_bonus = ev
                         elif et == 'Defense': food_def_bonus = ev
                         elif et == 'WorkSpeed': food_ws_bonus = ev
-            buff_icon_map = {'Attack': 'atk', 'Defense': 'def', 'WorkSpeed': 'ws', 'HungerResist': 'hunger', 'Exp_Increase': 'exp'}
+            buff_icon_map = {'Attack': 'atk', 'Defense': 'def', 'WorkSpeed': 'ws', 'HungerResist': 'hunger', 'Exp_Increase': 'exp', 'Regene_Hp': 'heal'}
             if hasattr(self, 'buff_icons'):
                 for bk, lbl in self.buff_icons.items():
                     et_for_key = next((et for et, bk2 in buff_icon_map.items() if bk2 == bk), None)
