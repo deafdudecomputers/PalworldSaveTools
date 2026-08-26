@@ -1742,10 +1742,9 @@ def reset_completion_screen_for_player(player_uid, parent=None):
         gvas = sav_to_gvasfile(file_path)
         sd = gvas.properties.get('SaveData', {}).get('value', {})
         rec = sd.get('RecordData', {}).get('value', {})
+        # Delete bIsGameCleared — leave quests untouched (completing all quests + deleting field is handled externally)
         if 'bIsGameCleared' in rec:
-            rec['bIsGameCleared']['value'] = False
-        else:
-            rec['bIsGameCleared'] = {'id': None, 'value': False, 'type': 'BoolProperty'}
+            del rec['bIsGameCleared']
         gvasfile_to_sav(gvas, file_path)
         return True
     except Exception:
