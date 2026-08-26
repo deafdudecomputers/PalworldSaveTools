@@ -234,6 +234,22 @@ def rebuild_all_players_pals():
                 aid['instance_id'] = id_map[str(aid['instance_id'])]
         except:
             pass
+    # PalBooth listings store the pal instance directly in
+    # ConcreteModel.trade_infos[].pal_id.instance_id. The generic
+    # container/handle patch above does not touch that array, so
+    # update it here — otherwise the market shows the old (now
+    # deleted) IDs after a player-pal rebuild.
+    for m in mapobjs:
+        try:
+            raw = m.get('ConcreteModel', {}).get('value', {}).get('RawData', {}).get('value', {})
+            if raw.get('concrete_model_type') != 'PalMapObjectPalBoothModel':
+                continue
+            for ti in raw.get('trade_infos', []) or []:
+                pid = ti.get('pal_id', {}).get('instance_id')
+                if pid and str(pid) in id_map:
+                    ti['pal_id']['instance_id'] = id_map[str(pid)]
+        except:
+            pass
     for g in gmap:
         try:
             raw = g['value']['RawData']['value']
