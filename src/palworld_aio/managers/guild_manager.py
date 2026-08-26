@@ -326,6 +326,40 @@ def rebuild_all_guilds():
                     base_container_to_guild[nu(cid)] = gid_norm
         except:
             pass
+    # Booth CharacterContainers (PalBooth) hold market pals. They are
+    # not WorkerDirector containers, so the base-worker path above
+    # misses them. Build a separate lookup so is_base pals that live
+    # in a PalBooth keep their booth container on rebuild.
+    booth_char_container_to_guild = {}
+    try:
+        map_objs = wsd.get('MapObjectSaveData', {}).get('value', {}).get('values', [])
+        for obj in map_objs:
+            try:
+                mid = obj.get('MapObjectId', {}).get('value', '')
+                if mid not in ('PalBooth', 'ItemBooth'):
+                    continue
+                m_raw = obj.get('Model', {}).get('value', {}).get('RawData', {}).get('value', {})
+                # PalBooth is owned at the MapObject group level; fall back
+                # to its base_camp's guild if needed
+                gid_norm = nu(m_raw.get('group_id_belong_to', ''))
+                if not gid_norm or gid_norm not in guild_info:
+                    base_camp_id = nu(m_raw.get('base_camp_id_belong_to', ''))
+                    for b in base_camps:
+                        if nu(b['key']) == base_camp_id:
+                            gid_norm = nu(b['value']['RawData']['value'].get('group_id_belong_to', ''))
+                            break
+                if not gid_norm or gid_norm not in guild_info:
+                    continue
+                mm = obj.get('ConcreteModel', {}).get('value', {}).get('ModuleMap', {}).get('value', [])
+                for mod in mm:
+                    if mod.get('key') == 'EPalMapObjectConcreteModelModuleType::CharacterContainer':
+                        cid = mod.get('value', {}).get('RawData', {}).get('value', {}).get('target_container_id')
+                        if cid:
+                            booth_char_container_to_guild[nu(cid)] = gid_norm
+            except:
+                continue
+    except:
+        pass
     removed_instances = set()
     guild_pal_entries = {}
     orphan_entries = []
@@ -344,7 +378,20 @@ def rebuild_all_guilds():
             gid_from_raw_norm = nu(gid_from_raw) if gid_from_raw else ''
             target_guild_norm = None
             is_base = False
-            if owner_norm and owner_norm in player_to_guild:
+            eff_norm = ''
+            # Market pals live in a PalBooth CharacterContainer — keep
+            # them in that booth even though their owner (000...01) is a
+            # guild member and would otherwise be routed to the player's
+            # palbox.
+            slot_container_norm = ''
+            try:
+                slot_container_norm = nu(sp.get('SlotId', {}).get('value', {}).get('ContainerId', {}).get('value', {}).get('ID', {}).get('value', ''))
+            except:
+                pass
+            if slot_container_norm and slot_container_norm in booth_char_container_to_guild:
+                target_guild_norm = booth_char_container_to_guild[slot_container_norm]
+                is_base = True
+            elif owner_norm and owner_norm in player_to_guild:
                 target_guild_norm = player_to_guild[owner_norm]
             else:
                 effective = ownership.get_effective_owner(inst_val, owner)
@@ -503,6 +550,14 @@ def rebuild_all_guilds():
                                     break
                         except:
                             pass
+                    # Fallback: PalBooth CharacterContainers are not
+                    # WorkerDirector containers. If the slot's container
+                    # is a booth container for this guild, keep it.
+                    if not target_cid and orig_cid_norm and orig_cid_norm in booth_char_container_to_guild:
+                        if booth_char_container_to_guild[orig_cid_norm] == gn:
+                            # Recover the original container id string with
+                            # proper UUID formatting from the slot
+                            target_cid = orig_cid
                     if not target_cid:
                         create_skip += 1
                         continue
