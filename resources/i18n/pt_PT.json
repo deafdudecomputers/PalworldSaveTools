@@ -2245,5 +2245,10 @@
     "inventory.palpedia_selected": "{count} selecionado",
     "inventory.palpedia_save_failed": "Falha ao salvar as alterações da Palpedia",
     "inventory.palpedia_click_register": "Clique para registrar",
-    "inventory.palpedia_click_unregister": "Clique para cancelar o registro"
+    "inventory.palpedia_click_unregister": "Clique para cancelar o registro",
+    "edit_pals.show_gym": "Gym",
+    "edit_pals.show_rush": "Rush",
+    "player.reset_completion_screen": "Redefinir tela de conclusão",
+    "player.reset_completion_screen.success": "Redefinição da tela de conclusão — a próxima limpeza da Árvore do Mundo mostrará a primeira limpeza da tela",
+    "player.reset_completion_screen.failed": "Falha ao redefinir a tela de conclusão"
 }

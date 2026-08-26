@@ -2117,5 +2117,10 @@
     "inventory.palpedia_selected": "{count} выбрано",
     "inventory.palpedia_save_failed": "Не удалось сохранить изменения Palpedia.",
     "inventory.palpedia_click_register": "Нажмите, чтобы зарегистрироваться",
-    "inventory.palpedia_click_unregister": "Нажмите, чтобы отменить регистрацию"
+    "inventory.palpedia_click_unregister": "Нажмите, чтобы отменить регистрацию",
+    "edit_pals.show_gym": "Gym",
+    "edit_pals.show_rush": "Rush",
+    "player.reset_completion_screen": "Экран завершения сброса",
+    "player.reset_completion_screen.success": "Сброс экрана завершения — следующее чистое мировое дерево покажет первый чистый экран",
+    "player.reset_completion_screen.failed": "Не удалось сбросить экран завершения"
 }

@@ -2121,5 +2121,10 @@
     "inventory.palpedia_selected": "已选择 {count}",
     "inventory.palpedia_save_failed": "无法保存 Palpedia 更改",
     "inventory.palpedia_click_register": "点击注册",
-    "inventory.palpedia_click_unregister": "点击取消注册"
+    "inventory.palpedia_click_unregister": "点击取消注册",
+    "edit_pals.show_gym": "Gym",
+    "edit_pals.show_rush": "Rush",
+    "player.reset_completion_screen": "重置完成屏幕",
+    "player.reset_completion_screen.success": "完成屏幕重置—下一个世界树清除将显示第一清除屏幕",
+    "player.reset_completion_screen.failed": "重置完成屏幕失败"
 }

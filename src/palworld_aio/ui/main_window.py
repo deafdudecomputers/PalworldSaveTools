@@ -23,7 +23,7 @@ from palworld_aio.widgets.toggle_check import ToggleCheckBtn
 from palworld_aio.utils import as_uuid
 from palworld_aio.managers.save_manager import save_manager
 from palworld_aio.managers.data_manager import get_guilds, get_guild_members, get_bases, delete_guild, delete_player, load_exclusions, save_exclusions, delete_base_camp
-from palworld_aio.managers.func_manager import delete_empty_guilds, delete_inactive_players, delete_inactive_bases, delete_duplicated_players, delete_imported_pals, delete_unreferenced_data, delete_non_base_map_objects, delete_invalid_structure_map_objects, delete_all_skins, unlock_all_private_chests, remove_invalid_items_from_save, remove_invalid_pals_from_save, remove_invalid_passives_from_save, fix_missions, reset_anti_air_turrets, reset_dungeons, reset_oilrig, reset_invader, reset_supply, reset_lock_gimmick, unlock_viewing_cage_for_player, fix_all_negative_timestamps, reset_selected_player_timestamp, detect_and_trim_overfilled_inventories, unlock_all_technologies_for_player, unlock_all_lab_research_for_guild, modify_container_slots, modify_all_player_slots, modify_all_guild_chest_slots, fix_unassigned_pals, restore_all_pals, fix_all_pals_combined, max_all_pals, fix_illegal_pals_in_save, fix_illegal_player_stats, repair_structures, repair_items, edit_game_days, scan_illegal_pals_by_owner, scan_illegal_players_by_stats, fix_invalid_pal_active_skills
+from palworld_aio.managers.func_manager import delete_empty_guilds, delete_inactive_players, delete_inactive_bases, delete_duplicated_players, delete_imported_pals, delete_unreferenced_data, delete_non_base_map_objects, delete_invalid_structure_map_objects, delete_all_skins, unlock_all_private_chests, remove_invalid_items_from_save, remove_invalid_pals_from_save, remove_invalid_passives_from_save, fix_missions, reset_anti_air_turrets, reset_dungeons, reset_oilrig, reset_invader, reset_supply, reset_lock_gimmick, unlock_viewing_cage_for_player, fix_all_negative_timestamps, reset_selected_player_timestamp, reset_completion_screen_for_player, detect_and_trim_overfilled_inventories, unlock_all_technologies_for_player, unlock_all_lab_research_for_guild, modify_container_slots, modify_all_player_slots, modify_all_guild_chest_slots, fix_unassigned_pals, restore_all_pals, fix_all_pals_combined, max_all_pals, fix_illegal_pals_in_save, fix_illegal_player_stats, repair_structures, repair_items, edit_game_days, scan_illegal_pals_by_owner, scan_illegal_players_by_stats, fix_invalid_pal_active_skills
 from palworld_aio.managers.guild_manager import move_player_to_guild, rebuild_all_guilds, make_member_leader, rename_guild, set_guild_level
 from palworld_aio.managers.base_manager import export_base_json, import_base_json, clone_base_complete, update_base_area_range, get_last_import_audit
 from palworld_aio.managers.backup_manager import export_base_backup, load_base_file, compress_to_pst3
@@ -1190,6 +1190,7 @@ class MainWindow(QMainWindow):
         menu.add_action(self._create_action(t('player.rename.menu'), lambda: self._rename_player(item.text(4), item.text(0))))
         menu.add_action(self._create_action(t('player.viewing_cage.menu'), lambda: self._unlock_viewing_cage(item.text(4))))
         menu.add_action(self._create_action(t('player.reset_timestamp.menu') if t else 'Reset Timestamp', lambda: self._reset_player_timestamp(item.text(4))))
+        menu.add_action(self._create_action(t('player.reset_completion_screen') if t else 'Reset Completion Screen', lambda: self._reset_completion_screen(item.text(4))))
         menu.add_action(self._create_action(t('player.unlock_technologies.menu') if t else 'Unlock All Technologies', lambda: self._unlock_all_technologies_for_player(item.text(4))))
         menu.addSeparator()
         menu.add_action(self._create_action('Set Player Level' if not t else t('player.set_level'), lambda: self._set_player_level(item.text(4))))
@@ -1244,6 +1245,7 @@ class MainWindow(QMainWindow):
         menu.add_action(self._create_action(t('deletion.ctx.delete_player'), lambda: self._delete_player(item.text(4))))
         menu.add_action(self._create_action(t('player.rename.menu'), lambda: self._rename_player(item.text(4), item.text(0).replace('[L]', ''))))
         menu.add_action(self._create_action(t('player.reset_timestamp.menu') if t else 'Reset Timestamp', lambda: self._reset_player_timestamp(item.text(4))))
+        menu.add_action(self._create_action(t('player.reset_completion_screen') if t else 'Reset Completion Screen', lambda: self._reset_completion_screen(item.text(4))))
         menu.add_sep()
         menu.add_action(self._create_action('Set Player Level' if not t else t('player.set_level'), lambda: self._set_player_level(item.text(4))))
         result = menu.exec(self.guild_members_panel.tree.viewport().mapToGlobal(pos))
@@ -1816,6 +1818,12 @@ class MainWindow(QMainWindow):
             self._show_info(t('Done') if t else 'Done', t('timestamps.player_reset') if t else 'Player timestamp reset to current time')
         else:
             self._show_warning(t('Error') if t else 'Error', t('timestamps.reset_failed') if t else 'Failed to reset player timestamp')
+    def _reset_completion_screen(self, uid):
+        if reset_completion_screen_for_player(uid, self):
+            self.refresh_all()
+            self._show_info(t('Done') if t else 'Done', t('player.reset_completion_screen.success') if t else 'Completion screen reset — next World Tree clear will show first-clear screen')
+        else:
+            self._show_warning(t('Error') if t else 'Error', t('player.reset_completion_screen.failed') if t else 'Failed to reset completion screen')
     def _open_paldefender(self):
         if not constants.loaded_level_json:
             self._show_warning(t('Error'), t('error.no_save_loaded'))

@@ -1,6 +1,7 @@
 #2.4.2
 - **Nudge Palbox rotation now works with or without moving** — rotating the Palbox with no X/Y/Z offset did nothing, and even with an offset the Palbox kept its old facing. Every combination of X, Y, Z, and rotation now applies correctly so the Palbox turns as expected.
 - **Rebuilding pals keeps Pal Market stock** — rebuilding guilds or all player pals gave pals new IDs but left the Pal Market's listed stock and its container behind, so the market appeared empty or broken. Market pals are now kept in their booth container and the booth's trade list is relinked to the new IDs, so the market stays intact. Thanks to palheim.net for the report.
+- **Gym and Rush pal filters** — the pal pickers in Create Pal, Bulk Clone and Bulk Delete now have Gym (`gym_` pals) and Rush (`_bossrush` pals) toggles alongside Standard, Predator, Boss and NPC, so you can filter the 21 Gym and 8 Rush pals separately.
 - Bumped version to 2.4.2
 
 #2.4.1

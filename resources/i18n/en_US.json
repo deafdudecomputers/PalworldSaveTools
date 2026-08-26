@@ -2406,5 +2406,10 @@
     "inventory.palpedia_selected": "{count} selected",
     "inventory.palpedia_save_failed": "Failed to save Palpedia changes",
     "inventory.palpedia_click_register": "Click to register",
-    "inventory.palpedia_click_unregister": "Click to unregister"
+    "inventory.palpedia_click_unregister": "Click to unregister",
+    "edit_pals.show_gym": "Gym",
+    "edit_pals.show_rush": "Rush",
+    "player.reset_completion_screen": "Reset Completion Screen",
+    "player.reset_completion_screen.success": "Completion screen reset — next World Tree clear will show first-clear screen",
+    "player.reset_completion_screen.failed": "Failed to reset completion screen"
 }

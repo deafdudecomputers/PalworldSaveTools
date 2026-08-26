@@ -1731,6 +1731,25 @@ def reset_selected_player_timestamp(player_uid, parent=None):
         return True
     except Exception as e:
         return False
+def reset_completion_screen_for_player(player_uid, parent=None):
+    if not constants.current_save_path:
+        return False
+    player_id = str(player_uid).replace('-', '').upper()
+    file_path = os.path.join(constants.current_save_path, 'Players', f'{player_id.zfill(32)}.sav')
+    if not os.path.exists(file_path):
+        return False
+    try:
+        gvas = sav_to_gvasfile(file_path)
+        sd = gvas.properties.get('SaveData', {}).get('value', {})
+        rec = sd.get('RecordData', {}).get('value', {})
+        if 'bIsGameCleared' in rec:
+            rec['bIsGameCleared']['value'] = False
+        else:
+            rec['bIsGameCleared'] = {'id': None, 'value': False, 'type': 'BoolProperty'}
+        gvasfile_to_sav(gvas, file_path)
+        return True
+    except Exception:
+        return False
 def remove_invalid_passives_from_save(parent=None):
     base_dir = constants.get_base_path()
     valid_passives = set()

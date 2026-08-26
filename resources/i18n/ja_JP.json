@@ -2119,5 +2119,10 @@
     "inventory.palpedia_selected": "{count} が選択されました",
     "inventory.palpedia_save_failed": "Palpedia の変更を保存できませんでした",
     "inventory.palpedia_click_register": "クリックして登録",
-    "inventory.palpedia_click_unregister": "クリックして登録を解除します"
+    "inventory.palpedia_click_unregister": "クリックして登録を解除します",
+    "edit_pals.show_gym": "Gym",
+    "edit_pals.show_rush": "Rush",
+    "player.reset_completion_screen": "完了画面をリセット",
+    "player.reset_completion_screen.success": "完了画面のリセット—次のワールドツリークリアには最初にクリアされた画面が表示されます",
+    "player.reset_completion_screen.failed": "完了画面のリセットに失敗しました"
 }

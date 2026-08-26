@@ -13,23 +13,9 @@ except ImportError:
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 LANGUAGES = {'zh_CN': {'name': 'Simplified Chinese', 'code': 'zh-CN'}, 'de_DE': {'name': 'German', 'code': 'de'}, 'es_ES': {'name': 'Spanish', 'code': 'es'}, 'fr_FR': {'name': 'French', 'code': 'fr'}, 'ru_RU': {'name': 'Russian', 'code': 'ru'}, 'ja_JP': {'name': 'Japanese', 'code': 'ja'}, 'ko_KR': {'name': 'Korean', 'code': 'ko'}, 'pt_BR': {'name': 'Portuguese (Brazil)', 'code': 'pt'}, 'pt_PT': {'name': 'Portuguese (Portugal)', 'code': 'pt'}}
 NEW_TRANSLATIONS = {
-    'modify_all_guild_chest_slots_prompt': 'Enter new slot count for all guild chests:',
-    'deletion.unreferenced_result': 'Removed {characters} players, {pals} pals, {guilds} guilds\nRemoved {broken_objects} broken objects, {dropped_items} dropped items\nRemoved {treasure_dupes} duplicate treasure chests, {orphaned_containers} orphaned containers',
-    'inventory.palpedia': 'Palpedia',
-    'inventory.palpedia_registered': 'Registered',
-    'inventory.palpedia_not_registered': 'Not Registered',
-    'inventory.palpedia_summary': 'Registered {registered}/{total}   \u2022   Total Caught {caught}',
-    'inventory.palpedia_no_player': 'Select a player to view their Palpedia',
-    'inventory.palpedia_search': 'Search pals...',
-    'inventory.palpedia_register_all': 'Register All',
-    'inventory.palpedia_unregister_all': 'Unregister All',
-    'inventory.palpedia_caught_all': 'Caught All',
-    'inventory.palpedia_edit_caught': 'Edit Caught Count',
-    'inventory.palpedia_caught_count_prompt': 'Set caught count:',
-    'inventory.palpedia_selected': '{count} selected',
-    'inventory.palpedia_save_failed': 'Failed to save Palpedia changes',
-    'inventory.palpedia_click_register': 'Click to register',
-    'inventory.palpedia_click_unregister': 'Click to unregister',
+    'player.reset_completion_screen': 'Reset Completion Screen',
+    'player.reset_completion_screen.success': 'Completion screen reset — next World Tree clear will show first-clear screen',
+    'player.reset_completion_screen.failed': 'Failed to reset completion screen',
 }
 OLD_KEYS = []
 def _clean_uv_locks():
@@ -56,6 +42,17 @@ def add_english_keys():
         data[key] = english_text
     with open(lang_file, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
+def _google_code(lang_code: str) -> str:
+    # deep_translator Google codes are in LANGUAGES[].code already
+    return LANGUAGES[lang_code]['code']
+
+def _mymemory_code(lang_code: str) -> str:
+    mapping = {
+        'zh_CN': 'zh-CN', 'de_DE': 'de-DE', 'es_ES': 'es-ES', 'fr_FR': 'fr-FR',
+        'ru_RU': 'ru-RU', 'ja_JP': 'ja-JP', 'ko_KR': 'ko-KR', 'pt_BR': 'pt-BR', 'pt_PT': 'pt-PT',
+    }
+    return mapping.get(lang_code, LANGUAGES[lang_code]['code'])
+
 def translate_text(text: str, target_lang: str) -> str:
     import re
     placeholders = re.findall(r'\{[^}]+\}', text)
@@ -65,11 +62,43 @@ def translate_text(text: str, target_lang: str) -> str:
         tok = f'__PH{i}__'
         tokens[tok] = ph
         protected = protected.replace(ph, tok, 1)
-    translator = GoogleTranslator(source='en', target=target_lang)
-    translated = translator.translate(protected)
-    for tok, ph in tokens.items():
-        translated = translated.replace(tok, ph)
-    return translated
+
+    last_exc = None
+    # 1) Try Google
+    try:
+        translator = GoogleTranslator(source='en', target=target_lang)
+        translated = translator.translate(protected)
+        if translated and translated.strip() and translated.strip() != protected.strip():
+            for tok, ph in tokens.items():
+                translated = translated.replace(tok, ph)
+            return translated
+        # Google may return same text for some single-word translations (e.g. Gym -> Gym) and deep_translator treats that as error;
+        # if we got here with same text, treat as success if non-empty
+        if translated and translated.strip():
+            for tok, ph in tokens.items():
+                translated = translated.replace(tok, ph)
+            return translated
+    except Exception as e:
+        last_exc = e
+        # fall through to MyMemory
+
+    # 2) Fallback: MyMemory
+    try:
+        from deep_translator import MyMemoryTranslator
+        # MyMemory needs full locale like en-US -> de-DE
+        mymem_target = _mymemory_code(target_lang) if target_lang in LANGUAGES else target_lang
+        # MyMemory autodetects source, use en-US
+        translator2 = MyMemoryTranslator(source='en-US', target=mymem_target)
+        translated2 = translator2.translate(protected)
+        if translated2 and translated2.strip():
+            for tok, ph in tokens.items():
+                translated2 = translated2.replace(tok, ph)
+            return translated2
+    except Exception as e:
+        last_exc = e
+
+    raise RuntimeError(f'No translation was found for \"{text}\" -> {target_lang} (last: {last_exc})')
+
 def add_keys_to_language(lang_code: str, lang_info: dict) -> bool:
     try:
         lang_file = PROJECT_ROOT / 'resources' / 'i18n' / f'{lang_code}.json'
@@ -77,12 +106,18 @@ def add_keys_to_language(lang_code: str, lang_info: dict) -> bool:
             data = json.load(f)
         had_failure = False
         for key, english_text in NEW_TRANSLATIONS.items():
+            # Skip if key already has a non-English translation and we are not forcing overwrite?
+            # Always try to translate; on failure, keep existing value and report failure — never write English fallback for non-en_US.
             try:
-                translated = translate_text(english_text, lang_info['code'])
+                translated = translate_text(english_text, lang_code)
                 data[key] = translated
             except Exception as e:
-                print(f'  [WARN] {key}: translate failed ({e}), using English fallback')
-                data[key] = english_text
+                print(f'  [WARN] {key} ({lang_code}): translate failed ({e}), keeping existing / skipping')
+                # Do not overwrite with English — keep existing translation if present, otherwise skip
+                if key not in data:
+                    # No existing translation, leave absent so it can be handled manually — do not create English entry
+                    had_failure = True
+                    continue
                 had_failure = True
         with open(lang_file, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=4)

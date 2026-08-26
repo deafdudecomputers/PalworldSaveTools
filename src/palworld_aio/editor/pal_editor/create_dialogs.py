@@ -821,6 +821,14 @@ class PalCreateDialog(QDialog):
         self._show_npc_chk.setChecked(True)
         self._show_npc_chk.toggled.connect(self._filter_pal_list)
         filter_layout.addWidget(self._show_npc_chk)
+        self._show_gym_chk = ToggleCheckBtn(t('edit_pals.show_gym') if t else 'Gym')
+        self._show_gym_chk.setChecked(True)
+        self._show_gym_chk.toggled.connect(self._filter_pal_list)
+        filter_layout.addWidget(self._show_gym_chk)
+        self._show_rush_chk = ToggleCheckBtn(t('edit_pals.show_rush') if t else 'Rush')
+        self._show_rush_chk.setChecked(True)
+        self._show_rush_chk.toggled.connect(self._filter_pal_list)
+        filter_layout.addWidget(self._show_rush_chk)
         filter_layout.addStretch()
         layout.addLayout(filter_layout)
         self.pal_list = QListWidget()
@@ -952,6 +960,8 @@ class PalCreateDialog(QDialog):
         show_predator = self._show_predator_chk.isChecked() if hasattr(self, '_show_predator_chk') else False
         show_boss = self._show_boss_chk.isChecked() if hasattr(self, '_show_boss_chk') else False
         show_npc = self._show_npc_chk.isChecked() if hasattr(self, '_show_npc_chk') else True
+        show_gym = self._show_gym_chk.isChecked() if hasattr(self, '_show_gym_chk') else True
+        show_rush = self._show_rush_chk.isChecked() if hasattr(self, '_show_rush_chk') else True
         self.pal_list.setUpdatesEnabled(False)
         self.pal_list.setItemDelegate(None)
         while self.pal_list.count():
@@ -962,16 +972,22 @@ class PalCreateDialog(QDialog):
             asset_lower = asset.lower()
             if search_text and search_text not in name.lower() and (search_text not in asset.lower()):
                 continue
+            is_gym = asset_lower.startswith('gym_')
+            is_rush = '_bossrush' in asset_lower
             is_predator = asset.upper().startswith('PREDATOR_')
-            is_boss = any((asset.upper().startswith(p) for p in _data._BOSS_PREFIXES)) and not is_predator
+            is_boss = any((asset.upper().startswith(p) for p in _data._BOSS_PREFIXES)) and not is_predator and not is_gym and not is_rush
             is_npc = asset_lower in self._npc_assets
+            if is_gym and not show_gym:
+                continue
+            if is_rush and not show_rush:
+                continue
             if is_predator and not show_predator:
                 continue
             if is_boss and not show_boss:
                 continue
             if is_npc and not show_npc:
                 continue
-            if (not is_predator and not is_boss and not is_npc) and not show_standard:
+            if (not is_predator and not is_boss and not is_npc and not is_gym and not is_rush) and not show_standard:
                 continue
             pal_icon_path = _icons._get_pal_icon_path(asset)
             lower_basename = os.path.basename(pal_icon_path).lower()
@@ -1166,6 +1182,14 @@ class BulkSpeciesDialog(FramelessDialog):
         self._show_npc_chk.setChecked(True)
         self._show_npc_chk.toggled.connect(self._rebuild_grid)
         filter_row.addWidget(self._show_npc_chk)
+        self._show_gym_chk = ToggleCheckBtn(t('edit_pals.show_gym') if t else 'Gym')
+        self._show_gym_chk.setChecked(True)
+        self._show_gym_chk.toggled.connect(self._rebuild_grid)
+        filter_row.addWidget(self._show_gym_chk)
+        self._show_rush_chk = ToggleCheckBtn(t('edit_pals.show_rush') if t else 'Rush')
+        self._show_rush_chk.setChecked(True)
+        self._show_rush_chk.toggled.connect(self._rebuild_grid)
+        filter_row.addWidget(self._show_rush_chk)
         filter_row.addStretch()
         left_col.addLayout(filter_row)
         pal_scroll = QScrollArea()
@@ -1248,22 +1272,30 @@ class BulkSpeciesDialog(FramelessDialog):
         show_predator = self._show_predator_chk.isChecked() if hasattr(self, '_show_predator_chk') else False
         show_boss = self._show_boss_chk.isChecked() if hasattr(self, '_show_boss_chk') else False
         show_npc = self._show_npc_chk.isChecked() if hasattr(self, '_show_npc_chk') else True
+        show_gym = self._show_gym_chk.isChecked() if hasattr(self, '_show_gym_chk') else True
+        show_rush = self._show_rush_chk.isChecked() if hasattr(self, '_show_rush_chk') else True
         from .data import _BOSS_PREFIXES
         result = []
         for cid_upper in self._species_map:
             name = resolve_name(cid_upper, PalFrame._NAMEMAP) or cid_upper
             if search and search not in name.lower() and search not in cid_upper.lower():
                 continue
+            is_gym = cid_upper.lower().startswith('gym_')
+            is_rush = '_bossrush' in cid_upper.lower()
             is_predator = cid_upper.startswith('PREDATOR_')
-            is_boss = any(cid_upper.startswith(p) for p in _BOSS_PREFIXES) and not is_predator
+            is_boss = any(cid_upper.startswith(p) for p in _BOSS_PREFIXES) and not is_predator and not is_gym and not is_rush
             is_npc = cid_upper.lower() in getattr(self, '_npc_set', set())
+            if is_gym and not show_gym:
+                continue
+            if is_rush and not show_rush:
+                continue
             if is_predator and not show_predator:
                 continue
             if is_boss and not show_boss:
                 continue
             if is_npc and not show_npc:
                 continue
-            if (not is_predator and not is_boss and not is_npc) and not show_standard:
+            if (not is_predator and not is_boss and not is_npc and not is_gym and not is_rush) and not show_standard:
                 continue
             pals = self._species_map[cid_upper]
             result.append((name, cid_upper, len(pals), is_boss, is_predator))

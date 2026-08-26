@@ -117,6 +117,14 @@ class PlayerPalActionDialog(QDialog):
         self._show_npc_chk.setChecked(True)
         self._show_npc_chk.toggled.connect(self._search_pals)
         search_bar_layout.addWidget(self._show_npc_chk)
+        self._show_gym_chk = ToggleCheckBtn(t('edit_pals.show_gym') if t else 'Gym')
+        self._show_gym_chk.setChecked(True)
+        self._show_gym_chk.toggled.connect(self._search_pals)
+        search_bar_layout.addWidget(self._show_gym_chk)
+        self._show_rush_chk = ToggleCheckBtn(t('edit_pals.show_rush') if t else 'Rush')
+        self._show_rush_chk.setChecked(True)
+        self._show_rush_chk.toggled.connect(self._search_pals)
+        search_bar_layout.addWidget(self._show_rush_chk)
         search_bar_layout.addStretch()
         search_layout.addLayout(search_bar_layout)
         self.pal_list = QListWidget()
@@ -298,16 +306,22 @@ class PlayerPalActionDialog(QDialog):
             del item
         for asset, name in sorted(PalFrame._NAMEMAP.items(), key=lambda x: x[1]):
             asset_lower = asset.lower()
+            is_gym = asset_lower.startswith('gym_')
+            is_rush = '_bossrush' in asset_lower
             is_predator = asset.upper().startswith('PREDATOR_')
-            is_boss = any((asset.upper().startswith(p) for p in _BOSS_PREFIXES)) and not is_predator
+            is_boss = any((asset.upper().startswith(p) for p in _BOSS_PREFIXES)) and not is_predator and not is_gym and not is_rush
             is_npc = asset_lower not in PalFrame._PALMAP
+            if is_gym and not self._show_gym_chk.isChecked():
+                continue
+            if is_rush and not self._show_rush_chk.isChecked():
+                continue
             if is_predator and not self._show_predator_chk.isChecked():
                 continue
             if is_boss and not self._show_boss_chk.isChecked():
                 continue
             if is_npc and not self._show_npc_chk.isChecked():
                 continue
-            if (not is_predator and not is_boss and not is_npc) and not self._show_standard_chk.isChecked():
+            if (not is_predator and not is_boss and not is_npc and not is_gym and not is_rush) and not self._show_standard_chk.isChecked():
                 continue
             if query_lower and query_lower not in name.lower() and (query_lower not in asset.lower()):
                 continue

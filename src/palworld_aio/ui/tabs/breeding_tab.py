@@ -74,6 +74,10 @@ class _SelectPalDialog(PalCreateDialog):
             self._show_boss_chk.hide()
         if hasattr(self, '_show_npc_chk'):
             self._show_npc_chk.hide()
+        if hasattr(self, '_show_gym_chk'):
+            self._show_gym_chk.hide()
+        if hasattr(self, '_show_rush_chk'):
+            self._show_rush_chk.hide()
         if hasattr(self, '_nickname_label'):
             self._nickname_label.hide()
         if hasattr(self, 'nick_edit'):
@@ -91,6 +95,8 @@ class _SelectPalDialog(PalCreateDialog):
         show_predator = self._show_predator_chk.isChecked() if hasattr(self, '_show_predator_chk') else True
         show_boss = self._show_boss_chk.isChecked() if hasattr(self, '_show_boss_chk') else True
         show_npc = self._show_npc_chk.isChecked() if hasattr(self, '_show_npc_chk') else True
+        show_gym = self._show_gym_chk.isChecked() if hasattr(self, '_show_gym_chk') else True
+        show_rush = self._show_rush_chk.isChecked() if hasattr(self, '_show_rush_chk') else True
         self.pal_list.setUpdatesEnabled(False)
         while self.pal_list.count():
             item = self.pal_list.takeItem(0)
@@ -103,16 +109,22 @@ class _SelectPalDialog(PalCreateDialog):
             if search_text and search_text not in name.lower() and search_text not in asset.lower():
                 continue
             asset_lower = asset.lower()
+            is_gym = asset_lower.startswith('gym_')
+            is_rush = '_bossrush' in asset_lower
             is_predator = asset.upper().startswith('PREDATOR_')
-            is_boss = any(asset.upper().startswith(p) for p in _BOSS_PREFIXES) and not is_predator
+            is_boss = any(asset.upper().startswith(p) for p in _BOSS_PREFIXES) and not is_predator and not is_gym and not is_rush
             is_npc = asset_lower in self._npc_assets
+            if is_gym and not show_gym:
+                continue
+            if is_rush and not show_rush:
+                continue
             if is_predator and not show_predator:
                 continue
             if is_boss and not show_boss:
                 continue
             if is_npc and not show_npc:
                 continue
-            if (not is_predator and not is_boss and not is_npc) and not show_standard:
+            if (not is_predator and not is_boss and not is_npc and not is_gym and not is_rush) and not show_standard:
                 continue
             pal_icon_path = _get_pal_icon_path(asset)
             lower_basename = os.path.basename(pal_icon_path).lower()

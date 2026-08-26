@@ -2101,5 +2101,10 @@
     "inventory.palpedia_selected": "{count} sélectionné",
     "inventory.palpedia_save_failed": "Échec de l'enregistrement des modifications Palpedia",
     "inventory.palpedia_click_register": "Cliquez pour vous inscrire",
-    "inventory.palpedia_click_unregister": "Cliquez pour vous désinscrire"
+    "inventory.palpedia_click_unregister": "Cliquez pour vous désinscrire",
+    "edit_pals.show_gym": "Gym",
+    "edit_pals.show_rush": "Rush",
+    "player.reset_completion_screen": "Écran Réinitialiser l'achèvement",
+    "player.reset_completion_screen.success": "Réinitialisation de l'écran d'achèvement — le prochain World Tree Clear affichera le premier écran clair",
+    "player.reset_completion_screen.failed": "Échec de la réinitialisation de l'écran d'"
 }

@@ -2143,5 +2143,10 @@
     "inventory.palpedia_selected": "{count} ausgewählt",
     "inventory.palpedia_save_failed": "Palpedia-Änderungen konnten nicht gespeichert werden",
     "inventory.palpedia_click_register": "Klicken Sie hier, um sich zu registrieren",
-    "inventory.palpedia_click_unregister": "Klicken Sie hier, um die Registrierung aufzuheben"
+    "inventory.palpedia_click_unregister": "Klicken Sie hier, um die Registrierung aufzuheben",
+    "edit_pals.show_gym": "Gym",
+    "edit_pals.show_rush": "Rush",
+    "player.reset_completion_screen": "Abschlussbildschirm zurücksetzen",
+    "player.reset_completion_screen.success": "Zurücksetzen des Abschlussbildschirms — beim nächsten Löschen des Weltbaums wird der erste Löschbildschirm angezeigt",
+    "player.reset_completion_screen.failed": "Fehler beim Zurücksetzen des Abschlussbildschirms"
 }
