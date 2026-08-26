@@ -2153,9 +2153,25 @@ class MapTab(QWidget):
         dialog.setWindowTitle(t('base.palbox_nudge') if t else 'Nudge Palbox')
         if dialog.exec() != QDialog.Accepted:
             return
-        dx, dy, dz, _ = dialog.result_value
-        if dx == 0 and dy == 0 and dz == 0:
+        dx, dy, dz, angle = dialog.result_value
+        if dx == 0 and dy == 0 and dz == 0 and angle == 0:
             return
+        import math
+        def _rotate_quat(rot):
+            if not rot or angle == 0:
+                return rot
+            ha = math.radians(angle) / 2
+            sin_a = math.sin(ha)
+            cos_a = math.cos(ha)
+            qx = rot.get('x', 0.0)
+            qy = rot.get('y', 0.0)
+            qz = rot.get('z', 0.0)
+            qw = rot.get('w', 1.0)
+            rot['x'] = cos_a * qx - sin_a * qy
+            rot['y'] = sin_a * qx + cos_a * qy
+            rot['z'] = cos_a * qz + sin_a * qw
+            rot['w'] = cos_a * qw - sin_a * qz
+            return rot
         def task():
             bid = str(base_data['base_id']).replace('-', '').lower()
             wsd = constants.loaded_level_json['properties']['worldSaveData']['value']
@@ -2178,6 +2194,8 @@ class MapTab(QWidget):
                             t2['x'] += dx
                             t2['y'] += dy
                             t2['z'] += dz
+                    _rotate_quat(itc.get('rotation'))
+                    _rotate_quat(itc.get('transform', {}).get('rotation'))
                     break
                 except:
                     continue

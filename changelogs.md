@@ -1,3 +1,7 @@
+#2.4.2
+- **Nudge Palbox rotation now works with or without moving** — rotating the Palbox with no X/Y/Z offset did nothing, and even with an offset the Palbox kept its old facing. Every combination of X, Y, Z, and rotation now applies correctly so the Palbox turns as expected.
+- Bumped version to 2.4.2
+
 #2.4.1
 - **Nudge Base now moves every building when you shift X or Y** — offsetting a base on the X or Y axis only moved the palbox itself and left all other buildings, work stations and worker spawn points behind; only Z shifts moved the whole base. Shifting on any axis now carries every structure in the camp along with it, so the entire base lands together at the new position.
 - **Rotating a base now turns it around its true center** — the rotation option in Nudge Base pivoted structures around the wrong spot, shifting the layout as it turned. The base now rotates in place around where it actually stands.
