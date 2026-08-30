@@ -2,6 +2,7 @@ import os
 import json
 import re
 from palsav import json_tools
+from i18n import get_language
 import sys
 from resource_resolver import resource_path
 import uuid
@@ -9,6 +10,7 @@ from PySide6.QtGui import QPixmap, QIcon
 from PySide6.QtCore import QSize, Qt
 from typing import Optional, Dict, List, Any
 from palworld_aio import constants
+from palworld_aio.game_localization import localize_game_data
 from palworld_aio.utils import sav_to_gvasfile, gvasfile_to_sav, as_uuid, are_equal_uuids, fast_deepcopy
 from palworld_aio.inventory.dynamic_item_manager import get_dynamic_item_manager, generate_dynamic_item_uuid
 from palworld_aio.inventory.standardized_container import StandardizedContainer, ContainerSlot
@@ -36,6 +38,7 @@ def is_effigy_item(item_id):
 class ItemData:
     _instance = None
     _item_data = None
+    _item_data_language = None
     _icon_cache = {}
     _asset_to_item = {}
     _asset_to_item_lower = {}
@@ -47,12 +50,15 @@ class ItemData:
         return cls._instance
     @classmethod
     def load_item_data(cls):
-        if cls._item_data is not None:
+        language = get_language()
+        if cls._item_data is not None and cls._item_data_language == language:
             return cls._item_data
         base_path = constants.get_base_path()
         item_file = resource_path(base_path, 'game_data', 'items.json')
         try:
-            cls._item_data = json_tools.load(item_file).get('items', [])
+            item_data = localize_game_data(json_tools.load(item_file), 'items.json')
+            cls._item_data = item_data.get('items', [])
+            cls._item_data_language = language
             cls._asset_to_item = {item['asset']: item for item in cls._item_data}
             cls._asset_to_item_lower = {item['asset'].lower(): item for item in cls._item_data}
             cls._asset_to_typea = {item['asset']: item.get('type_a', '') for item in cls._item_data if item.get('type_a')}
@@ -60,6 +66,7 @@ class ItemData:
             return cls._item_data
         except Exception as e:
             cls._item_data = []
+            cls._item_data_language = language
             return cls._item_data
     @classmethod
     def _friendly_name(cls, asset_name: str) -> str:

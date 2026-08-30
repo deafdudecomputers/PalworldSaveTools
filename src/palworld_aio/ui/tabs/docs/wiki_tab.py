@@ -7,8 +7,9 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QPixmap, QIcon, QCursor, QPainter, QColor, QBrush
-from i18n import t
+from i18n import get_language, t
 from palworld_aio import constants
+from palworld_aio.game_localization import localize_game_data
 from palworld_aio.editor.pal_editor.icons import _get_element_pixmap
 from palworld_aio.editor.pal_editor.data import get_paldeck_pals
 from resource_resolver import resource_path
@@ -123,13 +124,28 @@ _FILTER_BTN_S = (
 
 _LIST_ICON = 28
 
+_wiki_cache_language = None
+
+
+def _sync_wiki_language_caches():
+    global _wiki_cache_language, _item_names, _pals_cache, _skill_names
+    language = get_language()
+    if language == _wiki_cache_language:
+        return
+    _wiki_cache_language = language
+    _item_names = None
+    _pals_cache = None
+    _skill_names = None
+
 def _load_json(filename, key):
+    _sync_wiki_language_caches()
     base_dir = constants.get_base_path()
     fp = resource_path(base_dir, 'game_data', filename)
     if not os.path.exists(fp):
         return []
     with open(fp, 'r', encoding='utf-8') as f:
         data = json.load(f)
+    data = localize_game_data(data, filename)
     return data.get(key, [])
 
 def _icon(icon_path, size=_LIST_ICON):
@@ -994,7 +1010,7 @@ class WikiDetailPanel(QScrollArea):
                 rl = QLabel()
                 rl.setPixmap(rp)
                 rl.setFixedSize(36, 36)
-                rl.setToolTip(f'Rank {rank}')
+                rl.setToolTip(t('passive.rank.value', rank=rank))
                 hl.addWidget(rl)
         nw = QWidget()
         nl = QVBoxLayout(nw)
@@ -1196,6 +1212,7 @@ class WikiCategoryPage(QWidget):
         self._cat = category_id
         self._all_data = []
         self._loaded = False
+        self._loaded_language = None
         self._config = _CATEGORY_CONFIG.get(category_id, {})
         self._sort_by = 'paldeck' if category_id == 'pals' else None
         self._sort_reverse = False
@@ -1337,6 +1354,7 @@ class WikiCategoryPage(QWidget):
         return btn
 
     def load(self):
+        _sync_wiki_language_caches()
         if self._cat == 'pals':
             items = get_paldeck_pals()
         else:
@@ -1350,6 +1368,7 @@ class WikiCategoryPage(QWidget):
                         item['icon'] = fixed
         self._all_data = items
         self._loaded = True
+        self._loaded_language = get_language()
         self._active_filters = {}
         self._filter_btns = {}
         while self._filter_layout.count():
@@ -1523,6 +1542,8 @@ class WikiCategoryPage(QWidget):
             self._detail.show_item(self._all_data[idx])
 
     def refresh_labels(self):
+        if self._loaded and self._loaded_language != get_language():
+            self.load()
         self._search.setPlaceholderText(t('docs.wiki.search'))
         if self._sort_labels:
             for fid, btn in self._sort_btns.items():

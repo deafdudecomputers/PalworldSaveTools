@@ -7,6 +7,7 @@ from PySide6.QtGui import QShowEvent
 from PySide6.QtGui import QPixmap, QIcon, QFont
 from i18n import t
 from palworld_aio import constants
+from palworld_aio.game_localization import localize_game_data
 from palworld_aio.utils import sav_to_gvasfile, gvasfile_to_sav
 from palworld_aio.managers.data_manager import get_guilds, get_guild_members
 from palworld_aio.editor.edit_pals import _clean_desc_for_tooltip
@@ -97,7 +98,7 @@ class PlayerTechnologyActionDialog(QDialog):
         try:
             base_dir = constants.get_base_path()
             tech_file = resource_path(base_dir, 'game_data', 'world.json')
-            data = json_tools.load(tech_file)
+            data = localize_game_data(json_tools.load(tech_file), 'world.json')
             self.tech_data = data.get('technology', [])
             self._display_technologies(self.tech_data)
         except Exception as e:

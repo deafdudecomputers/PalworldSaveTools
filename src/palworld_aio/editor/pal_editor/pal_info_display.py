@@ -9,6 +9,7 @@ from i18n import t
 import nerdfont as nf
 from loading_manager import show_information, show_warning, show_question
 from palworld_aio import constants
+import palworld_aio.managers.data_manager as dm
 from resource_resolver import resource_path
 from palworld_aio.utils import extract_value, safe_nested_get, calculate_max_hp, calculate_shot_attack, calculate_defense, calculate_work_speed, resolve_name, _hp_breakdown, _atk_breakdown, _def_breakdown, _ws_breakdown, stat_breakdown_tooltip
 from palworld_aio.ui.chrome.styles import slot_full, slot_selected, TOOLTIP_STYLE
@@ -472,10 +473,15 @@ class PalInfoDisplayMixin:
                 power_lbl.setStyleSheet('font-size: 9px; font-weight: 700; color: #F59E0B; background: transparent; border: none;')
                 slot_layout.addWidget(power_lbl)
                 if e and skill_info:
-                    tip_parts = [f'<b>{move_name}</b>', f'Element: {skill_elem}', f'Power: {skill_power}']
+                    elem_name = _data.element_display_name(skill_elem)
+                    tip_parts = [
+                        f'<b>{move_name}</b>',
+                        f"{t('skill.tooltip.element')}: {elem_name}",
+                        f"{t('skill.tooltip.power')}: {skill_power}",
+                    ]
                     cd = skill_info.get('cooldown', 0)
                     if cd:
-                        tip_parts.append(f'Cooldown: {cd}s')
+                        tip_parts.append(f"{t('skill.tooltip.cooldown')}: {cd}s")
                     desc = skill_info.get('description', '')
                     if desc:
                         tip_parts.append('')
@@ -544,10 +550,9 @@ class PalInfoDisplayMixin:
                         self.passive_rank_icons[si].hide()
                     p_desc = p_info.get('description', '')
                     tip_parts = [f'<b style="color:{tc}">{display_name}</b>']
-                    rank_labels = {1: 'Common', 2: 'Rare', 3: 'Rare', 4: 'Epic', 5: 'Epic', -99: 'Negative'}
-                    tip_parts.append(f"<i>{rank_labels.get(rank, f'Rank {rank}')}</i>")
+                    tip_parts.append(f"<i>{dm.passive_rank_label(rank)}</i>")
                     if p_desc:
-                        p_desc = p_desc.replace('{CharacterName}', 'Pal')
+                        p_desc = p_desc.replace('{CharacterName}', t('common.pal'))
                         for ei in range(1, 5):
                             ev = p_info.get(f'effect{ei}', 0)
                             ev_str = str(int(ev)) if isinstance(ev, float) and ev == int(ev) else f'{ev:.0f}' if isinstance(ev, float) else str(ev)

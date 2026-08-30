@@ -1,7 +1,7 @@
 import threading
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout
 from PySide6.QtCore import Qt
-from i18n import t
+from i18n import get_language, t
 from resource_resolver import resource_path
 from palworld_aio import constants
 from palworld_aio.managers import data_manager as dm
@@ -11,6 +11,7 @@ from .icons import _strip_prefix_label
 class PalFrame(QFrame):
     _cheat_mode = False
     _maps_loaded = False
+    _maps_language = None
     _NAMEMAP = {}
     _PALMAP = {}
     _PASSMAP = {}
@@ -31,10 +32,11 @@ class PalFrame(QFrame):
     _maps_loaded_lock = threading.Lock()
     @classmethod
     def _load_maps(cls):
-        if cls._maps_loaded:
+        language = get_language()
+        if cls._maps_loaded and cls._maps_language == language:
             return
         with cls._maps_loaded_lock:
-            if cls._maps_loaded:
+            if cls._maps_loaded and cls._maps_language == language:
                 return
         cls._PASSMAP = dm.load_game_data_map('skills.json', 'passives')
         cls._SKILLMAP = dm.load_game_data_map('skills.json', 'skills')
@@ -56,6 +58,7 @@ class PalFrame(QFrame):
                         cls._PAL_ZUKAN[asset_lower] = zukan_index
         except Exception:
             pass
+        cls._PASSRANK = {}
         cls._PASSFLAGS = {}
         try:
             fp = resource_path(constants.get_base_path(), 'game_data', 'skills.json')
@@ -72,6 +75,7 @@ class PalFrame(QFrame):
             pass
         cls._PASSMAP = {k: v for k, v in cls._PASSMAP.items() if not any((exc in v.lower() for exc in dm._SKILL_EXCLUSION_NAMES))}
         cls._PASSMAP = {passive_id: name for passive_id, name in cls._PASSMAP.items() if cls._is_pal_passive(passive_id)}
+        cls._maps_language = language
         cls._maps_loaded = True
     def __init__(self, pal_item, parent=None):
         super().__init__(parent)

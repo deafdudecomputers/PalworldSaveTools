@@ -8,6 +8,7 @@ from i18n import t
 import nerdfont as nf
 from loading_manager import show_information, show_warning, show_question
 from palworld_aio import constants
+import palworld_aio.managers.data_manager as dm
 from resource_resolver import resource_path
 from palworld_aio.utils import extract_value, safe_nested_get, calculate_max_hp
 from palworld_aio.ui.chrome.styles import slot_full, slot_selected, TOOLTIP_STYLE, INPUT_DIALOG_STYLE
@@ -706,11 +707,10 @@ class PalInfoHandlerMixin:
                     ov.set_mode(None)
                 if p_clean:
                     tip_parts = [f'<b style="color:{tc}">{display_name}</b>']
-                    rank_labels = {1: 'Common', 2: 'Rare', 3: 'Rare', 4: 'Epic', 5: 'Epic', -99: 'Negative'}
-                    tip_parts.append(f"<i>{rank_labels.get(rank, f'Rank {rank}')}</i>")
+                    tip_parts.append(f"<i>{dm.passive_rank_label(rank)}</i>")
                     p_desc = p_info.get('description', '')
                     if p_desc:
-                        p_desc = p_desc.replace('{CharacterName}', 'Pal')
+                        p_desc = p_desc.replace('{CharacterName}', t('common.pal'))
                         for ei in range(1, 5):
                             ev = p_info.get(f'effect{ei}', 0)
                             ev_str = str(int(ev)) if isinstance(ev, float) and ev == int(ev) else f'{ev:.0f}' if isinstance(ev, float) else str(ev)

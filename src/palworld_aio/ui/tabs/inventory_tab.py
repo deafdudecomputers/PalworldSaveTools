@@ -9,6 +9,7 @@ from palworld_aio.ui.chrome.styles import DIALOG_STYLE as DARK_THEME_STYLE, STAT
 from palworld_aio.widgets.toggle_check import ToggleCheckBtn
 from palsav import json_tools
 from palworld_aio import constants as _constants
+from palworld_aio.game_localization import localize_game_data
 from palworld_aio.inventory.inventory_manager import PlayerInventory, ItemData, get_player_inventory, UI_SLOT_BINDINGS, FOOD_POUCH_ITEMS, ACCESSORY_UNLOCK_ITEMS, WEAPON_UNLOCK_ITEMS, INVENTORY_EXPANSION_ITEMS
 from palworld_aio.editor.pal_editor.data import get_paldeck_pals
 from palworld_aio.editor.edit_pals import _clean_desc_for_tooltip, get_pal_base_data, _get_cached_pixmap, _get_pal_icon_path, _get_element_pixmap, _resolve_partner_desc, _partner_desc_to_html, PalInfoWidget
@@ -1100,6 +1101,7 @@ class TechnologyPanelWidget(QFrame):
             fp = resource_path(base_dir, 'game_data', 'world.json')
             with open(fp, encoding='utf-8') as f:
                 data = json.load(f)
+            data = localize_game_data(data, 'world.json')
             self._tech_data = data.get('technology', [])
         except Exception:
             self._tech_data = []

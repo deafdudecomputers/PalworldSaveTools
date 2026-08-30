@@ -1890,13 +1890,7 @@ def _get_pal_learnset_set(cid, learnset, learnset_ci):
     return result
 
 def _build_skill_name_map():
-    try:
-        base_dir = constants.get_base_path()
-        fp = resource_path(base_dir, 'game_data', 'skills.json')
-        sdata = json_tools.load(fp)
-        return {s.get('asset', '').lower(): s.get('name', '') for s in sdata.get('skills', []) if s.get('asset')}
-    except Exception:
-        return {}
+    return load_game_data_map('skills.json', 'skills')
 
 def _is_skill_invalid_for_pal(skill_full, pal_learnset_set, skill_name_map, exclusion_patterns, exclusion_names):
     if not skill_full or not skill_full.strip():

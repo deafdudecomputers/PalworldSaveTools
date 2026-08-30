@@ -4,9 +4,10 @@ import uuid
 import sys
 from collections import defaultdict
 from palsav.archive import UUID
-from i18n import t
+from i18n import get_language, t
 from typing import Optional, Dict, List, Any
 from palworld_aio import constants
+from palworld_aio.game_localization import localize_game_data
 from palworld_aio.utils import are_equal_uuids, as_uuid, fast_deepcopy
 from palworld_aio.inventory.inventory_manager import InventoryContainer, ItemData
 from palworld_aio.inventory.dynamic_item_manager import get_dynamic_item_manager, generate_dynamic_item_uuid
@@ -173,19 +174,23 @@ def update_container_contents(container_id, items):
             pass
     return False
 _structure_data_cache = None
+_structure_data_language = None
 def load_structure_data():
-    global _structure_data_cache
-    if _structure_data_cache is not None:
+    global _structure_data_cache, _structure_data_language
+    language = get_language()
+    if _structure_data_cache is not None and _structure_data_language == language:
         return _structure_data_cache
     try:
         base_path = constants.get_base_path()
         structure_data_path = resource_path(base_path, 'game_data', 'world.json')
         if os.path.exists(structure_data_path):
-            _structure_data_cache = json_tools.load(structure_data_path)
+            _structure_data_cache = localize_game_data(json_tools.load(structure_data_path), 'world.json')
+            _structure_data_language = language
             return _structure_data_cache
     except Exception as e:
         pass
     _structure_data_cache = {}
+    _structure_data_language = language
     return _structure_data_cache
 def get_container_icon_path_from_structure(container_type):
     structure_data = load_structure_data()
@@ -216,14 +221,19 @@ def get_container_image_path(container_type):
                 return os.path.join(icons_path, filename)
     return icon_path if os.path.exists(icon_path) else None
 _item_info_cache = {}
+_item_info_language = None
 def _resolve_item_info(item_id):
-    global _item_info_cache
+    global _item_info_cache, _item_info_language
+    language = get_language()
+    if _item_info_language != language:
+        _item_info_cache = {}
+        _item_info_language = language
     if not _item_info_cache:
         try:
             base_path = constants.get_base_path()
             fp = resource_path(base_path, 'game_data', 'items.json')
             if os.path.exists(fp):
-                items_data = json_tools.load(fp)
+                items_data = localize_game_data(json_tools.load(fp), 'items.json')
                 for item in items_data.get('items', []):
                     aid = item.get('asset', '')
                     if aid:
@@ -933,10 +943,7 @@ class BaseInventoryManager:
         return self._cache_valid and bool(self._item_location_cache)
     def _translate_container_name(self, map_object_id):
         try:
-            base_path = constants.get_base_path()
-            structure_data_path = resource_path(base_path, 'game_data', 'world.json')
-            if os.path.exists(structure_data_path):
-                structure_data = json_tools.load(structure_data_path)
+            structure_data = load_structure_data()
             structures = structure_data.get('structures', [])
             for structure in structures:
                 if structure.get('asset') == map_object_id:
