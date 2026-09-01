@@ -107,13 +107,45 @@ def scan_and_protect_ancient_structures(parent=None):
                     if target_work_id:
                         constants.ancient_protected_instance_ids.add(str(target_work_id).replace('-', '').lower())
             # Protect GUIDs inside fully-parsed ConcreteModel.RawData (no longer opaque)
-            for k in ('egg_instance_id', 'guid1', 'guid2', 'hatched_character_guid'):
+            for k in ('egg_instance_id', 'guid1', 'guid2', 'hatched_character_guid', 'tail_guid'):
                 v = conc_raw.get(k)
                 if v:
                     constants.ancient_protected_instance_ids.add(str(v).replace('-', '').lower())
-                    # guid1/guid2 can be container ids (e.g. 1b078026...), protect as container too
-                    if k in ('guid1', 'guid2'):
+                    if k in ('guid1', 'guid2', 'tail_guid', 'egg_instance_id'):
                         constants.ancient_protected_container_ids.add(str(v).replace('-', '').lower())
+            # If still opaque (huge hatchery with 3 pals, 4405B), scan raw bytes for ItemContainer GUIDs
+            raw_bytes = None
+            if 'unknown_bytes' in conc_raw and isinstance(conc_raw['unknown_bytes'], (bytes, bytearray)):
+                raw_bytes = bytes(conc_raw['unknown_bytes'])
+            elif 'values' in conc_raw:
+                v = conc_raw['values']
+                if isinstance(v, dict) and '~b' in v:
+                    import base64
+                    try:
+                        raw_bytes = base64.b64decode(v['~b'])
+                    except Exception:
+                        raw_bytes = None
+                elif isinstance(v, (bytes, bytearray)):
+                    raw_bytes = bytes(v)
+                elif isinstance(v, list):
+                    try:
+                        raw_bytes = bytes(v)
+                    except Exception:
+                        raw_bytes = None
+            if raw_bytes and len(raw_bytes) > 100:
+                try:
+                    item_ids = {str(c['key']['ID']['value']).replace('-','').lower() for c in wsd.get('ItemContainerSaveData',{}).get('value',[]) if c.get('key',{}).get('ID',{}).get('value')}
+                    for cid in item_ids:
+                        try:
+                            rc = bytes.fromhex(cid)
+                            pat = bytes([rc[3], rc[2], rc[1], rc[0], rc[7], rc[6], rc[5], rc[4], rc[11], rc[10], rc[9], rc[8], rc[15], rc[14], rc[13], rc[12]])
+                            if pat in raw_bytes:
+                                constants.ancient_protected_container_ids.add(cid)
+                                constants.ancient_protected_instance_ids.add(cid)
+                        except Exception:
+                            continue
+                except Exception:
+                    pass
             if map_object_id == 'AncientRelicRecycler':
                 recyclers += 1
             else:
