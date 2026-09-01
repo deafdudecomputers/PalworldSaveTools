@@ -1,3 +1,8 @@
+#2.4.3
+- **Simplified Chinese now covers the whole game** — Pal names, partner skills, passive traits, active skills, elements, items, structures, technologies and work suitability now show proper Simplified Chinese everywhere — Pal Editor, inventory, wiki and technology views — while save IDs stay untouched. UI, in-app guides and README are refined, the README language switcher is clearer, and a new English–Chinese glossary is included.
+- **Character transfer no longer leaves stale base camp points** — creating a new guild during character transfer now properly clears its base camp points to an empty list instead of deleting the field, preventing leftover references.
+- Bumped version to 2.4.3
+
 #2.4.2
 - **Nudge Palbox rotation now works with or without moving** — rotating the Palbox with no X/Y/Z offset did nothing, and even with an offset the Palbox kept its old facing. Every combination of X, Y, Z, and rotation now applies correctly so the Palbox turns as expected.
 - **Rebuilding pals keeps Pal Market stock** — rebuilding guilds or all player pals gave pals new IDs but left the Pal Market's listed stock and its container behind, so the market appeared empty or broken. Market pals are now kept in their booth container and the booth's trade list is relinked to the new IDs, so the market stays intact. Thanks to palheim.net for the report.
