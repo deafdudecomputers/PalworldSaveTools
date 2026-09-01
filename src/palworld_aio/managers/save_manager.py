@@ -94,6 +94,8 @@ class SaveManager(QObject):
         constants.PLAYER_REMAPS = {}
         constants.death_bag_protected_instance_ids.clear()
         constants.death_bag_protected_container_ids.clear()
+        constants.ancient_protected_instance_ids.clear()
+        constants.ancient_protected_container_ids.clear()
         constants.selected_source_player = None
         constants.dps_executor = None
         constants.dps_futures = []
@@ -119,8 +121,9 @@ class SaveManager(QObject):
         constants.loaded_level_mtime = os.path.getmtime(level_sav_path)
         t1 = time.perf_counter()
         constants.invalidate_container_lookup()
-        from palworld_aio.managers.func_manager import scan_and_protect_death_bags
+        from palworld_aio.managers.func_manager import scan_and_protect_death_bags, scan_and_protect_ancient_structures
         scan_and_protect_death_bags()
+        scan_and_protect_ancient_structures()
         from palworld_aio.inventory.dynamic_item_manager import get_dynamic_item_manager
         get_dynamic_item_manager().sync_with_save_data(constants.loaded_level_json)
         build_player_levels()
@@ -208,8 +211,9 @@ class SaveManager(QObject):
         constants.loaded_level_mtime = os.path.getmtime(level_sav_path)
         t1 = time.perf_counter()
         constants.invalidate_container_lookup()
-        from palworld_aio.managers.func_manager import scan_and_protect_death_bags
+        from palworld_aio.managers.func_manager import scan_and_protect_death_bags, scan_and_protect_ancient_structures
         scan_and_protect_death_bags()
+        scan_and_protect_ancient_structures()
         build_player_levels()
         if not constants.loaded_level_json:
             raise Exception('Failed to parse Level.sav')

@@ -65,6 +65,98 @@ def is_death_penalty_chest_obj(obj):
     return obj.get('MapObjectId', {}).get('value') == 'DeathPenaltyChest'
 def is_death_bag(obj):
     return is_dropped_character(obj) or is_death_penalty_chest_obj(obj)
+ANCIENT_MAP_OBJECT_IDS = {
+    'AncientRelicRecycler',
+    'MultiElectricHatchingPalEgg',
+    'MultiElectricHatchingPalEggWithBreed',
+}
+def scan_and_protect_ancient_structures(parent=None):
+    if not constants.loaded_level_json:
+        return {'ancient_recyclers': 0, 'ancient_hatcheries': 0}
+    constants.ancient_protected_instance_ids.clear()
+    constants.ancient_protected_container_ids.clear()
+    wsd = constants.loaded_level_json['properties']['worldSaveData']['value']
+    map_objects = wsd.get('MapObjectSaveData', {}).get('value', {}).get('values', [])
+    recyclers = 0
+    hatcheries = 0
+    for obj in map_objects:
+        try:
+            map_object_id = obj.get('MapObjectId', {}).get('value', '')
+            if map_object_id not in ANCIENT_MAP_OBJECT_IDS:
+                continue
+            raw = obj.get('Model', {}).get('value', {}).get('RawData', {}).get('value', {})
+            conc_raw = obj.get('ConcreteModel', {}).get('value', {}).get('RawData', {}).get('value', {})
+            for key in ('instance_id', 'concrete_model_instance_id'):
+                val = raw.get(key) or conc_raw.get(key)
+                if val:
+                    constants.ancient_protected_instance_ids.add(str(val).replace('-', '').lower())
+            # Also protect concrete model instance id from ConcreteModel if present
+            if 'instance_id' in conc_raw:
+                constants.ancient_protected_instance_ids.add(str(conc_raw['instance_id']).replace('-', '').lower())
+            # Protect container via ModuleMap
+            module_map = obj.get('ConcreteModel', {}).get('value', {}).get('ModuleMap', {}).get('value', [])
+            for module in module_map:
+                if module.get('key') == 'EPalMapObjectConcreteModelModuleType::ItemContainer':
+                    module_raw = module.get('value', {}).get('RawData', {}).get('value', {})
+                    target_container_id = module_raw.get('target_container_id')
+                    if target_container_id:
+                        constants.ancient_protected_container_ids.add(str(target_container_id).replace('-', '').lower())
+                if module.get('key') == 'EPalMapObjectConcreteModelModuleType::Workee':
+                    module_raw = module.get('value', {}).get('RawData', {}).get('value', {})
+                    target_work_id = module_raw.get('target_work_id')
+                    if target_work_id:
+                        constants.ancient_protected_instance_ids.add(str(target_work_id).replace('-', '').lower())
+            # Protect GUIDs inside fully-parsed ConcreteModel.RawData (no longer opaque)
+            for k in ('egg_instance_id', 'guid1', 'guid2', 'hatched_character_guid'):
+                v = conc_raw.get(k)
+                if v:
+                    constants.ancient_protected_instance_ids.add(str(v).replace('-', '').lower())
+                    # guid1/guid2 can be container ids (e.g. 1b078026...), protect as container too
+                    if k in ('guid1', 'guid2'):
+                        constants.ancient_protected_container_ids.add(str(v).replace('-', '').lower())
+            if map_object_id == 'AncientRelicRecycler':
+                recyclers += 1
+            else:
+                hatcheries += 1
+        except Exception:
+            continue
+    return {'ancient_recyclers': recyclers, 'ancient_hatcheries': hatcheries}
+def is_ancient_protected_instance(instance_id):
+    if not instance_id:
+        return False
+    return str(instance_id).replace('-', '').lower() in constants.ancient_protected_instance_ids
+def is_ancient_protected_container(container_id):
+    if not container_id:
+        return False
+    return str(container_id).replace('-', '').lower() in constants.ancient_protected_container_ids
+def is_ancient_map_object(obj):
+    try:
+        mid = obj.get('MapObjectId', {}).get('value')
+        if mid in ANCIENT_MAP_OBJECT_IDS:
+            return True
+        raw = obj.get('Model', {}).get('value', {}).get('RawData', {}).get('value', {})
+        conc = obj.get('ConcreteModel', {}).get('value', {}).get('RawData', {}).get('value', {})
+        for d in (raw, conc):
+            for k in ('instance_id', 'concrete_model_instance_id', 'egg_instance_id', 'guid1', 'guid2', 'hatched_character_guid'):
+                v = d.get(k)
+                if v and is_ancient_protected_instance(v):
+                    return True
+        # Also check container ids inside conc
+        for k in ('egg_instance_id', 'guid1', 'guid2'):
+            v = conc.get(k)
+            if v and is_ancient_protected_container(v):
+                return True
+        module_map = obj.get('ConcreteModel', {}).get('value', {}).get('ModuleMap', {}).get('value', [])
+        for mod in module_map:
+            cid = mod.get('value', {}).get('RawData', {}).get('value', {}).get('target_container_id')
+            if cid and is_ancient_protected_container(cid):
+                return True
+            wid = mod.get('value', {}).get('RawData', {}).get('value', {}).get('target_work_id')
+            if wid and is_ancient_protected_instance(wid):
+                return True
+    except Exception:
+        pass
+    return False
 def get_entity_location(entity_data):
     try:
         if 'Model' in entity_data:
@@ -423,6 +515,11 @@ def delete_unreferenced_data(parent=None):
         return {}
     from palworld_aio.managers.save_manager import build_player_levels
     build_player_levels()
+    # Protect ancient structures (hatchery/recycler) — their containers/works must never be pruned
+    try:
+        scan_and_protect_ancient_structures()
+    except Exception:
+        pass
     def normalize_uid(uid):
         if isinstance(uid, dict):
             uid = uid.get('value', '')
@@ -570,6 +667,10 @@ def delete_unreferenced_data(parent=None):
     new_map_objects = []
     deleted_container_ids = set()
     for obj in map_objects:
+        # Ancient hatchery/recycler must never be pruned — keep them even if marked broken/dropped
+        if is_ancient_map_object(obj):
+            new_map_objects.append(obj)
+            continue
         if is_broken_mapobject(obj):
             if is_entity_in_exclusion_zones(obj):
                 new_map_objects.append(obj)
@@ -612,6 +713,21 @@ def _cleanup_orphaned_works(wsd, deleted_instance_ids=None, deleted_base_camp_id
         try:
             wr = we.get('RawData', {}).get('value', {})
             if not isinstance(wr, dict):
+                return True
+            # Never delete ancient hatchery/recycler works
+            work_id = str(wr.get('id', '')).replace('-', '').lower()
+            if work_id and is_ancient_protected_instance(work_id):
+                return True
+            for k in ('owner_map_object_model_id', 'owner_map_object_concrete_model_id'):
+                oid = str(wr.get(k, '')).replace('-', '').lower()
+                if oid and is_ancient_protected_instance(oid):
+                    return True
+            transform = wr.get('transform', {})
+            if isinstance(transform, dict):
+                tid = str(transform.get('map_object_instance_id', '')).replace('-', '').lower()
+                if tid and is_ancient_protected_instance(tid):
+                    return True
+            if wr.get('assign_define_data_id') in ('AncientRelicRecycler_0',):
                 return True
             base_camp_id = str(wr.get('base_camp_id_belong_to', '')).replace('-', '').lower()
             if scope_norm and base_camp_id and base_camp_id != scope_norm:
@@ -676,6 +792,11 @@ def _cleanup_orphaned_containers(wsd, deleted_container_ids):
     removed = 0
     if not deleted_container_ids:
         return 0
+    # Never delete ancient structures' containers
+    if constants.ancient_protected_container_ids:
+        deleted_container_ids = set(deleted_container_ids) - constants.ancient_protected_container_ids
+        if not deleted_container_ids:
+            return 0
     for key in ('ItemContainerSaveData', 'CharacterContainerSaveData'):
         cont_root = wsd.get(key, {})
         cont_list = cont_root.get('value', []) if isinstance(cont_root, dict) else []
@@ -810,6 +931,7 @@ def _sweep_orphaned_item_containers(wsd):
     if not candidates:
         return 0
     candidates -= constants.death_bag_protected_container_ids
+    candidates -= constants.ancient_protected_container_ids
     if candidates:
         candidates -= _scan_player_saves_for_container_ids(candidates)
     orphans = candidates
@@ -947,7 +1069,9 @@ def delete_non_base_map_objects(parent=None):
         instance_id = raw_data.get('instance_id', 'UNKNOWN_ID')
         object_name = m.get('MapObjectId', {}).get('value', 'UNKNOWN_OBJECT_TYPE')
         should_keep = False
-        if is_death_bag(m):
+        if is_ancient_map_object(m):
+            should_keep = True
+        elif is_death_bag(m):
             should_keep = True
         elif base_camp_id and str(base_camp_id).replace('-', '').lower() in active_base_ids:
             should_keep = True
@@ -996,6 +1120,8 @@ def delete_invalid_structure_map_objects(parent=None):
         object_id_node = m.get('MapObjectId', {})
         object_name = object_id_node.get('value')
         if isinstance(object_name, str) and object_name.lower() in valid_assets:
+            new_map_objs.append(m)
+        elif is_ancient_map_object(m):
             new_map_objs.append(m)
         elif is_entity_in_exclusion_zones(m):
             new_map_objs.append(m)
@@ -2459,6 +2585,16 @@ def delete_orphaned_dynamic_items(parent=None):
         scan_container(cont)
     for cont in wsd.get('CharacterContainerSaveData', {}).get('value', []):
         scan_container(cont)
+    # Ancient hatchery/recycler dynamic items must never be considered orphaned
+    for di in dynamic_items:
+        try:
+            cid = str(di.get('RawData', {}).get('value', {}).get('container_id', '')).replace('-', '').lower()
+            if cid and is_ancient_protected_container(cid):
+                lid = di.get('RawData', {}).get('value', {}).get('id', {}).get('local_id_in_created_world', '')
+                if lid:
+                    referenced_dynamic_ids.add(normalize_uid(lid))
+        except Exception:
+            pass
     orphaned_ids = dynamic_ids - referenced_dynamic_ids
     if not orphaned_ids:
         return 0
