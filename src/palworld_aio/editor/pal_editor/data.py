@@ -1,8 +1,10 @@
 import os
 import threading
 from palsav import json_tools
+from i18n import get_language
 
 from palworld_aio import constants
+from palworld_aio.game_localization import localize_game_data
 from resource_resolver import resource_path
 
 _PAL_STYLESHEET = '\nQWidget#palRoot {\n    background: qlineargradient(spread:pad,x1:0,y1:0,x2:1,y2:1,\n        stop:0 rgba(8,10,16,0.98),stop:0.5 rgba(6,12,20,0.98),stop:1 rgba(4,8,16,0.98));\n}\nQWidget#partyPanel {\n    background: rgba(10,14,20,0.95);\n    border: 1px solid rgba(125,211,252,0.12);\n    border-radius: 6px;\n}\nQWidget#partyPanel QLabel {\n    color: #C8D8E8;\n}\nQWidget#palboxPanel {\n    background: rgba(10,14,20,0.95);\n    border: 1px solid rgba(125,211,252,0.12);\n    border-radius: 6px;\n}\nQWidget#palboxPanel QLabel {\n    color: #C8D8E8;\n}\nQWidget#palInfoPanel QLabel {\n    color: #C8D8E8;\n}\nQLabel#boxHeader {\\n    font-size: 12px;\n    font-weight: 700;\n    color: #7DD3FC;\n    padding: 4px 8px;\n    background: rgba(125,211,252,0.06);\n    border-radius: 4px;\n    min-width: 80px;\n    qproperty-alignment: AlignCenter;\n}\nQPushButton#navBtn {\n    background: rgba(125,211,252,0.08);\n    color: #7DD3FC;\n    border: 1px solid rgba(125,211,252,0.2);\n    border-radius: 6px;\n    padding: 6px 14px;\n    font-size: 14px;\n    font-weight: 600;\n    min-width: 32px;\n}\nQPushButton#navBtn:hover {\n    background: rgba(125,211,252,0.18);\n    border-color: rgba(125,211,252,0.4);\n    color: #FFFFFF;\n}\nQPushButton#navBtn:pressed {\n    background: rgba(125,211,252,0.1);\n}\n'
@@ -43,14 +45,32 @@ def _ensure_friendship_thresholds():
         _FRIENDSHIP_THRESHOLDS = [0, 6000, 13000, 21000, 30000, 40000, 55000, 80000, 110000, 150000, 200000]
     return _FRIENDSHIP_THRESHOLDS
 
+_GAME_DATA_LANGUAGE = None
 _PAL_BASE_DATA_CACHE = {}
+
+
+def _sync_game_data_language():
+    global _GAME_DATA_LANGUAGE, _PAL_BASE_DATA_CACHE, _PALDECK_PALS_CACHE
+    global _SKILL_DATA, _PASSIVE_DATA, _ELEMENT_DATA
+    language = get_language()
+    if language == _GAME_DATA_LANGUAGE:
+        return
+    _GAME_DATA_LANGUAGE = language
+    _PAL_BASE_DATA_CACHE = {}
+    _PALDECK_PALS_CACHE = None
+    _SKILL_DATA = None
+    _PASSIVE_DATA = None
+    _ELEMENT_DATA = None
+
+
 def _load_pal_base_data():
+    _sync_game_data_language()
     if _PAL_BASE_DATA_CACHE:
         return _PAL_BASE_DATA_CACHE
     try:
         base_dir = constants.get_base_path()
         path = resource_path(base_dir, 'game_data', 'characters.json')
-        data = json_tools.load(path)
+        data = localize_game_data(json_tools.load(path), 'characters.json')
         for p in data.get('pals', []):
             a = p.get('asset', '').lower()
             if not a:
@@ -126,19 +146,25 @@ _SKILL_DATA = None
 _ELEMENT_DATA = None
 def _ensure_element_data():
     global _ELEMENT_DATA
+    _sync_game_data_language()
     if _ELEMENT_DATA is not None:
         return _ELEMENT_DATA
     _ELEMENT_DATA = {}
     try:
         base_dir = constants.get_base_path()
         path = resource_path(base_dir, 'game_data', 'skills.json')
-        js = json_tools.load(path)
+        js = localize_game_data(json_tools.load(path), 'skills.json')
         for e in js.get('elements', []):
             if isinstance(e, dict) and 'name' in e:
                 _ELEMENT_DATA[e['name'].lower()] = e
     except Exception:
         pass
     return _ELEMENT_DATA
+
+
+def element_display_name(element):
+    info = _ensure_element_data().get(str(element or '').lower(), {})
+    return info.get('display') or element
 
 _APPEND_TEXT_DATA = None
 def _ensure_append_text_data():
@@ -220,6 +246,7 @@ def get_paldeck_pals():
       - '_deck_sub': '' for base, 'b', 'c'... for variants
     """
     global _PALDECK_PALS_CACHE
+    _sync_game_data_language()
     if _PALDECK_PALS_CACHE is not None:
         return _PALDECK_PALS_CACHE
 
@@ -227,7 +254,7 @@ def get_paldeck_pals():
     try:
         base_dir = constants.get_base_path()
         path = resource_path(base_dir, 'game_data', 'characters.json')
-        data = json_tools.load(path)
+        data = localize_game_data(json_tools.load(path), 'characters.json')
         pals = data.get('pals', [])
     except Exception:
         pals = []
@@ -286,13 +313,14 @@ def _pal_can_toggle_predator(cid: str) -> tuple[bool, bool]:
 
 def _ensure_skill_data():
     global _SKILL_DATA
+    _sync_game_data_language()
     if _SKILL_DATA is not None:
         return
     _SKILL_DATA = {}
     try:
         base_dir = constants.get_base_path()
         path = resource_path(base_dir, 'game_data', 'skills.json')
-        js = json_tools.load(path)
+        js = localize_game_data(json_tools.load(path), 'skills.json')
         for s in js.get('skills', []):
             if isinstance(s, dict) and 'asset' in s:
                 _SKILL_DATA[s['asset'].lower()] = s
@@ -302,13 +330,14 @@ def _ensure_skill_data():
 _PASSIVE_DATA = None
 def _ensure_passive_data():
     global _PASSIVE_DATA
+    _sync_game_data_language()
     if _PASSIVE_DATA is not None:
         return
     _PASSIVE_DATA = {}
     try:
         base_dir = constants.get_base_path()
         path = resource_path(base_dir, 'game_data', 'skills.json')
-        js = json_tools.load(path)
+        js = localize_game_data(json_tools.load(path), 'skills.json')
         for p in js.get('passives', []):
             if isinstance(p, dict) and 'asset' in p:
                 _PASSIVE_DATA[p['asset'].lower()] = p

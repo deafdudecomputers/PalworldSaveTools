@@ -2,8 +2,9 @@ import os
 from palsav import json_tools
 import palworld_coord
 from palsav.archive import UUID
-from i18n import t
+from i18n import get_language, t
 from palworld_aio import constants
+from palworld_aio.game_localization import localize_game_entries, section_for
 from palworld_aio.utils import are_equal_uuids, as_uuid, fast_deepcopy
 from palworld_aio.inventory.container_ownership import ContainerOwnership
 from functools import lru_cache
@@ -838,17 +839,34 @@ def passive_rank_color(rank):
     if rank >= 2:
         return _RANK_COLORS[2]
     return _RANK_COLORS[1]
+
+
+def passive_rank_label(rank):
+    """Return a translated player-facing passive rarity label."""
+    key = {
+        1: 'passive.rank.common',
+        2: 'passive.rank.rare',
+        3: 'passive.rank.rare',
+        4: 'passive.rank.epic',
+        5: 'passive.rank.epic',
+        -99: 'passive.rank.negative',
+    }.get(rank)
+    if key:
+        return t(key)
+    return t('passive.rank.value', rank=rank)
+
+
 def format_passive_description(p_info):
     p_desc = p_info.get('description', '')
     if p_desc:
-        p_desc = p_desc.replace('{CharacterName}', 'Pal')
+        p_desc = p_desc.replace('{CharacterName}', t('common.pal'))
         for ei in range(1, 5):
             ev = p_info.get(f'effect{ei}', 0)
             ev_str = str(int(ev)) if isinstance(ev, float) and ev == int(ev) else f'{ev:.0f}' if isinstance(ev, float) else str(ev)
             p_desc = p_desc.replace(f'{{EffectValue{ei}}}', ev_str)
     return p_desc
-@lru_cache(maxsize=32)
-def load_game_data_map(fname, key):
+@lru_cache(maxsize=64)
+def _load_game_data_map_for_language(fname, key, language):
     base_dir = constants.get_base_path()
     fp = resource_path(base_dir, 'game_data', fname)
     try:
@@ -856,6 +874,9 @@ def load_game_data_map(fname, key):
         if not isinstance(js, dict):
             return {}
         data = js.get(key, [])
+        section = section_for(fname, key)
+        if section:
+            data = localize_game_entries(data, section, language)
         result = {}
         for x in data:
             if isinstance(x, dict) and 'asset' in x and ('name' in x):
@@ -863,3 +884,7 @@ def load_game_data_map(fname, key):
         return result
     except Exception:
         return {}
+
+
+def load_game_data_map(fname, key):
+    return _load_game_data_map_for_language(fname, key, get_language())

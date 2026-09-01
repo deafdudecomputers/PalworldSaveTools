@@ -158,10 +158,15 @@ def _show_learned_moves_dialog(raw, parent):
             power_lbl.setStyleSheet('font-size: 9px; font-weight: 700; color: #F59E0B; background: transparent; border: none;')
             slot_layout.addWidget(power_lbl)
             if skill_info:
-                tip_parts = [f'<b>{move_name}</b>', f'Element: {skill_elem}', f'Power: {skill_power}']
+                elem_name = _data.element_display_name(skill_elem)
+                tip_parts = [
+                    f'<b>{move_name}</b>',
+                    f"{t('skill.tooltip.element')}: {elem_name}",
+                    f"{t('skill.tooltip.power')}: {skill_power}",
+                ]
                 cd = skill_info.get('cooldown', 0)
                 if cd:
-                    tip_parts.append(f'Cooldown: {cd}s')
+                    tip_parts.append(f"{t('skill.tooltip.cooldown')}: {cd}s")
                 desc = skill_info.get('description', '')
                 if desc:
                     tip_parts.append('')
@@ -243,10 +248,15 @@ def _show_learned_moves_dialog(raw, parent):
                 power_lbl.setStyleSheet('font-size: 9px; font-weight: 700; color: #F59E0B; background: transparent; border: none;')
                 slot_layout.addWidget(power_lbl)
                 if skill_info:
-                    tip_parts = [f'<b>{move_name}</b>', f'Element: {skill_elem}', f'Power: {skill_power}']
+                    elem_name = _data.element_display_name(skill_elem)
+                    tip_parts = [
+                        f'<b>{move_name}</b>',
+                        f"{t('skill.tooltip.element')}: {elem_name}",
+                        f"{t('skill.tooltip.power')}: {skill_power}",
+                    ]
                     cd = skill_info.get('cooldown', 0)
                     if cd:
-                        tip_parts.append(f'Cooldown: {cd}s')
+                        tip_parts.append(f"{t('skill.tooltip.cooldown')}: {cd}s")
                     desc = skill_info.get('description', '')
                     if desc:
                         tip_parts.append('')

@@ -257,10 +257,15 @@ class SkillPicker(QWidget):
                 item.setData(Qt.UserRole + 2, pwr)
                 item.setText(name)
                 item.setData(Qt.UserRole, name)
-                tip_parts = [f'<b>{name}</b>', f'Element: {elem}', f'Power: {pwr}']
+                elem_name = _pedata.element_display_name(elem)
+                tip_parts = [
+                    f'<b>{name}</b>',
+                    f"{t('skill.tooltip.element')}: {elem_name}",
+                    f"{t('skill.tooltip.power')}: {pwr}",
+                ]
                 cd = info.get('cooldown', 0)
                 if cd:
-                    tip_parts.append(f'Cooldown: {cd}s')
+                    tip_parts.append(f"{t('skill.tooltip.cooldown')}: {cd}s")
                 desc = info.get('description', '')
                 if desc:
                     tip_parts.append('')
@@ -301,7 +306,7 @@ class SkillPicker(QWidget):
                 item.setData(Qt.UserRole + 4, bd)
                 item.setForeground(QColor(tc))
                 p_desc = dm.format_passive_description(p_info) if isinstance(p_info, dict) else ''
-                tip_parts = [f'<b style="color:{tc}">{name}</b>', f"<i>{dm.rank_labels.get(rank, f'Rank {rank}')}</i>"]
+                tip_parts = [f'<b style="color:{tc}">{name}</b>', f"<i>{dm.passive_rank_label(rank)}</i>"]
                 if p_desc:
                     tip_parts.append('')
                     tip_parts.append(_clean_desc_for_tooltip(p_desc))
