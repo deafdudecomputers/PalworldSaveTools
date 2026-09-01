@@ -1195,7 +1195,7 @@ def transfer_guild(targ_lvl, targ_json, host_guid, targ_uid, source_guild_dict):
         player_inst_id = targ_json['SaveData']['value']['IndividualId']['value']['InstanceId']['value']
         raw['individual_character_handle_ids'] = [{'guid': PalUUID.from_str('00000000-0000-0000-0000-000000000000'), 'instance_id': player_inst_id}]
         raw['base_ids'] = []
-        raw.pop('map_object_instance_ids_base_camp_points', None)
+        raw['map_object_instance_ids_base_camp_points'] = []
         raw['guild_markers'] = []
         guilds.append(cloned)
         _set_player_groupid(targ_json, new_gid)
