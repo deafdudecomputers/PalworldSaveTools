@@ -541,7 +541,7 @@ class MainWindow(QMainWindow):
         user_cfg_path = str(USER_CONFIG_DIR / 'user.cfg')
         if not os.path.exists(user_cfg_path):
             user_cfg_path = os.path.join(str(CONFIG_DIR), 'user.cfg')
-        default_settings = {'language': 'en_US', 'show_icons': True, 'boot_preference': 'menu', 'console_detached': False, 'console_window_geometry': None, 'right_panel_visible': True, 'sidebar_collapsed': False, 'loading_screen_mode': 'overlay'}
+        default_settings = {'language': 'en_US', 'show_icons': True, 'boot_preference': 'menu', 'console_detached': False, 'console_window_geometry': None, 'right_panel_visible': True, 'sidebar_collapsed': False, 'loading_screen_mode': 'overlay', 'disable_update_check': False}
         if os.path.exists(user_cfg_path):
             try:
                 self.user_settings = json_tools.load(user_cfg_path)
@@ -602,6 +602,8 @@ class MainWindow(QMainWindow):
     def _on_detach_state_changed(self, detached):
         self.sidebar.set_console_visible(detached)
     def _check_update(self):
+        if self.user_settings.get('disable_update_check', False):
+            return
         self.update_checker = UpdateChecker()
         self.update_checker.update_checked.connect(self._on_update_checked)
         self.update_checker.start()

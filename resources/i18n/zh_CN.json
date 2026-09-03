@@ -2221,5 +2221,6 @@
     "Source Player: {name}({guid})": "源玩家：{name}（{guid}）",
     "Target Player: {name}({guid})": "目标玩家：{name}（{guid}）",
     "This is NOT Level.sav.Please select Level.sav file.": "这不是 Level.sav，请重新选择 Level.sav 文件。",
-    "Transfer complete and backup created!": "转移完成，备份已创建！"
+    "Transfer complete and backup created!": "转移完成，备份已创建！",
+    "update.disable_check": "Disable Update Check"
 }

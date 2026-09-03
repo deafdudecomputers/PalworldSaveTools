@@ -2148,5 +2148,6 @@
     "edit_pals.show_rush": "Rush",
     "player.reset_completion_screen": "Abschlussbildschirm zurücksetzen",
     "player.reset_completion_screen.success": "Zurücksetzen des Abschlussbildschirms — beim nächsten Löschen des Weltbaums wird der erste Löschbildschirm angezeigt",
-    "player.reset_completion_screen.failed": "Fehler beim Zurücksetzen des Abschlussbildschirms"
+    "player.reset_completion_screen.failed": "Fehler beim Zurücksetzen des Abschlussbildschirms",
+    "update.disable_check": "Disable Update Check"
 }

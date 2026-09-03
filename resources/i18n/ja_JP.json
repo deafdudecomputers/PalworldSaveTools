@@ -2124,5 +2124,6 @@
     "edit_pals.show_rush": "Rush",
     "player.reset_completion_screen": "完了画面をリセット",
     "player.reset_completion_screen.success": "完了画面のリセット—次のワールドツリークリアには最初にクリアされた画面が表示されます",
-    "player.reset_completion_screen.failed": "完了画面のリセットに失敗しました"
+    "player.reset_completion_screen.failed": "完了画面のリセットに失敗しました",
+    "update.disable_check": "Disable Update Check"
 }

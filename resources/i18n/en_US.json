@@ -2471,5 +2471,6 @@
     "Source Player: {name}({guid})": "Source Player: {name} ({guid})",
     "Target Player: {name}({guid})": "Target Player: {name} ({guid})",
     "This is NOT Level.sav.Please select Level.sav file.": "This is not Level.sav. Please select Level.sav.",
-    "Transfer complete and backup created!": "Transfer complete and backup created!"
+    "Transfer complete and backup created!": "Transfer complete and backup created!",
+    "update.disable_check": "Disable Update Check"
 }

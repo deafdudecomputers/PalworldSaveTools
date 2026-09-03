@@ -2118,5 +2118,6 @@
     "edit_pals.show_rush": "Rush",
     "player.reset_completion_screen": "Restablecer pantalla de finalización",
     "player.reset_completion_screen.success": "Restablecimiento de la pantalla de finalización: el siguiente Árbol del mundo borrado mostrará la primera pantalla de borrado",
-    "player.reset_completion_screen.failed": "No se ha podido restablecer la pantalla de finalización"
+    "player.reset_completion_screen.failed": "No se ha podido restablecer la pantalla de finalización",
+    "update.disable_check": "Disable Update Check"
 }

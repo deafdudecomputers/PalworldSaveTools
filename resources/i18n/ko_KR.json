@@ -2123,5 +2123,6 @@
     "edit_pals.show_rush": "Rush",
     "player.reset_completion_screen": "완료 화면 재설정",
     "player.reset_completion_screen.success": "완료 화면 재설정 — 다음 월드 트리 클리어는 첫 번째 선명한 화면을 표시합니다",
-    "player.reset_completion_screen.failed": "완료 화면을 재설정하지 못했습니다"
+    "player.reset_completion_screen.failed": "완료 화면을 재설정하지 못했습니다",
+    "update.disable_check": "Disable Update Check"
 }

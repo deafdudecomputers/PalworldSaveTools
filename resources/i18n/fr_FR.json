@@ -2106,5 +2106,6 @@
     "edit_pals.show_rush": "Rush",
     "player.reset_completion_screen": "Écran Réinitialiser l'achèvement",
     "player.reset_completion_screen.success": "Réinitialisation de l'écran d'achèvement — le prochain World Tree Clear affichera le premier écran clair",
-    "player.reset_completion_screen.failed": "Échec de la réinitialisation de l'écran d'"
+    "player.reset_completion_screen.failed": "Échec de la réinitialisation de l'écran d'",
+    "update.disable_check": "Disable Update Check"
 }

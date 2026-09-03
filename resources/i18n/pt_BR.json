@@ -2411,5 +2411,6 @@
     "edit_pals.show_rush": "Rush",
     "player.reset_completion_screen": "Redefinir tela de conclusão",
     "player.reset_completion_screen.success": "Redefinição da tela de conclusão — a próxima limpeza da Árvore do Mundo mostrará a tela de primeira limpeza",
-    "player.reset_completion_screen.failed": "Falha ao redefinir a tela de conclusão"
+    "player.reset_completion_screen.failed": "Falha ao redefinir a tela de conclusão",
+    "update.disable_check": "Disable Update Check"
 }
