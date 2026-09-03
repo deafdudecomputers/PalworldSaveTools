@@ -1834,9 +1834,48 @@ class MainWindow(QMainWindow):
         if not constants.loaded_level_json:
             self._show_warning(t('Error'), t('error.no_save_loaded'))
             return
+        # Debug: log that Fix All Guilds was triggered (visible in console and Logs/)
+        try:
+            import logging
+            logging.info("GUI: Fix All Guilds triggered - calling rebuild_all_guilds()")
+            print("[GUI] Fix All Guilds triggered")
+        except:
+            pass
         def task():
-            return rebuild_all_guilds()
+            try:
+                import logging
+                logging.info("Fix All Guilds task start")
+                print("[Fix All Guilds] task start - before booth count check")
+                # Log booth state before via func_manager helper (no GUI dependency)
+                try:
+                    from palworld_aio.managers.func_manager import get_palbooth_report
+                    rep = get_palbooth_report()
+                    print(f"[Fix All Guilds] BEFORE booths={rep['count']} locked={sum(1 for b in rep['booths'] if b.get('is_private_lock')==1)}")
+                    logging.info(f"Fix All Guilds BEFORE booths={rep['count']} locked={sum(1 for b in rep['booths'] if b.get('is_private_lock')==1)}")
+                    for b in rep['booths'][:3]:
+                        print(f"  BEFORE {b['MapObjectId']} {b['instance_id'][:8]} lock={b['is_private_lock']} seller={b.get('trade_summary')}")
+                except Exception as e:
+                    print(f"[Fix All Guilds] BEFORE report failed: {e}")
+                res = rebuild_all_guilds()
+                print(f"[Fix All Guilds] rebuild_all_guilds() returned {res}")
+                logging.info(f"Fix All Guilds rebuild returned {res}")
+                try:
+                    from palworld_aio.managers.func_manager import get_palbooth_report as _gpr2
+                    rep2 = _gpr2()
+                    print(f"[Fix All Guilds] AFTER booths={rep2['count']} locked={sum(1 for b in rep2['booths'] if b.get('is_private_lock')==1)}")
+                    logging.info(f"Fix All Guilds AFTER booths={rep2['count']} locked={sum(1 for b in rep2['booths'] if b.get('is_private_lock')==1)}")
+                    for b in rep2['booths'][:3]:
+                        print(f"  AFTER {b['MapObjectId']} {b['instance_id'][:8]} lock={b['is_private_lock']} seller={b.get('trade_summary')} pals={[(p.get('CharacterID'), p.get('OwnerPlayerUId')) for p in b.get('pals',[])[:1]]}")
+                except Exception as e:
+                    print(f"[Fix All Guilds] AFTER report failed: {e}")
+                return res
+            except Exception as e:
+                import traceback
+                print(f"[Fix All Guilds] task exception: {e}")
+                traceback.print_exc()
+                return False
         def on_finished(success):
+            print(f"[Fix All Guilds] on_finished success={success}")
             if success:
                 self.refresh_all()
                 self._show_info(t('Done'), t('guild.rebuild.done'))

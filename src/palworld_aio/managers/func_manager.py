@@ -4084,3 +4084,255 @@ def edit_game_days(parent=None):
         return {'old': current_days, 'new': new_days}
     except Exception as e:
         return None
+
+
+# ---------------------------------------------------------------------------
+# PalBooth / ItemBooth diagnostic — SHOW before/after Fix All Guilds and
+# prove we can LOAD and READ booth data (private lock, owneruid, pals, trade)
+# ---------------------------------------------------------------------------
+def _booth_u2s(v):
+    try:
+        if isinstance(v, UUID) or hasattr(v, 'hex'):
+            return str(v)
+    except Exception:
+        pass
+    if isinstance(v, dict) and 'value' in v:
+        return _booth_u2s(v['value'])
+    return str(v) if v is not None else 'None'
+
+
+def _booth_nu(v):
+    return str(v).replace('-', '').lower() if v is not None else ''
+
+
+def _snapshot_booths_internal(wsd):
+    """Collect PalBooth + ItemBooth with every field the diag needs."""
+    objs = wsd.get('MapObjectSaveData', {}).get('value', {}).get('values', [])
+    out = []
+    for idx, obj in enumerate(objs):
+        mid = obj.get('MapObjectId', {}).get('value', '')
+        if mid not in ('PalBooth', 'ItemBooth'):
+            continue
+        conc = obj.get('ConcreteModel', {}).get('value', {}).get('RawData', {}).get('value', {})
+        model = obj.get('Model', {}).get('value', {}).get('RawData', {}).get('value', {})
+        module_map = obj.get('ConcreteModel', {}).get('value', {}).get('ModuleMap', {}).get('value', [])
+        char_cid = ''
+        item_cid = ''
+        for m in module_map or []:
+            k = m.get('key', '')
+            if 'CharacterContainer' in k:
+                char_cid = _booth_u2s(m.get('value', {}).get('RawData', {}).get('value', {}).get('target_container_id', ''))
+            if 'ItemContainer' in k:
+                item_cid = _booth_u2s(m.get('value', {}).get('RawData', {}).get('value', {}).get('target_container_id', ''))
+        # trade infos — PalBooth: pal_id+cost+seller, ItemBooth: product+cost+seller
+        tis = conc.get('trade_infos', []) or []
+        if not isinstance(tis, list):
+            tis = []
+        # position for fallback matching
+        pos = model.get('initital_transform_cache', {}).get('translation', {}) if isinstance(model.get('initital_transform_cache'), dict) else {}
+        # build booth dict — mirrors diag script's snapshot_booths
+        out.append({
+            'idx': idx,
+            'MapObjectId': mid,
+            'instance_id': _booth_u2s(conc.get('instance_id', '')),
+            'model_instance_id': _booth_u2s(conc.get('model_instance_id', '')),
+            'model_raw_instance_id': _booth_u2s(model.get('instance_id', '')),
+            'concrete_model_type': conc.get('concrete_model_type', ''),
+            'is_private_lock': conc.get('is_private_lock', None),
+            'private_lock_player_uid': _booth_u2s(conc.get('private_lock_player_uid', '')) if 'private_lock_player_uid' in conc else None,
+            'trade_infos': tis,
+            'group_id_belong_to': _booth_u2s(model.get('group_id_belong_to', '')),
+            'build_player_uid': _booth_u2s(model.get('build_player_uid', '')),
+            'char_container_id': char_cid,
+            'item_container_id': item_cid,
+            'pos': pos,
+            '_conc': conc,
+            '_model': model,
+        })
+    return out
+
+
+def _resolve_booth_pals_internal(wsd, booth):
+    """For one booth, list pals in its CharacterContainer and its trade_infos."""
+    pals = []
+    cid = booth.get('char_container_id', '')
+    if cid and cid != 'None':
+        cid_norm = _booth_nu(cid)
+        for c in wsd.get('CharacterContainerSaveData', {}).get('value', []) or []:
+            try:
+                cc = _booth_u2s(c.get('key', {}).get('ID', {}).get('value', ''))
+            except Exception:
+                continue
+            if _booth_nu(cc) == cid_norm:
+                for s in c.get('value', {}).get('Slots', {}).get('value', {}).get('values', []) or []:
+                    rv = s.get('RawData', {}).get('value', {}) or {}
+                    iid = _booth_u2s(rv.get('instance_id', ''))
+                    entry = {'slot_instance_id': iid, 'slot_player_uid': _booth_u2s(rv.get('player_uid', '')), 'source': 'CharacterContainer Slot'}
+                    for ch in wsd.get('CharacterSaveParameterMap', {}).get('value', []) or []:
+                        try:
+                            if _booth_nu(ch.get('key', {}).get('InstanceId', {}).get('value', '')) == _booth_nu(iid):
+                                sp = ch['value']['RawData']['value']['object']['SaveParameter']['value']
+                                entry.update({
+                                    'CharacterID': sp.get('CharacterID', {}).get('value', ''),
+                                    'Level': sp.get('Level', {}).get('value', sp.get('Level', {})),
+                                    'OwnerPlayerUId': _booth_u2s(sp.get('OwnerPlayerUId', {}).get('value', 'MISSING')) if 'OwnerPlayerUId' in sp else 'MISSING',
+                                })
+                                lvl = entry['Level']
+                                if isinstance(lvl, dict) and 'value' in lvl:
+                                    entry['Level'] = lvl['value']
+                                break
+                        except Exception:
+                            continue
+                    pals.append(entry)
+                break
+    for ti in booth.get('trade_infos', []) or []:
+        pal_id = ti.get('pal_id', {}) if isinstance(ti, dict) else {}
+        if pal_id and 'instance_id' in pal_id:
+            iid = _booth_u2s(pal_id.get('instance_id', ''))
+            cost = ti.get('cost', {}) if isinstance(ti.get('cost'), dict) else {}
+            entry2 = {
+                'slot_instance_id': iid,
+                'slot_player_uid': _booth_u2s(pal_id.get('player_uid', '')),
+                'seller_player_uid': _booth_u2s(ti.get('seller_player_uid', '')),
+                'cost_id': cost.get('static_id', ''),
+                'cost_num': cost.get('num', ''),
+                'source': 'trade_infos',
+            }
+            for ch in wsd.get('CharacterSaveParameterMap', {}).get('value', []) or []:
+                try:
+                    if _booth_nu(ch.get('key', {}).get('InstanceId', {}).get('value', '')) == _booth_nu(iid):
+                        sp = ch['value']['RawData']['value']['object']['SaveParameter']['value']
+                        entry2.update({
+                            'CharacterID': sp.get('CharacterID', {}).get('value', ''),
+                            'OwnerPlayerUId': _booth_u2s(sp.get('OwnerPlayerUId', {}).get('value', 'MISSING')) if 'OwnerPlayerUId' in sp else 'MISSING',
+                            'Level': sp.get('Level', {}).get('value', sp.get('Level', {})),
+                        })
+                        if isinstance(entry2['Level'], dict) and 'value' in entry2['Level']:
+                            entry2['Level'] = entry2['Level']['value']
+                        break
+                except Exception:
+                    continue
+            pals.append(entry2)
+    return pals
+
+
+def get_palbooth_report(parent=None):
+    """
+    LOAD and READ palbooths data — returns every PalBooth/ItemBooth with
+    private lock state, owneruid, pals, trade info, etc.
+    No mutation. Safe to call anytime a save is loaded.
+    """
+    if not constants.loaded_level_json:
+        return {'booths': [], 'count': 0, 'error': 'No save loaded'}
+    wsd = constants.loaded_level_json['properties']['worldSaveData']['value']
+    booths = _snapshot_booths_internal(wsd)
+    # Enrich each booth with pals + trade summary for display
+    enriched = []
+    for b in booths:
+        pals = _resolve_booth_pals_internal(wsd, b)
+        # Build a JSON-safe copy without _conc/_model
+        copy = {k: v for k, v in b.items() if not k.startswith('_')}
+        copy['pals'] = pals
+        # Summaries for quick UI
+        if b['MapObjectId'] == 'PalBooth':
+            copy['trade_summary'] = [
+                {'pal_instance': _booth_u2s(t.get('pal_id', {}).get('instance_id', '')), 'seller': _booth_u2s(t.get('seller_player_uid', '')), 'cost': f"{t.get('cost',{}).get('static_id','')} x{t.get('cost',{}).get('num','')}"}
+                for t in b['trade_infos']
+            ]
+        else:
+            copy['trade_summary'] = [
+                {'product': t.get('product',{}).get('static_id',''), 'cost': f"{t.get('cost',{}).get('static_id','')} x{t.get('cost',{}).get('num','')}", 'seller': _booth_u2s(t.get('seller_player_uid',''))}
+                for t in b['trade_infos']
+            ]
+        enriched.append(copy)
+    return {'booths': enriched, 'count': len(enriched), 'palbooth_count': sum(1 for b in enriched if b['MapObjectId']=='PalBooth'), 'itembooth_count': sum(1 for b in enriched if b['MapObjectId']=='ItemBooth')}
+
+
+def rebuild_all_guilds_with_report(parent=None):
+    """
+    SHOW the updated save result of using Fix All Guilds (rebuild_all_guilds)
+    before and after — returns a report proving booth data survived.
+
+    Report shape:
+      {
+        'ok': bool, 'before': [...booth dicts...], 'after': [...],
+        'diff': [...], 'pals_before': {...}, 'pals_after': {...},
+        'counts': {'before': int, 'after': int, 'locked_before': int, 'locked_after': int}
+      }
+    Booth dicts are same shape as get_palbooth_report()['booths'].
+    """
+    if not constants.loaded_level_json:
+        return {'ok': False, 'error': 'No save loaded', 'before': [], 'after': []}
+    wsd = constants.loaded_level_json['properties']['worldSaveData']['value']
+    # --- BEFORE snapshot (proves we can READ) ---
+    before_raw = _snapshot_booths_internal(wsd)
+    before = []
+    for b in before_raw:
+        pals = _resolve_booth_pals_internal(wsd, b)
+        before.append({k: v for k, v in b.items() if not k.startswith('_') } | {'pals': pals})
+
+    # --- FIX ---
+    from palworld_aio.managers.guild_manager import rebuild_all_guilds as _rebuild
+    ok = _rebuild()
+
+    # --- AFTER snapshot (proves updated save result) ---
+    wsd_after = constants.loaded_level_json['properties']['worldSaveData']['value']
+    after_raw = _snapshot_booths_internal(wsd_after)
+    after = []
+    for b in after_raw:
+        pals = _resolve_booth_pals_internal(wsd_after, b)
+        after.append({k: v for k, v in b.items() if not k.startswith('_')} | {'pals': pals})
+
+    # --- DIFF (what Fix All Guilds changed) ---
+    def _key(b):
+        v = b.get('model_raw_instance_id') or b.get('instance_id') or ''
+        if v and v != 'None':
+            return _booth_nu(v)
+        pos = b.get('pos', {})
+        if isinstance(pos, dict) and pos.get('x') is not None:
+            try:
+                return f"pos:{float(pos['x']):.1f},{float(pos['y']):.1f},{float(pos['z']):.1f}"
+            except Exception:
+                pass
+        return b.get('instance_id', '')
+    before_map = {_key(b): b for b in before}
+    after_map = {_key(b): b for b in after}
+    diff = []
+    for k in sorted(set(before_map) | set(after_map)):
+        b = before_map.get(k)
+        a = after_map.get(k)
+        if b and not a:
+            diff.append({'key': k, 'status': 'MISSING_AFTER', 'before': b})
+        elif a and not b:
+            diff.append({'key': k, 'status': 'NEW_AFTER', 'after': a})
+        else:
+            changes = []
+            for field in ('is_private_lock', 'private_lock_player_uid', 'group_id_belong_to', 'build_player_uid', 'char_container_id'):
+                if _booth_nu(str(b.get(field) or '')) != _booth_nu(str(a.get(field) or '')):
+                    if field == 'is_private_lock' and b.get(field) != a.get(field):
+                        changes.append(f"{field}: {b.get(field)} -> {a.get(field)}")
+                    elif field != 'is_private_lock':
+                        changes.append(f"{field}: {b.get(field)} -> {a.get(field)}")
+                    elif b.get(field) != a.get(field):
+                        changes.append(f"{field}: {b.get(field)} -> {a.get(field)}")
+            if len(b.get('trade_infos',[])) != len(a.get('trade_infos',[])):
+                changes.append(f"trade_infos len: {len(b.get('trade_infos',[]))} -> {len(a.get('trade_infos',[]))}")
+            else:
+                for i, (tb, ta) in enumerate(zip(b.get('trade_infos',[]), a.get('trade_infos',[]))):
+                    if _booth_u2s(tb.get('seller_player_uid')) != _booth_u2s(ta.get('seller_player_uid')):
+                        changes.append(f"trade[{i}].seller: {_booth_u2s(tb.get('seller_player_uid'))} -> {_booth_u2s(ta.get('seller_player_uid'))}")
+            if changes:
+                diff.append({'key': k, 'status': 'DIFF', 'changes': changes, 'before': b, 'after': a})
+            else:
+                diff.append({'key': k, 'status': 'OK', 'before': b, 'after': a})
+
+    counts = {
+        'before': len(before),
+        'after': len(after),
+        'locked_before': sum(1 for b in before if b.get('is_private_lock') == 1),
+        'locked_after': sum(1 for b in after if b.get('is_private_lock') == 1),
+        'palbooth_before': sum(1 for b in before if b['MapObjectId'] == 'PalBooth'),
+        'palbooth_after': sum(1 for b in after if b['MapObjectId'] == 'PalBooth'),
+    }
+    return {'ok': bool(ok), 'before': before, 'after': after, 'diff': diff, 'counts': counts}
+

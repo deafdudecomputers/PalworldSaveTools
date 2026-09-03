@@ -69,6 +69,8 @@ def decode_bytes(parent_reader: FArchiveReader, m_bytes: Sequence[int], object_i
                     else:
                         raise ValueError(f'PalBooth trailing bytes mismatch: {remaining}')
                 except Exception:
+                    # Fallback to opaque — remove partially decoded trade_infos so encode uses unknown_prefix path and round-trips
+                    data.pop('trade_infos', None)
                     reader.data.seek(pos_before)
                     rest = reader.read_to_end()
                     if len(rest) >= 18:

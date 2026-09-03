@@ -299,7 +299,26 @@ def rebuild_all_guilds():
         elif hasattr(obj, 'raw_bytes'):
             return str(obj)
         return obj
+    # Debug: always log when Fix All Guilds is called (GUI had no prints before)
+    try:
+        print(f"[rebuild_all_guilds] TRIGGERED save_path={constants.current_save_path} loaded={bool(constants.loaded_level_json)}")
+        import logging
+        logging.info(f"rebuild_all_guilds TRIGGERED save_path={constants.current_save_path}")
+        # Also log booth count before for OWNERUID verification
+        if constants.loaded_level_json:
+            _wsd_dbg = constants.loaded_level_json['properties']['worldSaveData']['value']
+            _bcount = len([o for o in _wsd_dbg.get('MapObjectSaveData',{}).get('value',{}).get('values',[]) if o.get('MapObjectId',{}).get('value') in ('PalBooth','ItemBooth')])
+            print(f"[rebuild_all_guilds] BEFORE booths={_bcount}")
+            logging.info(f"rebuild_all_guilds BEFORE booths={_bcount}")
+    except:
+        pass
     if not constants.current_save_path or not constants.loaded_level_json:
+        try:
+            print("[rebuild_all_guilds] SKIPPED - no save loaded (current_save_path or loaded_level_json is None)")
+            import logging
+            logging.warning("rebuild_all_guilds SKIPPED - no save loaded")
+        except:
+            pass
         return False
     wsd = constants.loaded_level_json['properties']['worldSaveData']['value']
     def nu(x):
@@ -347,6 +366,13 @@ def rebuild_all_guilds():
     # misses them. Build a separate lookup so is_base pals that live
     # in a PalBooth keep their booth container on rebuild.
     booth_char_container_to_guild = {}
+    # Like unlock_all_private_chests, we want to skip PalBooth/ItemBooth entirely.
+    # Keep sets of ALL booth container IDs regardless of guild lookup,
+    # so any pal in a booth container is never treated as a regular guild/base pal,
+    # and so _apply_remap never touches booth container IDs (which would break
+    # the link between booth ModuleMap and CharacterContainerSaveData/ItemContainerSaveData).
+    booth_char_container_ids: set[str] = set()
+    booth_item_container_ids: set[str] = set()
     try:
         map_objs = wsd.get('MapObjectSaveData', {}).get('value', {}).get('values', [])
         for obj in map_objs:
@@ -354,9 +380,17 @@ def rebuild_all_guilds():
                 mid = obj.get('MapObjectId', {}).get('value', '')
                 if mid not in ('PalBooth', 'ItemBooth'):
                     continue
+                mm = obj.get('ConcreteModel', {}).get('value', {}).get('ModuleMap', {}).get('value', [])
+                for mod in mm:
+                    if mod.get('key') == 'EPalMapObjectConcreteModelModuleType::CharacterContainer':
+                        cid = mod.get('value', {}).get('RawData', {}).get('value', {}).get('target_container_id')
+                        if cid:
+                            booth_char_container_ids.add(nu(cid))
+                    if mod.get('key') == 'EPalMapObjectConcreteModelModuleType::ItemContainer':
+                        cid2 = mod.get('value', {}).get('RawData', {}).get('value', {}).get('target_container_id')
+                        if cid2:
+                            booth_item_container_ids.add(nu(cid2))
                 m_raw = obj.get('Model', {}).get('value', {}).get('RawData', {}).get('value', {})
-                # PalBooth is owned at the MapObject group level; fall back
-                # to its base_camp's guild if needed
                 gid_norm = nu(m_raw.get('group_id_belong_to', ''))
                 if not gid_norm or gid_norm not in guild_info:
                     base_camp_id = nu(m_raw.get('base_camp_id_belong_to', ''))
@@ -366,7 +400,6 @@ def rebuild_all_guilds():
                             break
                 if not gid_norm or gid_norm not in guild_info:
                     continue
-                mm = obj.get('ConcreteModel', {}).get('value', {}).get('ModuleMap', {}).get('value', [])
                 for mod in mm:
                     if mod.get('key') == 'EPalMapObjectConcreteModelModuleType::CharacterContainer':
                         cid = mod.get('value', {}).get('RawData', {}).get('value', {}).get('target_container_id')
@@ -376,6 +409,7 @@ def rebuild_all_guilds():
                 continue
     except:
         pass
+    booth_all_container_ids = booth_char_container_ids | booth_item_container_ids
     removed_instances = set()
     guild_pal_entries = {}
     orphan_entries = []
@@ -394,6 +428,7 @@ def rebuild_all_guilds():
             gid_from_raw_norm = nu(gid_from_raw) if gid_from_raw else ''
             target_guild_norm = None
             is_base = False
+            is_booth = False
             eff_norm = ''
             # Market pals live in a PalBooth CharacterContainer — keep
             # them in that booth even though their owner (000...01) is a
@@ -404,9 +439,18 @@ def rebuild_all_guilds():
                 slot_container_norm = nu(sp.get('SlotId', {}).get('value', {}).get('ContainerId', {}).get('value', {}).get('ID', {}).get('value', ''))
             except:
                 pass
-            if slot_container_norm and slot_container_norm in booth_char_container_to_guild:
-                target_guild_norm = booth_char_container_to_guild[slot_container_norm]
+            if slot_container_norm and (slot_container_norm in booth_char_container_to_guild or slot_container_norm in booth_char_container_ids):
+                target_guild_norm = booth_char_container_to_guild.get(slot_container_norm, "")
+                # If booth container not mapped to a guild (fallback), still treat as booth to skip
+                if not target_guild_norm:
+                    # Find any guild that has this booth container via direct scan (already in booth_char_container_ids)
+                    # Just keep it as booth without guild assignment — will be preserved via is_booth skip
+                    is_booth = True
+                    is_base = True
+                    # Don't assign to guild_pal_entries; keep pal untouched in place
+                    continue
                 is_base = True
+                is_booth = True
             elif owner_norm and owner_norm in player_to_guild:
                 target_guild_norm = player_to_guild[owner_norm]
             else:
@@ -420,7 +464,9 @@ def rebuild_all_guilds():
             if target_guild_norm:
                 if target_guild_norm not in guild_pal_entries:
                     guild_pal_entries[target_guild_norm] = []
-                guild_pal_entries[target_guild_norm].append({'entry': ch, 'is_base': is_base, 'effective_owner': eff_norm if not owner_norm and eff_norm else ''})
+                # is_booth marks PalBooth/ItemBooth market listings — their OwnerPlayerUId
+                # must be preserved (seller 000...01) not zeroed like normal base pals.
+                guild_pal_entries[target_guild_norm].append({'entry': ch, 'is_base': is_base, 'is_booth': is_booth, 'original_owner': owner if is_booth else '', 'effective_owner': eff_norm if not owner_norm and eff_norm else ''})
             else:
                 orphan_entries.append(ch)
                 removed_instances.add(str(inst))
@@ -430,6 +476,9 @@ def rebuild_all_guilds():
     all_remove_instances = set(removed_instances)
     for gn, entries in guild_pal_entries.items():
         for pe in entries:
+            # is_booth pals stay in booth container - don't delete/recreate them
+            if pe.get('is_booth'):
+                continue
             inst = pe['entry']['key']['InstanceId']['value']
             all_remove_instances.add(str(inst))
     for cont in containers:
@@ -534,8 +583,13 @@ def rebuild_all_guilds():
             continue
         group_id = gi['group_id']
         for pe in entries:
+            # is_booth pals are market listings - keep original, don't delete/recreate (preserves Owner and avoids pal disappearance)
+            if pe.get('is_booth'):
+                continue
             ch = pe['entry']
             is_base = pe['is_base']
+            is_booth = pe.get('is_booth', False)
+            original_owner = pe.get('original_owner', '')
             try:
                 sp = ch['value']['RawData']['value']['object']['SaveParameter']['value']
                 cid = extract_value(sp, 'CharacterID', '')
@@ -543,8 +597,11 @@ def rebuild_all_guilds():
                 owner_field = sp.get('OwnerPlayerUId')
                 owner = owner_field.get('value', '') if isinstance(owner_field, dict) else ''
                 owner_norm = nu(owner) if owner else ''
-                if is_base:
-                    owner = '00000000-0000-0000-0000-000000000000'
+                # TEST REMOVED: never zero owner - preserve original for all pals
+                if is_booth and original_owner:
+                    owner = original_owner
+                    owner_norm = nu(owner) if owner else ''
+                # elif is_base: owner='00000000-0000-0000-0000-000000000000'  # REMOVED per user request
                 if is_base:
                     import sys as _sys
                     slot_field = sp.get('SlotId', {})
@@ -621,11 +678,15 @@ def rebuild_all_guilds():
                     if k in ('CharacterID', 'NickName', 'OwnerPlayerUId', 'SlotId', 'IndividualId'):
                         continue
                     new_sp[k] = _uuid_to_str(fast_deepcopy(v))
-                if is_base:
-                    new_sp.pop('OwnerPlayerUId', None)
+                # TEST REMOVED: never pop/zero - preserve original Owner for all pals
+                if 'OwnerPlayerUId' in sp:
+                    orig_val = sp['OwnerPlayerUId'].get('value','') if isinstance(sp.get('OwnerPlayerUId'), dict) else ''
+                    new_sp['OwnerPlayerUId'] = {'id': None, 'type': 'StructProperty', 'struct_type': 'Guid', 'struct_id': '00000000-0000-0000-0000-000000000000', 'value': str(orig_val) if not isinstance(orig_val, str) else orig_val}
+                elif is_booth and original_owner:
+                    owner_str = str(original_owner) if not isinstance(original_owner, str) else original_owner
+                    new_sp['OwnerPlayerUId'] = {'id': None, 'type': 'StructProperty', 'struct_type': 'Guid', 'struct_id': '00000000-0000-0000-0000-000000000000', 'value': owner_str}
                 else:
-                    owner_str = str(owner) if not isinstance(owner, str) else owner
-                    new_sp['OwnerPlayerUId']['value'] = owner_str
+                    new_sp.pop('OwnerPlayerUId', None)
                 target_cid_str = str(target_cid) if not isinstance(target_cid, str) else target_cid
                 new_sp['SlotId']['value']['ContainerId']['value']['ID']['value'] = target_cid_str
                 new_sp['SlotId']['value']['SlotIndex']['value'] = slot_idx
@@ -650,8 +711,12 @@ def rebuild_all_guilds():
                 for k in list(new_sp.keys()):
                     new_sp[k] = sp_cleaned[k]
                 from palsav.archive import UUID as _ArchUUID
-                if not is_base:
-                    new_sp['OwnerPlayerUId']['value'] = _ArchUUID.from_str(str(new_sp['OwnerPlayerUId']['value']))
+                # TEST REMOVED: always convert if Owner exists (preserve for all)
+                if 'OwnerPlayerUId' in new_sp and 'value' in new_sp['OwnerPlayerUId']:
+                    try:
+                        new_sp['OwnerPlayerUId']['value'] = _ArchUUID.from_str(str(new_sp['OwnerPlayerUId']['value']))
+                    except:
+                        pass
                 new_sp['SlotId']['value']['ContainerId']['value']['ID']['value'] = _ArchUUID.from_str(str(new_sp['SlotId']['value']['ContainerId']['value']['ID']['value']))
                 skeleton['value']['RawData']['value']['group_id'] = _ArchUUID.from_str(str(skeleton['value']['RawData']['value']['group_id']))
                 from palworld_aio.utils import safe_nested_get, calculate_max_hp
@@ -695,6 +760,13 @@ def rebuild_all_guilds():
             container_map[cid_norm] = cont
         slots = cont.get('value', {}).get('Slots', {}).get('value', {}).get('values', [])
         slots.append(slot_entry)
+    # Booth pals are kept in-place (not recreated) — keep their instance_ids
+    # in the guild's individual_character_handle_ids so the game still
+    # considers them guild-owned. Without this, AFTER handles loses the
+    # booth pal (e.g. 2b28… 58→57) and private lock breaks for the owner.
+    booth_handles_per_guild: dict[str, list] = {}
+    for gn, entries in guild_pal_entries.items():
+        booth_handles_per_guild[gn] = [pe['entry']['key']['InstanceId']['value'] for pe in entries if pe.get('is_booth')]
     for gn, gi in guild_info.items():
         raw = gi['group']['value']['RawData']['value']
         raw['individual_character_handle_ids'] = []
@@ -711,11 +783,61 @@ def rebuild_all_guilds():
             if key not in seen:
                 raw['individual_character_handle_ids'].append({'guid': zero, 'instance_id': inst})
                 seen.add(key)
+        for inst in booth_handles_per_guild.get(gn, []):
+            key = nu(inst)
+            if key not in seen:
+                raw['individual_character_handle_ids'].append({'guid': zero, 'instance_id': inst})
+                seen.add(key)
+    booth_snap_by_idx: dict[int, dict] = {}
     if remap:
         new_obj_by_old = {old: UUID.from_str(new) for old, new in remap.items()}
         new_str_by_old = {old: new for old, new in remap.items()}
+        # Save Booth OWNERUID + lock before _apply_remap — it remaps ALL UUIDs
+        # across wsd, including build_player_uid / group_id_belong_to /
+        # owner_instance_id / seller_player_uid inside booth Model/Concrete.
+        # If any of those UIDs equals an old pal InstanceId, remap would
+        # break the booth's OWNERUID and private lock for the owner.
+        # Use index-based snapshot (deepcopy) so we can restore the ENTIRE
+        # booth owner state after remap, regardless of key collision.
+        try:
+            map_objs = wsd.get('MapObjectSaveData', {}).get('value', {}).get('values', [])
+            for idx, obj in enumerate(map_objs):
+                try:
+                    mid = obj.get('MapObjectId', {}).get('value', '')
+                    if mid not in ('PalBooth', 'ItemBooth'):
+                        continue
+                    raw = obj.get('ConcreteModel', {}).get('value', {}).get('RawData', {}).get('value', {})
+                    model = obj.get('Model', {}).get('value', {}).get('RawData', {}).get('value', {})
+                    # Deepcopy entire Model+Concrete+ModuleMap so every owner field is saved:
+                    # Model: instance_id, concrete_model_instance_id, base_camp_id_belong_to,
+                    # group_id_belong_to, repair_work_id, owner_spawner_level_object_instance_id,
+                    # owner_instance_id, build_player_uid, stage_instance_id_belong_to
+                    # Concrete: instance_id, model_instance_id, is_private_lock,
+                    # private_lock_player_uid, trade_infos[].seller/pal_id
+                    # ModuleMap: target_container_id for CharacterContainer/ItemContainer (links to
+                    # CharacterContainerSaveData/ItemContainerSaveData — must not be remapped)
+                    mm = obj.get('ConcreteModel', {}).get('value', {}).get('ModuleMap', {}).get('value', [])
+                    booth_snap_by_idx[idx] = {
+                        'mid': mid,
+                        'model': fast_deepcopy(model),
+                        'raw': fast_deepcopy(raw),
+                        'module_map': fast_deepcopy(mm),
+                    }
+                except:
+                    continue
+        except:
+            pass
+
         def _apply_remap(node):
             if isinstance(node, dict):
+                # Skip PalBooth/ItemBooth entirely like unlock_all_private_chests does
+                # for concrete_model_type — never remap owner/lock UIDs inside booths,
+                # and never remap booth container IDs (which would break the link
+                # between booth ModuleMap and CharacterContainerSaveData/ItemContainerSaveData)
+                if node.get('MapObjectId', {}).get('value') in ('PalBooth', 'ItemBooth'):
+                    return node
+                if node.get('concrete_model_type') in ('PalMapObjectPalBoothModel', 'PalMapObjectItemBoothModel'):
+                    return node
                 for k in node:
                     node[k] = _apply_remap(node[k])
                 return node
@@ -724,16 +846,73 @@ def rebuild_all_guilds():
                     node[i] = _apply_remap(node[i])
                 return node
             if isinstance(node, UUID):
-                return new_obj_by_old.get(str(node).replace('-', '').lower(), node)
+                nid = str(node).replace('-', '').lower()
+                if nid in booth_all_container_ids:
+                    return node
+                return new_obj_by_old.get(nid, node)
             if isinstance(node, str):
                 if len(node) == 36 and node[8] == '-' and node[13] == '-' and node[18] == '-' and node[23] == '-':
-                    return new_str_by_old.get(node.replace('-', '').lower(), node)
+                    nid2 = node.replace('-', '').lower()
+                    if nid2 in booth_all_container_ids:
+                        return node
+                    return new_str_by_old.get(nid2, node)
                 return node
             return node
         _apply_remap(wsd)
+
+    # Restore Booth OWNERUID + lock after _apply_remap — index-based so
+    # no key collision can make restore miss. Restores every owner UUID
+    # that _apply_remap could have clobbered.
+    if booth_snap_by_idx and remap:
+        try:
+            map_objs = wsd.get('MapObjectSaveData', {}).get('value', {}).get('values', [])
+            for idx, obj in enumerate(map_objs):
+                snap = booth_snap_by_idx.get(idx)
+                if not snap:
+                    continue
+                try:
+                    raw = obj.get('ConcreteModel', {}).get('value', {}).get('RawData', {}).get('value', {})
+                    model = obj.get('Model', {}).get('value', {}).get('RawData', {}).get('value', {})
+                    snap_model = snap['model']
+                    snap_raw = snap['raw']
+                    # Model owner fields (every GUID that could be an OWNERUID)
+                    for k in ('instance_id', 'concrete_model_instance_id', 'base_camp_id_belong_to', 'group_id_belong_to', 'repair_work_id', 'owner_spawner_level_object_instance_id', 'owner_instance_id', 'build_player_uid'):
+                        if k in snap_model:
+                            model[k] = snap_model[k]
+                    if 'stage_instance_id_belong_to' in snap_model:
+                        model['stage_instance_id_belong_to'] = fast_deepcopy(snap_model['stage_instance_id_belong_to'])
+                    # Concrete owner/lock fields — restore wholesale for PalBooth/ItemBooth
+                    for k in ('instance_id', 'model_instance_id', 'is_private_lock', 'private_lock_player_uid'):
+                        if k in snap_raw:
+                            raw[k] = snap_raw[k]
+                    if 'trade_infos' in snap_raw:
+                        raw['trade_infos'] = fast_deepcopy(snap_raw['trade_infos'])
+                    # Preserve raw bytes that carry lock suffix (no UUIDs but keep intact)
+                    for k in ('leading_bytes', 'unknown_mid', 'trailing_bytes', 'unknown_prefix', 'unknown_before_lock', 'unknown_after_lock'):
+                        if k in snap_raw:
+                            raw[k] = fast_deepcopy(snap_raw[k])
+                    # ModuleMap target_container_ids (links booth to its containers)
+                    if 'module_map' in snap:
+                        try:
+                            cm = obj.get('ConcreteModel', {}).get('value', {}).get('ModuleMap', {}).get('value', [])
+                            cm[:] = fast_deepcopy(snap['module_map'])
+                        except:
+                            pass
+                except:
+                    continue
+        except:
+            pass
     duplicates = debug_check_duplicate_handles()
     if duplicates:
         print(f'DUPLICATE HANDLES DETECTED: {duplicates}')
+    try:
+        _wsd_after = constants.loaded_level_json['properties']['worldSaveData']['value']
+        _bcount_after = len([o for o in _wsd_after.get('MapObjectSaveData',{}).get('value',{}).get('values',[]) if o.get('MapObjectId',{}).get('value') in ('PalBooth','ItemBooth')])
+        print(f"[rebuild_all_guilds] DONE booths after={_bcount_after} remap={len(remap) if 'remap' in locals() else 0}")
+        import logging
+        logging.info(f"rebuild_all_guilds DONE booths after={_bcount_after}")
+    except:
+        pass
     return True
 def make_member_leader(guild_id, player_uid):
     if not constants.loaded_level_json:
