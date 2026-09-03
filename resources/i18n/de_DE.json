@@ -2149,5 +2149,7 @@
     "player.reset_completion_screen": "Abschlussbildschirm zurücksetzen",
     "player.reset_completion_screen.success": "Zurücksetzen des Abschlussbildschirms — beim nächsten Löschen des Weltbaums wird der erste Löschbildschirm angezeigt",
     "player.reset_completion_screen.failed": "Fehler beim Zurücksetzen des Abschlussbildschirms",
-    "update.disable_check": "Disable Update Check"
+    "update.disable_check": "Aktualisierungsprüfung deaktivieren",
+    "update.check_status.title": "Aktualisierungsüberprüfung",
+    "update.check_status.message": "Überprüfungen {status} aktualisieren. Ein Neustart kann für die volle Wirkung erforderlich sein."
 }

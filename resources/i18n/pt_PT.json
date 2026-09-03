@@ -2251,5 +2251,7 @@
     "player.reset_completion_screen": "Redefinir tela de conclusão",
     "player.reset_completion_screen.success": "Redefinição da tela de conclusão — a próxima limpeza da Árvore do Mundo mostrará a primeira limpeza da tela",
     "player.reset_completion_screen.failed": "Falha ao redefinir a tela de conclusão",
-    "update.disable_check": "Disable Update Check"
+    "update.disable_check": "Desativar verificação de actualização",
+    "update.check_status.title": "Verificar Atualização MMEX",
+    "update.check_status.message": "Atualize as verificações {status}. Pode ser necessário reiniciar para obter o efeito total."
 }

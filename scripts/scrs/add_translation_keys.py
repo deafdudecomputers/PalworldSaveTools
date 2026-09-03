@@ -17,6 +17,8 @@ NEW_TRANSLATIONS = {
     'player.reset_completion_screen.success': 'Completion screen reset — next World Tree clear will show first-clear screen',
     'player.reset_completion_screen.failed': 'Failed to reset completion screen',
     'update.disable_check': 'Disable Update Check',
+    'update.check_status.title': 'Update Check',
+    'update.check_status.message': 'Update checks {status}. Restart may be required for full effect.',
 }
 OLD_KEYS = []
 def _clean_uv_locks():

@@ -2472,5 +2472,7 @@
     "Target Player: {name}({guid})": "Target Player: {name} ({guid})",
     "This is NOT Level.sav.Please select Level.sav file.": "This is not Level.sav. Please select Level.sav.",
     "Transfer complete and backup created!": "Transfer complete and backup created!",
-    "update.disable_check": "Disable Update Check"
+    "update.disable_check": "Disable Update Check",
+    "update.check_status.title": "Update Check",
+    "update.check_status.message": "Update checks {status}. Restart may be required for full effect."
 }

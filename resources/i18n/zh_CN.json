@@ -2222,5 +2222,7 @@
     "Target Player: {name}({guid})": "目标玩家：{name}（{guid}）",
     "This is NOT Level.sav.Please select Level.sav file.": "这不是 Level.sav，请重新选择 Level.sav 文件。",
     "Transfer complete and backup created!": "转移完成，备份已创建！",
-    "update.disable_check": "Disable Update Check"
+    "update.disable_check": "禁用更新检查",
+    "update.check_status.title": "检查更新",
+    "update.check_status.message": "更新检查__ PH0 __。可能需要重新启动才能完全生效。"
 }

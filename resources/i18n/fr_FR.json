@@ -2107,5 +2107,7 @@
     "player.reset_completion_screen": "Écran Réinitialiser l'achèvement",
     "player.reset_completion_screen.success": "Réinitialisation de l'écran d'achèvement — le prochain World Tree Clear affichera le premier écran clair",
     "player.reset_completion_screen.failed": "Échec de la réinitialisation de l'écran d'",
-    "update.disable_check": "Disable Update Check"
+    "update.disable_check": "Désactiver la vérification de mise à jour",
+    "update.check_status.title": "Update Check",
+    "update.check_status.message": "Mettre à jour les vérifications {status}. Un redémarrage peut être nécessaire pour un effet complet."
 }

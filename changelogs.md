@@ -4,6 +4,7 @@
 - **Simplified Chinese now covers the whole game** — Pal names, partner skills, passive traits, active skills, elements, items, structures, technologies and work suitability now show proper Simplified Chinese everywhere — Pal Editor, inventory, wiki and technology views — while save IDs stay untouched. UI, in-app guides and README are refined, the README language switcher is clearer, and a new English–Chinese glossary is included.
 - **Character transfer no longer leaves stale base camp points** — creating a new guild during character transfer now properly clears its base camp points to an empty list instead of deleting the field, preventing leftover references.
 - **Cleaning up unused data no longer breaks Ancient Hatchery and Ancient Relic Recycler** — those two structures were stored in a special way the app didn't fully understand, so their internal inventories and breeding data looked like unused junk and were removed. They are now decoded correctly with all their contents kept intact, and their storage is always preserved during cleanup.
+- **Disable update check option** — new config in Menu > Configs > Disable Update Check lets you turn off automatic update checks and the version chip pulse animation entirely. Shows a confirmation message when toggled.
 - Bumped version to 2.4.3
 
 #2.4.2

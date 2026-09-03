@@ -2119,5 +2119,7 @@
     "player.reset_completion_screen": "Restablecer pantalla de finalización",
     "player.reset_completion_screen.success": "Restablecimiento de la pantalla de finalización: el siguiente Árbol del mundo borrado mostrará la primera pantalla de borrado",
     "player.reset_completion_screen.failed": "No se ha podido restablecer la pantalla de finalización",
-    "update.disable_check": "Disable Update Check"
+    "update.disable_check": "Desactivar la comprobación de actualización",
+    "update.check_status.title": "Comprobación de actualización",
+    "update.check_status.message": "Comprobaciones de actualización {status}. Es posible que sea necesario reiniciar para que surta efecto."
 }

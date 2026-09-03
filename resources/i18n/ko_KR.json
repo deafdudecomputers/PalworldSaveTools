@@ -2124,5 +2124,7 @@
     "player.reset_completion_screen": "완료 화면 재설정",
     "player.reset_completion_screen.success": "완료 화면 재설정 — 다음 월드 트리 클리어는 첫 번째 선명한 화면을 표시합니다",
     "player.reset_completion_screen.failed": "완료 화면을 재설정하지 못했습니다",
-    "update.disable_check": "Disable Update Check"
+    "update.disable_check": "업데이트 확인 비활성화",
+    "update.check_status.title": "업데이트 확인",
+    "update.check_status.message": "업데이트 확인 __ PH0 __. 완전한 효과를 얻으려면 다시 시작해야 할 수 있습니다."
 }

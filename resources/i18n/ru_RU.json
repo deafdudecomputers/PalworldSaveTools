@@ -2123,5 +2123,7 @@
     "player.reset_completion_screen": "Экран завершения сброса",
     "player.reset_completion_screen.success": "Сброс экрана завершения — следующее чистое мировое дерево покажет первый чистый экран",
     "player.reset_completion_screen.failed": "Не удалось сбросить экран завершения",
-    "update.disable_check": "Disable Update Check"
+    "update.disable_check": "Отключить проверку обновлений",
+    "update.check_status.title": "Проверить обновления",
+    "update.check_status.message": "Проверка обновлений {status}. Для полного выполнения может потребоваться перезапуск."
 }
