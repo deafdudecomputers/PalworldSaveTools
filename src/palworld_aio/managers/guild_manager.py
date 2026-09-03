@@ -299,26 +299,7 @@ def rebuild_all_guilds():
         elif hasattr(obj, 'raw_bytes'):
             return str(obj)
         return obj
-    # Debug: always log when Fix All Guilds is called (GUI had no prints before)
-    try:
-        print(f"[rebuild_all_guilds] TRIGGERED save_path={constants.current_save_path} loaded={bool(constants.loaded_level_json)}")
-        import logging
-        logging.info(f"rebuild_all_guilds TRIGGERED save_path={constants.current_save_path}")
-        # Also log booth count before for OWNERUID verification
-        if constants.loaded_level_json:
-            _wsd_dbg = constants.loaded_level_json['properties']['worldSaveData']['value']
-            _bcount = len([o for o in _wsd_dbg.get('MapObjectSaveData',{}).get('value',{}).get('values',[]) if o.get('MapObjectId',{}).get('value') in ('PalBooth','ItemBooth')])
-            print(f"[rebuild_all_guilds] BEFORE booths={_bcount}")
-            logging.info(f"rebuild_all_guilds BEFORE booths={_bcount}")
-    except:
-        pass
     if not constants.current_save_path or not constants.loaded_level_json:
-        try:
-            print("[rebuild_all_guilds] SKIPPED - no save loaded (current_save_path or loaded_level_json is None)")
-            import logging
-            logging.warning("rebuild_all_guilds SKIPPED - no save loaded")
-        except:
-            pass
         return False
     wsd = constants.loaded_level_json['properties']['worldSaveData']['value']
     def nu(x):
@@ -905,14 +886,6 @@ def rebuild_all_guilds():
     duplicates = debug_check_duplicate_handles()
     if duplicates:
         print(f'DUPLICATE HANDLES DETECTED: {duplicates}')
-    try:
-        _wsd_after = constants.loaded_level_json['properties']['worldSaveData']['value']
-        _bcount_after = len([o for o in _wsd_after.get('MapObjectSaveData',{}).get('value',{}).get('values',[]) if o.get('MapObjectId',{}).get('value') in ('PalBooth','ItemBooth')])
-        print(f"[rebuild_all_guilds] DONE booths after={_bcount_after} remap={len(remap) if 'remap' in locals() else 0}")
-        import logging
-        logging.info(f"rebuild_all_guilds DONE booths after={_bcount_after}")
-    except:
-        pass
     return True
 def make_member_leader(guild_id, player_uid):
     if not constants.loaded_level_json:
