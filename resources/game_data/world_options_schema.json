@@ -1,0 +1,636 @@
+{
+    "AdditionalDropItemNumWhenPlayerKillingInPvPMode": {
+        "default": 1,
+        "description": "When bAdditionalDropItemWhenPlayerKillingInPvPMode is enabled, the quantity of the item to drop.",
+        "type": "IntProperty",
+        "allowed_values" : [0, 9999]
+    },
+    "AdditionalDropItemWhenPlayerKillingInPvPMode": {
+        "default": "PlayerDropItem",
+        "description": "When bAdditionalDropItemWhenPlayerKillingInPvPMode is enabled, the ID of the item to drop.",
+        "type": "NameProperty",
+        "allowed_values":[
+            "PlayerDropItem"
+        ]
+    },
+    "AdminPassword": {
+        "default": "",
+        "description": "Password used to obtain administrative privileges on the server.",
+        "type": "StrProperty"
+    },
+    "AutoResetGuildTimeNoOnlinePlayers": {
+        "default": 72.0,
+        "description": "Offline duration before bAutoResetGuildNoOnlinePlayers triggers. Ignored if bAutoResetGuildNoOnlinePlayers is False.",
+        "type": "FloatProperty"
+    },
+    "AutoSaveSpan": {
+        "default": 30.0,
+        "type": "FloatProperty",
+        "naming": {
+            "ini": "AutoSaveSpan",
+            "sav": "autoSaveSpan",
+            "json": "autoSaveSpan"
+        }
+    },
+    "AutoTransferMasterCheckIntervalSeconds": {
+        "default": 3600.0,
+        "type": "FloatProperty"
+    },
+    "AutoTransferMasterThresholdDays": {
+        "default": 14,
+        "type": "IntProperty",
+        "allowed_values":[0, 999999]
+    },
+    "BanListURL": {
+        "default": "https://b.palworldgame.com/api/banlist.txt",
+        "type": "StrProperty"
+    },
+    "BaseCampMaxNum": {
+        "default": 128,
+        "description": "Total number of bases across the server.",
+        "type": "IntProperty",
+        "allowed_values":[1, 9999]
+    },
+    "BaseCampMaxNumInGuild": {
+        "default": 4,
+        "description": "Maximum number of bases per guild. Default: 4 (max 10).Increasing this value raises processing load.",
+        "type": "IntProperty",
+        "allowed_values":[0, 10]
+    },
+    "BaseCampWorkerMaxNum": {
+        "default": 15,
+        "description": "Maximum number of Pals per base (max 50).Increasing this value raises processing load.",
+        "type": "IntProperty",
+        "allowed_values":[0, 50]
+    },
+    "BlockRespawnTime": {
+        "default": 5.0,
+        "description": "Cooldown before you can respawn after death (seconds).",
+        "type": "FloatProperty"
+    },
+    "BuildObjectDamageRate": {
+        "default": 1.0,
+        "description": "Damage multiplier to buildings.",
+        "type": "FloatProperty"
+    },
+    "BuildObjectDeteriorationDamageRate": {
+        "default": 1.0,
+        "description": "Building decay speed multiplier.",
+        "type": "FloatProperty"
+    },
+    "BuildObjectHpRate": {
+        "default": 1.0,
+        "type": "FloatProperty"
+    },
+    "BuildingNameDisplayCacheTTLSeconds": {
+        "default": 60,
+        "type": "IntProperty"
+    },
+    "ChatPostLimitPerMinute": {
+        "default": 30,
+        "description": "Maximum number of chat messages allowed per minute.",
+        "type": "IntProperty"
+    },
+    "CollectionDropRate": {
+        "default": 1.0,
+        "description": "Gatherable items multiplier",
+        "type": "FloatProperty"
+    },
+    "CollectionObjectHpRate": {
+        "default": 1.0,
+        "description": "Gatherable objects health multiplier",
+        "type": "FloatProperty"
+    },
+    "CollectionObjectRespawnSpeedRate": {
+        "default": 1.0,
+        "description": "Gatherable objects respawn interval",
+        "type": "FloatProperty"
+    },
+    "CoopPlayerMaxNum": {
+        "default": 4,
+        "type": "IntProperty"
+    },
+    "CrossplayPlatforms": {
+        "array_type": "EnumProperty",
+        "default": [
+            "Steam",
+            "Xbox",
+            "PS5",
+            "Mac"
+        ],
+        "description": "Allowed platform to connect the server. Default: (Steam,Xbox,PS5,Mac)",
+        "enum_type": "EPalAllowConnectPlatform",
+        "type": "ArrayProperty",
+        "allowed_values": [
+            "Steam",
+            "Xbox",
+            "PS5",
+            "Mac"
+        ]
+    },
+    "DayTimeSpeedRate": {
+        "default": 1.0,
+        "description": "Daytime progression speed.",
+        "type": "FloatProperty"
+    },
+    "DeathPenalty": {
+        "default": "Item",
+        "description": "Death PenaltyNone : No drops, Item : Drop all items except equipment, ItemAndEquipment : Drop all items, All : Drop all items and all Pals on team",
+        "enum_type": "EPalOptionWorldDeathPenalty",
+        "type": "EnumProperty",
+        "allowed_values":[
+            "None",
+            "Item",
+            "ItemsAndEquipment"
+        ]
+    },
+    "DenyTechnologyList": {
+        "array_type": "NameProperty",
+        "default": "",
+        "description": "Disable specific technologies.Specify Technology IDs .Example: DenyTechnologyList=(\"\"PALBOX\"\", \"\"RepairBench\"\"))",
+        "type": "ArrayProperty",
+        "allowed_values":[]
+    },
+    "Difficulty": {
+        "default": "None",
+        "enum_type": "EPalOptionWorldDifficulty",
+        "type": "EnumProperty",
+        "allowed_values":[
+            "None",
+            "Casual",
+            "Normal",
+            "Hard"
+        ]
+    },
+    "DropItemAliveMaxHours": {
+        "default": 1.0,
+        "type": "FloatProperty"
+    },
+    "DropItemMaxNum": {
+        "default": 3000,
+        "type": "IntProperty"
+    },
+    "DropItemMaxNum_UNKO": {
+        "default": 100,
+        "type": "IntProperty"
+    },
+    "EnablePredatorBossPal": {
+        "default": true,
+        "type": "BoolProperty"
+    },
+    "EnemyDropItemRate": {
+        "default": 1.0,
+        "description": "Dropped item quantity multiplier.",
+        "type": "FloatProperty"
+    },
+    "EquipmentDurabilityDamageRate": {
+        "default": 1.0,
+        "description": "Equipment durability loss multiplier.",
+        "type": "FloatProperty"
+    },
+    "ExpRate": {
+        "default": 1.0,
+        "description": "EXP gain multiplier.",
+        "type": "FloatProperty"
+    },
+    "GuildPlayerMaxNum": {
+        "default": 20,
+        "description": "Max player number of guild.",
+        "type": "IntProperty"
+    },
+    "GuildRejoinCooldownMinutes": {
+        "default": 0,
+        "description": "Guild rejoin cooldown (minutes).",
+        "type": "IntProperty"
+    },
+    "ItemContainerForceMarkDirtyInterval": {
+        "default": 1.0,
+        "description": "How often to force re-sync while a container UI is open (seconds).",
+        "type": "FloatProperty"
+    },
+    "ItemCorruptionMultiplier": {
+        "default": 1.0,
+        "description": "Item corruption speed multiplier.",
+        "type": "FloatProperty"
+    },
+    "ItemWeightRate": {
+        "default": 1.0,
+        "description": "Item weight multiplier.",
+        "type": "FloatProperty"
+    },
+    "LogFormatType": {
+        "default": "Text",
+        "description": "Log format: Text or Json",
+        "enum_type": "EPalLogFormatType",
+        "type": "EnumProperty",
+        "allowed_values": [
+            "Text",
+            "Json"
+        ]
+    },
+    "MaxBuildingLimitNum": {
+        "default": 0,
+        "description": "Per-player building count cap (0 = unlimited).",
+        "type": "IntProperty"
+    },
+    "MaxGuildsPerFrame": {
+        "default": 10,
+        "type": "IntProperty"
+    },
+    "MonsterFarmActionSpeedRate": {
+        "default": 1.0,
+        "description": "Item production speed multiplier from grazing.",
+        "type": "FloatProperty"
+    },
+    "NightTimeSpeedRate": {
+        "default": 1.0,
+        "description": "Nighttime progression speed.",
+        "type": "FloatProperty"
+    },
+    "PalAutoHPRegeneRate": {
+        "default": 1.0,
+        "description": "Pal natural HP regen multiplier.",
+        "type": "FloatProperty"
+    },
+    "PalAutoHpRegeneRateInSleep": {
+        "default": 1.0,
+        "description": "Pal HP regen while sleeping (in Palbox) multiplier.",
+        "type": "FloatProperty"
+    },
+    "PalCaptureRate": {
+        "default": 1.0,
+        "description": "Capture rate multiplier.",
+        "type": "FloatProperty"
+    },
+    "PalDamageRateAttack": {
+        "default": 1.0,
+        "description": "Damage dealt by Pals multiplier.",
+        "type": "FloatProperty"
+    },
+    "PalDamageRateDefense": {
+        "default": 1.0,
+        "description": "Damage taken by Pals multiplier.",
+        "type": "FloatProperty"
+    },
+    "PalEggDefaultHatchingTime": {
+        "default": 1.0,
+        "description": "Time to hatch a Huge Egg (hours). Note: Other eggs also require time to incubate.",
+        "type": "FloatProperty"
+    },
+    "PalSpawnNumRate": {
+        "default": 1.0,
+        "description": "Pal spawn rate. (Impacts performance.)",
+        "type": "FloatProperty"
+    },
+    "PalStaminaDecreaceRate": {
+        "default": 1.0,
+        "description": "Pal stamina depletion rate multiplier.",
+        "type": "FloatProperty"
+    },
+    "PalStomachDecreaceRate": {
+        "default": 1.0,
+        "description": "Pal hunger depletion rate multiplier.",
+        "type": "FloatProperty"
+    },
+    "PhysicsActiveDropItemMaxNum": {
+        "default": "-1",
+        "description": "Maximum number of dropped items that can use physics behavior.",
+        "type": "IntProperty"
+    },
+    "PlayerAutoHPRegeneRate": {
+        "default": 1.0,
+        "description": "Player natural HP regen multiplier.",
+        "type": "FloatProperty"
+    },
+    "PlayerAutoHpRegeneRateInSleep": {
+        "default": 1.0,
+        "description": "Player HP regen while sleeping multiplier.",
+        "type": "FloatProperty"
+    },
+    "PlayerDamageRateAttack": {
+        "default": 1.0,
+        "description": "Damage dealt by players multiplier.",
+        "type": "FloatProperty"
+    },
+    "PlayerDamageRateDefense": {
+        "default": 1.0,
+        "description": "Damage taken by players multiplier.",
+        "type": "FloatProperty"
+    },
+    "PlayerDataPalStorageUpdateCheckTickInterval": {
+        "default": 1.0,
+        "type": "FloatProperty"
+    },
+    "PlayerStaminaDecreaceRate": {
+        "default": 1.0,
+        "description": "Player stamina depletion rate multiplier.",
+        "type": "FloatProperty"
+    },
+    "PlayerStomachDecreaceRate": {
+        "default": 1.0,
+        "description": "Player hunger depletion rate multiplier.",
+        "type": "FloatProperty"
+    },
+    "PublicIP": {
+        "default": "",
+        "description": "(Community server) Explicitly specify the external public IP.",
+        "type": "StrProperty"
+    },
+    "PublicPort": {
+        "default": 8211,
+        "description": "(Community server) Explicitly specify the external public port. (Does not change the server's listening port.)",
+        "type": "IntProperty"
+    },
+    "RCONEnabled": {
+        "default": false,
+        "description": "Enable RCON.",
+        "type": "BoolProperty"
+    },
+    "RCONPort": {
+        "default": 25575,
+        "description": "Port number used for RCON.",
+        "type": "IntProperty"
+    },
+    "RESTAPIEnabled": {
+        "default": false,
+        "description": "Enable the REST API.",
+        "type": "BoolProperty"
+    },
+    "RESTAPIPort": {
+        "default": 8212,
+        "description": "Listening port for the REST API.",
+        "type": "IntProperty"
+    },
+    "RandomizerSeed": {
+        "default": "",
+        "description": "Seed value used when Pal spawn randomization mode is enabled.",
+        "type": "StrProperty"
+    },
+    "RandomizerType": {
+        "default": "None",
+        "description": "Pal spawn randomization mode:None = no randomization; Region = randomize per region; All = fully randomized.",
+        "enum_type": "EPalRandomizerType",
+        "type": "EnumProperty",
+        "allowed_values": [
+            "None",
+            "Region",
+            "All"
+        ]
+    },
+    "Region": {
+        "default": "",
+        "type": "StrProperty"
+    },
+    "RespawnPenaltyDurationThreshold": {
+        "default": 0.0,
+        "description": "Survival-time threshold (seconds) for applying the respawn cooldown multiplier set by RespawnPenaltyTimeScale on a subsequent death.",
+        "type": "FloatProperty"
+    },
+    "RespawnPenaltyTimeScale": {
+        "default": 2.0,
+        "description": "Multiplier applied to the respawn cooldown.",
+        "type": "FloatProperty"
+    },
+    "ServerDescription": {
+        "default": "",
+        "description": "Server description",
+        "type": "StrProperty"
+    },
+    "ServerName": {
+        "default": "Default Palworld Server",
+        "description": "Server name",
+        "type": "StrProperty"
+    },
+    "ServerPassword": {
+        "default": "",
+        "description": "Password required to log in to the server.",
+        "type": "StrProperty"
+    },
+    "ServerPlayerMaxNum": {
+        "default": 32,
+        "description": "Maximum number of players who can join the server.",
+        "type": "IntProperty",
+        "allowed_values":[1, 999999]
+    },
+    "ServerReplicatePawnCullDistance": {
+        "default": 15000.0,
+        "description": "Pal sync distance from players (cm). Minimum 5000 - maximum 15000.",
+        "type": "FloatProperty",
+        "allowed_values":[5000.0,15000.0]
+        
+    },
+    "SupplyDropSpan": {
+        "default": 180,
+        "description": "Meteorite / supply drop interval (minutes).",
+        "type": "IntProperty",
+        "allowed_values":[1, 999999]
+    },
+    "VoiceChatMaxVolumeDistance": {
+        "default": 3000.0,
+        "description": "Distance at which voice chat volume does not attenuate.",
+        "type": "FloatProperty",
+        "allowed_values":[0.0, 999999.0]
+    },
+    "VoiceChatZeroVolumeDistance": {
+        "default": 15000.0,
+        "description": "Distance at which voice chat volume becomes zero.",
+        "type": "FloatProperty",
+        "allowed_values":[0.0, 999999.0]
+    },
+    "WorkSpeedRate": {
+        "default": 1.0,
+        "type": "FloatProperty",
+        "allowed_values":[0.0, 999999.0]
+    },
+    "bActiveUNKO": {
+        "default": false,
+        "type": "BoolProperty",
+        "description": "An apparently deprecated property for a development branch that had pals poop."
+    },
+    "bAdditionalDropItemWhenPlayerKillingInPvPMode": {
+        "default": false,
+        "description": "Whether to drop a special item when a player is killed while PvP is enabled.",
+        "type": "BoolProperty"
+    },
+    "bAllowClientMod": {
+        "default": true,
+        "description": "Allow players with mods enabled to join the server.",
+        "type": "BoolProperty"
+    },
+    "bAllowEnhanceStat_Attack": {
+        "default": true,
+        "description": "Allow allocating stat points to Attack.",
+        "type": "BoolProperty"
+    },
+    "bAllowEnhanceStat_Health": {
+        "default": true,
+        "description": "Allow allocating stat points to HP.",
+        "type": "BoolProperty"
+    },
+    "bAllowEnhanceStat_Stamina": {
+        "default": true,
+        "description": "Allow allocating stat points to Stamina.",
+        "type": "BoolProperty"
+    },
+    "bAllowEnhanceStat_Weight": {
+        "default": true,
+        "description": "Allow allocating stat points to Carry Weight.",
+        "type": "BoolProperty"
+    },
+    "bAllowEnhanceStat_WorkSpeed": {
+        "default": true,
+        "description": "Allow allocating stat points to Work Speed.",
+        "type": "BoolProperty"
+    },
+    "bAllowGlobalPalboxExport": {
+        "default": true,
+        "description": "Allow saving to the Global Palbox.",
+        "type": "BoolProperty"
+    },
+    "bAllowGlobalPalboxImport": {
+        "default": false,
+        "description": "Allow loading from the Global Palbox.",
+        "type": "BoolProperty"
+    },
+    "bAutoResetGuildNoOnlinePlayers": {
+        "default": false,
+        "description": "If no guild members log in, automatically delete structures and base Pals.",
+        "type": "BoolProperty"
+    },
+    "bBuildAreaLimit": {
+        "default": false,
+        "description": "Prevent building near structures such as fast-travel points.",
+        "type": "BoolProperty"
+    },
+    "bCanPickupOtherGuildDeathPenaltyDrop": {
+        "default": false,
+        "type": "BoolProperty"
+    },
+    "bCharacterRecreateInHardcore": {
+        "default": false,
+        "description": "Whether you may recreate your character upon death in Hardcore mode.",
+        "type": "BoolProperty"
+    },
+    "bDisplayPvPItemNumOnWorldMap_BaseCamp": {
+        "default": false,
+        "description": "Whether to show, on the map, the number of PvP-exclusive items in each base.",
+        "type": "BoolProperty"
+    },
+    "bDisplayPvPItemNumOnWorldMap_Player": {
+        "default": false,
+        "description": "Whether to show player locations and the number of PvP-exclusive items on the map.",
+        "type": "BoolProperty"
+    },
+    "bEnableAimAssistKeyboard": {
+        "default": false,
+        "type": "BoolProperty"
+    },
+    "bEnableAimAssistPad": {
+        "default": true,
+        "type": "BoolProperty"
+    },
+    "bEnableBuildingPlayerUIdDisplay": {
+        "default": false,
+        "description": "Whether to display the creator's player ID on structures.",
+        "type": "BoolProperty"
+    },
+    "bEnableDefenseOtherGuildPlayer": {
+        "default": false,
+        "type": "BoolProperty"
+    },
+    "bEnableFastTravel": {
+        "default": true,
+        "description": "Enable fast travel.",
+        "type": "BoolProperty"
+    },
+    "bEnableFastTravelOnlyBaseCamp": {
+        "default": false,
+        "description": "Restrict fast travel to between bases only.",
+        "type": "BoolProperty"
+    },
+    "bEnableFriendlyFire": {
+        "default": false,
+        "type": "BoolProperty"
+    },
+    "bEnableInvaderEnemy": {
+        "default": true,
+        "description": "Enable Invader",
+        "type": "BoolProperty"
+    },
+    "bEnableNonLoginPenalty": {
+        "default": true,
+        "type": "BoolProperty"
+    },
+    "bEnablePlayerToPlayerDamage": {
+        "default": false,
+        "type": "BoolProperty"
+    },
+    "bEnableVoiceChat": {
+        "default": false,
+        "description": "Enable in-game voice chat.",
+        "type": "BoolProperty"
+    },
+    "bExistPlayerAfterLogout": {
+        "default": false,
+        "description": "Whether players enter a sleeping state at their current location when logging out.",
+        "type": "BoolProperty"
+    },
+    "bHardcore": {
+        "default": false,
+        "description": "Enable Hardcore. You will not be able to respawn on death.",
+        "type": "BoolProperty"
+    },
+    "bInvisibleOtherGuildBaseCampAreaFX": {
+        "default": false,
+        "description": "Show base area boundaries.",
+        "type": "BoolProperty"
+    },
+    "bIsMultiplay": {
+        "default": false,
+        "type": "BoolProperty"
+    },
+    "bIsPvP": {
+        "default": false,
+        "description": "EnablePvP",
+        "type": "BoolProperty"
+    },
+    "bIsRandomizerPalLevelRandom": {
+        "default": false,
+        "description": "If true, wild Pal levels are fully random. If false, levels are randomized within each area's intended range.",
+        "type": "BoolProperty"
+    },
+    "bIsShowJoinLeftMessage": {
+        "default": true,
+        "description": "On dedicated servers, show in-game messages when players join/leave.",
+        "type": "BoolProperty"
+    },
+    "bIsStartLocationSelectByMap": {
+        "default": false,
+        "description": "Whether to allow players to choose their starting location.",
+        "type": "BoolProperty"
+    },
+    "bIsUseBackupSaveData": {
+        "default": true,
+        "description": "Enable world backups.Enabling this increases disk load.",
+        "type": "BoolProperty"
+    },
+    "bPalLost": {
+        "default": false,
+        "description": "Permanently lose Pals on death.",
+        "type": "BoolProperty"
+    },
+    "bShowPlayerList": {
+        "default": false,
+        "description": "Enable the player list on the ESC menu.",
+        "type": "BoolProperty"
+    },
+    "bUseAuth": {
+        "default": true,
+        "type": "BoolProperty"
+    },
+    "FishingDifficultyRate":{
+        "default": 1.0,
+        "description": "Fishing difficulty",
+        "type": "FloatProperty"
+    }
+}

@@ -198,34 +198,38 @@ class MainWindow(QMainWindow):
         self._setup_connections()
         self.status_stream = StatusBarStream(self.status_bar, self)
         self.status_stream.detach_state_changed.connect(self._on_detach_state_changed)
-        sys.stdout = self.status_stream
-        sys.stderr = self.status_stream
-        from palsav import setup_logging
-        class _StatusBarLogHandler(logging.StreamHandler):
-            def __init__(self, stream):
-                super().__init__(stream)
-            def emit(self, record):
-                try:
-                    self.stream.write(self.format(record) + '\n')
-                except Exception:
-                    self.handleError(record)
-        handler = _StatusBarLogHandler(self.status_stream)
-        handler.setLevel(logging.INFO)
-        handler.raiseExceptions = False
-        handler.setFormatter(logging.Formatter('{message}', style='{'))
-        root_logger = logging.getLogger()
-        root_logger.addHandler(handler)
-        setup_logging()
-        for h in list(root_logger.handlers):
-            if h is handler:
-                continue
-            if isinstance(h, logging.StreamHandler) and (h.stream is None or h.stream is sys.stderr):
-                root_logger.removeHandler(h)
-                h.close()
-        logging.lastResort = None
-        if self.user_settings.get('console_detached', False):
-            self.status_stream.detach()
-            self.sidebar.set_console_visible(True)
+        DEBUG = bool(os.environ.get('PST_DEBUG', '') in ('1', 'true', 'True'))
+        if DEBUG:
+            print("ERROR STREAM NOT REDIRECTED FROM CONSOLED", file=sys.stderr)
+        else: 
+            sys.stdout = self.status_stream
+            sys.stderr = self.status_stream
+            from palsav import setup_logging
+            class _StatusBarLogHandler(logging.StreamHandler):
+                def __init__(self, stream):
+                    super().__init__(stream)
+                def emit(self, record):
+                    try:
+                        self.stream.write(self.format(record) + '\n')
+                    except Exception:
+                        self.handleError(record)
+            handler = _StatusBarLogHandler(self.status_stream)
+            handler.setLevel(logging.INFO)
+            handler.raiseExceptions = False
+            handler.setFormatter(logging.Formatter('{message}', style='{'))
+            root_logger = logging.getLogger()
+            root_logger.addHandler(handler)
+            setup_logging()
+            for h in list(root_logger.handlers):
+                if h is handler:
+                    continue
+                if isinstance(h, logging.StreamHandler) and (h.stream is None or h.stream is sys.stderr):
+                    root_logger.removeHandler(h)
+                    h.close()
+            logging.lastResort = None
+            if self.user_settings.get('console_detached', False):
+                self.status_stream.detach()
+                self.sidebar.set_console_visible(True)
     def _setup_ui(self):
         self.setWindowTitle(t('deletion.title') if t else 'All-in-One Tools')
         self.setMinimumSize(1200, 750)
@@ -1386,25 +1390,8 @@ class MainWindow(QMainWindow):
             dlg.exec()
 
     def _load_worldoption(self):
-        from ..utils import sav_to_json
-        from common import get_preferred_save_path
-        sav_path, _ = QFileDialog.getOpenFileName(self, t('menu.file.load_worldoption') if t else 'Load WorldOption', get_preferred_save_path(), 'WorldOption.sav (WorldOption.sav)')
-        if not sav_path:
-            return
-        if not os.path.basename(sav_path).startswith('WorldOption'):
-            self._show_warning(t('error.title') if t else 'Error', 'Please select a WorldOption.sav file')
-            return
-        try:
-            json_data = sav_to_json(sav_path)
-            if 'properties' not in json_data or 'OptionWorldData' not in json_data.get('properties', {}):
-                self._show_warning(t('error.title') if t else 'Error', 'Invalid WorldOption.sav structure')
-                return
-            from palworld_aio.editor.worldoption_editor import edit_worldoption_settings
-            result = edit_worldoption_settings(json_data, sav_path, self)
-            if result:
-                self._show_info(t('success.title') if t else 'Success', f'WorldOption settings saved successfully!\n\nLocation: {sav_path}')
-        except Exception as e:
-            self._show_error(t('error.title') if t else 'Error', f'Failed to load WorldOption.sav:\n{str(e)}')
+        from palworld_aio.editor.worldoption_editor import edit_worldoption_settings
+        result = edit_worldoption_settings(self)
     def _delete_empty_guilds(self):
         if not constants.loaded_level_json:
             msg_box = self._create_message_box(QMessageBox.Warning)
